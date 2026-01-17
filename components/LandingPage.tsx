@@ -163,10 +163,13 @@ const LandingPage: React.FC<{ games: Game[] }> = ({ games }) => {
                             Institutional Grade Lottery
                         </div>
                     </div>
-                    <h1 className="text-5xl md:text-8xl font-black mb-6 tracking-tighter glitch-text leading-none" data-text="AKLASBELA-TV">
-                        AKLASBELA-TV
-                    </h1>
-                    <p className="text-base md:text-xl text-slate-500 max-w-2xl mx-auto font-medium leading-relaxed">
+                    <div className="relative inline-block">
+                        <h1 className="text-6xl md:text-[9rem] font-black mb-6 tracking-tighter leading-none premium-gold-text glitch-layer" data-text="AKLASBELA-TV">
+                            AKLASBELA-TV
+                        </h1>
+                        <div className="absolute -inset-x-20 -top-20 -bottom-20 bg-amber-500/5 blur-[100px] pointer-events-none -z-10"></div>
+                    </div>
+                    <p className="text-base md:text-xl text-slate-500 max-w-2xl mx-auto font-medium leading-relaxed mt-4">
                         The gold standard of digital lotteries. Track results in real-time and trade with absolute confidence on our secure node.
                     </p>
                 </header>

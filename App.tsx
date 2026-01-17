@@ -24,7 +24,12 @@ const Header: React.FC = () => {
                 <div className="flex items-center gap-5">
                     <div className="relative group">
                         <div className="absolute -inset-1 bg-amber-500/30 rounded-full blur opacity-0 group-hover:opacity-100 transition duration-500"></div>
-                        {account.avatarUrl ? (
+                        {role === Role.Admin ? (
+                            /* Special GURU Logo for Admin */
+                            <div className="relative w-12 h-12 rounded-xl bg-red-600 border-2 border-amber-500 shadow-[0_0_15px_rgba(239,68,68,0.5)] flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
+                                <span className="russo text-xs text-white font-black tracking-tighter">GURU</span>
+                            </div>
+                        ) : account.avatarUrl ? (
                             <img src={account.avatarUrl} alt={account.name} className="relative w-12 h-12 rounded-full object-cover border-2 border-amber-500/30" />
                         ) : (
                             <div className="relative w-12 h-12 rounded-full bg-slate-900 border-2 border-amber-500/30 flex items-center justify-center">

@@ -15,13 +15,10 @@ function getGameCycle(drawTime) {
     if (!drawTime) return { openTime: now, closeTime: now };
     
     const [drawHoursPKT, drawMinutesPKT] = drawTime.split(':').map(Number);
-
     const year = now.getUTCFullYear();
     const month = now.getUTCMonth();
     const day = now.getUTCDate();
-    
     const openHourUTC = OPEN_HOUR_PKT - PKT_OFFSET_HOURS; // 11:00 AM UTC
-
     const todayOpen = new Date(Date.UTC(year, month, day, openHourUTC, 0, 0));
     const yesterdayOpen = new Date(todayOpen.getTime() - (24 * 60 * 60 * 1000));
 
@@ -29,7 +26,6 @@ function getGameCycle(drawTime) {
         const closeDate = new Date(openDate.getTime());
         const drawHourUTC = drawHoursPKT - PKT_OFFSET_HOURS;
         closeDate.setUTCHours(drawHourUTC, drawMinutesPKT, 0, 0);
-
         if (drawHoursPKT < OPEN_HOUR_PKT) {
             closeDate.setUTCDate(closeDate.getUTCDate() + 1);
         }
@@ -40,7 +36,6 @@ function getGameCycle(drawTime) {
     if (now >= yesterdayOpen && now < yesterdayCycleClose) {
         return { openTime: yesterdayOpen, closeTime: yesterdayCycleClose };
     }
-
     const todayCycleClose = calculateCloseTime(todayOpen);
     return { openTime: todayOpen, closeTime: todayCycleClose };
 }
@@ -54,30 +49,29 @@ function isGameOpen(drawTime) {
 
 const connect = () => {
     try {
-        db = new Database(DB_PATH);
+        db = new Database(DB_PATH, { timeout: 5000 });
         db.pragma('journal_mode = WAL');
         db.pragma('foreign_keys = ON');
-        console.log('[DB] Database connected successfully.');
+        console.log('[DB] Database connected.');
+        return true;
     } catch (error) {
-        console.error('[DB] Failed to connect to database:', error);
-        process.exit(1);
+        console.error('[DB] Connection failed:', error.message);
+        return false;
     }
 };
 
-const verifySchema = () => {
+const isSchemaValid = () => {
     try {
+        if (!db) return false;
         const stmt = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='admins'");
-        if (!stmt.get()) {
-            console.error('[DB] Database schema missing! Run setup-database.js.');
-            process.exit(1);
-        }
+        return !!stmt.get();
     } catch (error) {
-        console.error('[DB] Schema verification error:', error);
-        process.exit(1);
+        return false;
     }
 };
 
 const findAccountById = (id, table) => {
+    if (!db) return null;
     const stmt = db.prepare(`SELECT * FROM ${table} WHERE LOWER(id) = LOWER(?)`);
     const account = stmt.get(id);
     if (!account) return null;
@@ -90,11 +84,12 @@ const findAccountById = (id, table) => {
         if (account.prizeRates) account.prizeRates = JSON.parse(account.prizeRates);
         if (account.betLimits) account.betLimits = JSON.parse(account.betLimits);
         if ('isRestricted' in account) account.isRestricted = !!account.isRestricted;
-    } catch (e) { console.error('[DB] Parsing error in findAccountById:', e); }
+    } catch (e) { console.error('[DB] Parsing error:', e); }
     return account;
 };
 
 const findAccountForLogin = (loginId) => {
+    if (!db) return { account: null, role: null };
     const lowerCaseLoginId = loginId.toLowerCase();
     const tables = [{ name: 'users', role: 'USER' }, { name: 'dealers', role: 'DEALER' }, { name: 'admins', role: 'ADMIN' }];
     for (const tableInfo of tables) {
@@ -107,16 +102,8 @@ const findAccountForLogin = (loginId) => {
     return { account: null, role: null };
 };
 
-const updatePassword = (accountId, contact, newPassword) => {
-    const tables = ['users', 'dealers'];
-    for (const table of tables) {
-        const result = db.prepare(`UPDATE ${table} SET password = ? WHERE id = ? AND contact = ?`).run(newPassword, accountId, contact);
-        if (result.changes > 0) return true;
-    }
-    return false;
-};
-
 const getAllFromTable = (table, withLedger = false) => {
+    if (!db) return [];
     try {
         return db.prepare(`SELECT * FROM ${table}`).all().map(acc => {
             try {
@@ -126,26 +113,27 @@ const getAllFromTable = (table, withLedger = false) => {
                 if (acc.betLimits) acc.betLimits = typeof acc.betLimits === 'string' ? JSON.parse(acc.betLimits) : acc.betLimits;
                 if (table === 'bets' && acc.numbers) acc.numbers = typeof acc.numbers === 'string' ? JSON.parse(acc.numbers) : acc.numbers;
                 if ('isRestricted' in acc) acc.isRestricted = !!acc.isRestricted;
-            } catch (e) { console.error(`[DB] Error parsing row in ${table}:`, e); }
+            } catch (e) { console.error(`[DB] Row parse error in ${table}:`, e); }
             return acc;
         });
     } catch (err) {
-        console.error(`[DB] Failed to fetch from table ${table}:`, err);
+        console.error(`[DB] Fetch failed for ${table}:`, err.message);
         return [];
     }
 };
 
-const runInTransaction = (fn) => db.transaction(fn)();
+const runInTransaction = (fn) => {
+    if (!db) throw new Error("Database not connected");
+    return db.transaction(fn)();
+};
 
 const addLedgerEntry = (accountId, accountType, description, debit, credit) => {
     const table = accountType.toLowerCase() + 's';
     const account = db.prepare(`SELECT wallet FROM ${table} WHERE LOWER(id) = LOWER(?)`).get(accountId);
     const lastBalance = account ? account.wallet : 0;
-    
     if (debit > 0 && accountType !== 'ADMIN' && lastBalance < debit) {
         throw { status: 400, message: `Insufficient funds.` };
     }
-    
     const newBalance = lastBalance - debit + credit;
     db.prepare('INSERT INTO ledgers (id, accountId, accountType, timestamp, description, debit, credit, balance) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(uuidv4(), accountId, accountType, new Date().toISOString(), description, debit, credit, newBalance);
     db.prepare(`UPDATE ${table} SET wallet = ? WHERE LOWER(id) = LOWER(?)`).run(newBalance, accountId);
@@ -228,6 +216,7 @@ const approvePayoutsForGame = (gameId) => {
 };
 
 const getFinancialSummary = () => {
+    if (!db) return null;
     const games = db.prepare('SELECT * FROM games WHERE winningNumber IS NOT NULL').all();
     const allBets = db.prepare('SELECT * FROM bets').all().map(b => ({...b, numbers: JSON.parse(b.numbers)}));
     const allUsers = Object.fromEntries(getAllFromTable('users').map(u => [u.id, u])), allDealers = Object.fromEntries(getAllFromTable('dealers').map(d => [d.id, d]));
@@ -293,7 +282,6 @@ const findUserByDealer = (uId, dId) => {
 };
 
 const createUser = (u, dId, dep = 0) => {
-    if (db.prepare('SELECT id FROM users WHERE LOWER(id) = ?').get(u.id.toLowerCase())) throw { status: 400, message: "Taken." };
     const dealer = findAccountById(dId, 'dealers');
     if (!dealer || dealer.wallet < dep) throw { status: 400, message: 'Insufficient.' };
     db.prepare('INSERT INTO users (id, name, password, dealerId, area, contact, wallet, commissionRate, isRestricted, prizeRates, betLimits, avatarUrl) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(u.id, u.name, u.password, dId, u.area, u.contact, 0, u.commissionRate, 0, JSON.stringify(u.prizeRates), JSON.stringify(u.betLimits), u.avatarUrl);
@@ -304,27 +292,22 @@ const createUser = (u, dId, dep = 0) => {
 const updateUser = (u, uId, dId) => {
     const existing = findUserByDealer(uId, dId);
     if (!existing) throw { status: 404, message: "Not found." };
-    
     runInTransaction(() => {
         db.prepare('UPDATE users SET id = ?, name = ?, password = ?, area = ?, contact = ?, commissionRate = ?, prizeRates = ?, betLimits = ?, avatarUrl = ? WHERE LOWER(id) = LOWER(?)').run(u.id, u.name, u.password || existing.password, u.area, u.contact, u.commissionRate, JSON.stringify(u.prizeRates), JSON.stringify(u.betLimits), u.avatarUrl, uId);
-        
         if (u.id.toLowerCase() !== uId.toLowerCase()) {
             db.prepare('UPDATE bets SET userId = ? WHERE LOWER(userId) = LOWER(?)').run(u.id, uId);
             db.prepare('UPDATE ledgers SET accountId = ? WHERE LOWER(accountId) = LOWER(?) AND accountType = ?').run(u.id, uId, 'USER');
         }
     });
-    
     return findAccountById(u.id, 'users');
 };
 
 const updateUserByAdmin = (u, uId) => {
     const existing = db.prepare('SELECT * FROM users WHERE LOWER(id) = LOWER(?)').get(uId);
     if (!existing) throw { status: 404, message: "User not found." };
-    
     runInTransaction(() => {
         db.prepare('UPDATE users SET name = ?, password = ?, area = ?, contact = ?, commissionRate = ?, prizeRates = ?, betLimits = ?, avatarUrl = ? WHERE LOWER(id) = LOWER(?)').run(u.name, u.password || existing.password, u.area, u.contact, u.commissionRate, JSON.stringify(u.prizeRates), JSON.stringify(u.betLimits), u.avatarUrl, uId);
     });
-    
     return findAccountById(uId, 'users');
 };
 
@@ -363,6 +346,7 @@ const toggleUserRestrictionByDealer = (uId, dId) => {
 const createBet = (b) => db.prepare('INSERT INTO bets (id, userId, dealerId, gameId, subGameType, numbers, amountPerNumber, totalAmount, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').run(b.id, b.userId, b.dealerId, b.gameId, b.subGameType, b.numbers, b.amountPerNumber, b.totalAmount, b.timestamp);
 
 const getNumberStakeSummary = ({ gameId, dealerId, date }) => {
+    if (!db) return null;
     let query = 'SELECT gameId, subGameType, numbers, amountPerNumber, totalAmount FROM bets';
     const params = [], cond = [];
     if (gameId) { cond.push('gameId = ?'); params.push(gameId); }
@@ -392,20 +376,16 @@ const placeBulkBets = (uId, gId, groups, placedBy = 'USER') => {
     runInTransaction(() => {
         const user = findAccountById(uId, 'users');
         if (!user || user.isRestricted) throw { status: 403, message: 'Restricted or not found.' };
-        
         const dealer = findAccountById(user.dealerId, 'dealers');
         const game = findAccountById(gId, 'games');
         const admin = findAccountById('Guru', 'admins');
         const globalLimits = db.prepare('SELECT * FROM number_limits').all();
         const existingBets = db.prepare('SELECT * FROM bets WHERE gameId = ?').all(gId);
-        
         const userExistingTotal = existingBets.filter(b => b.userId === uId).reduce((s, b) => s + b.totalAmount, 0);
         const requestTotal = groups.reduce((s, g) => s + g.numbers.length * g.amountPerNumber, 0);
-        
         if (user.betLimits?.perDraw > 0 && (userExistingTotal + requestTotal) > user.betLimits.perDraw) {
             throw { status: 400, message: `Limit Reached: Draw total exceeds your PKR ${user.betLimits.perDraw} limit.` };
         }
-
         const numberStakeMap = new Map();
         existingBets.forEach(b => {
             const nums = typeof b.numbers === 'string' ? JSON.parse(b.numbers) : b.numbers;
@@ -415,44 +395,35 @@ const placeBulkBets = (uId, gId, groups, placedBy = 'USER') => {
                 numberStakeMap.set(key, (numberStakeMap.get(key) || 0) + b.amountPerNumber);
             });
         });
-
         groups.forEach(g => {
             const stake = g.amountPerNumber;
             const type = g.subGameType;
             const limitType = type === '1 Digit Open' ? '1-open' : type === '1 Digit Close' ? '1-close' : '2-digit';
             const userSingleLimit = limitType === '2-digit' ? user.betLimits.twoDigit : user.betLimits.oneDigit;
-
             g.numbers.forEach(n => {
                 const key = `${type}_${n}`;
                 const currentStake = numberStakeMap.get(key) || 0;
                 const newStake = currentStake + stake;
-
                 const globalLimit = globalLimits.find(l => l.gameType === limitType && l.numberValue === n);
                 if (globalLimit && newStake > globalLimit.limitAmount) {
                     throw { status: 400, message: `Market Limit: Total stake for '${n}' (${type}) exceeds market limit of PKR ${globalLimit.limitAmount}.` };
                 }
-
                 if (userSingleLimit > 0 && newStake > userSingleLimit) {
                     throw { status: 400, message: `User Limit: Your stake for '${n}' (${type}) exceeds your personal limit of PKR ${userSingleLimit}.` };
                 }
             });
         });
-
         if (user.wallet < requestTotal) throw { status: 400, message: `Insufficient funds.` };
-        
         const userComm = requestTotal * (user.commissionRate / 100);
         const dComm = requestTotal * ((dealer.commissionRate - user.commissionRate) / 100);
-        
         addLedgerEntry(user.id, 'USER', `Bet placed on ${game.name}`, requestTotal, 0);
         if (userComm > 0) addLedgerEntry(user.id, 'USER', `Comm earned`, 0, userComm);
-        
         addLedgerEntry(admin.id, 'ADMIN', `Stake: ${user.name}`, 0, requestTotal);
         if (userComm > 0) addLedgerEntry(admin.id, 'ADMIN', `Comm to user`, userComm, 0);
         if (dComm > 0) { 
             addLedgerEntry(admin.id, 'ADMIN', `Comm to dealer`, dComm, 0); 
             addLedgerEntry(dealer.id, 'DEALER', `Comm from ${user.name}`, 0, dComm); 
         }
-
         const created = [];
         groups.forEach(g => {
             const b = { 
@@ -475,6 +446,7 @@ const updateGameDrawTime = (id, time) => {
 };
 
 function getAllNumberLimits() {
+    if (!db) return [];
     return db.prepare('SELECT * FROM number_limits').all();
 }
 
@@ -494,12 +466,12 @@ function resetAllGames() {
             db.prepare('UPDATE games SET winningNumber = NULL, payoutsApproved = 0').run();
             db.prepare('DELETE FROM bets').run(); 
         });
-        console.log('[DB] 4:00 PM PKT Boundary Reached. Market Restarted.');
+        console.log('[DB] Market Restarted.');
     } catch (e) {
         console.error('[DB] Failed to reset games:', e);
     }
 }
 
 module.exports = {
-    connect, verifySchema, findAccountById, findAccountForLogin, updatePassword, getAllFromTable, runInTransaction, addLedgerEntry, createDealer, updateDealer, findUsersByDealerId, findUserByDealer, findBetsByUserId, createUser, updateUser, updateUserByAdmin, deleteUserByDealer, toggleAccountRestrictionByAdmin, toggleUserRestrictionByDealer, declareWinnerForGame, updateWinningNumber, approvePayoutsForGame, getFinancialSummary, getNumberStakeSummary, placeBulkBets, updateGameDrawTime, resetAllGames, getAllNumberLimits, saveNumberLimit, deleteNumberLimit, findBetsByDealerId, findBetsByGameId
+    connect, isSchemaValid, findAccountById, findAccountForLogin, updatePassword, getAllFromTable, runInTransaction, addLedgerEntry, createDealer, updateDealer, findUsersByDealerId, findUserByDealer, findBetsByUserId, createUser, updateUser, updateUserByAdmin, deleteUserByDealer, toggleAccountRestrictionByAdmin, toggleUserRestrictionByDealer, declareWinnerForGame, updateWinningNumber, approvePayoutsForGame, getFinancialSummary, getNumberStakeSummary, placeBulkBets, updateGameDrawTime, resetAllGames, getAllNumberLimits, saveNumberLimit, deleteNumberLimit, findBetsByDealerId, findBetsByGameId
 };

@@ -14,19 +14,19 @@ const app = express();
 
 // 1. Security Headers (Helmet)
 app.use(helmet({
-    contentSecurityPolicy: false, // Set to false to allow cross-origin assets if needed for dev
+    contentSecurityPolicy: false, 
 }));
 
-// 2. Rate Limiting (Prevent Brute Force) - Relaxed slightly for development/reliability
+// 2. Rate Limiting (Prevent Brute Force)
 const apiLimiter = rateLimit({
-    windowMs: 5 * 60 * 1000, // 5 minutes
-    max: 500, // 500 requests per 5 mins
+    windowMs: 5 * 60 * 1000, 
+    max: 1000, 
     message: { message: 'Network busy. Please slow down.' }
 });
 
 const authLimiter = rateLimit({
-    windowMs: 60 * 60 * 1000, // 1 hour
-    max: 50, // 50 login attempts per hour
+    windowMs: 60 * 60 * 1000, 
+    max: 100, 
     message: { message: 'Too many login attempts. Contact support.' }
 });
 
@@ -36,26 +36,47 @@ app.use('/api/auth/login', authLimiter);
 app.use(cors());
 app.use(express.json());
 
-// --- HEALTH CHECK ---
-app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', time: new Date().toISOString(), branding: 'A-Baba Exchange' });
-});
+// --- MAINTENANCE CHECK ---
+let systemError = null;
 
 // --- STRICT ENV VALIDATION ---
 const JWT_SECRET = process.env.JWT_SECRET;
 const API_KEY = process.env.API_KEY;
 
 if (!JWT_SECRET) {
-    console.error('FATAL ERROR: JWT_SECRET is not defined in the .env file.');
-    console.error('SERVER STOPPED: Create a .env file with JWT_SECRET=your_random_secret');
-    process.exit(1);
+    systemError = "JWT_SECRET is not defined in .env. Setup required.";
+    console.error(`[CRITICAL] ${systemError}`);
 }
+
+// --- DATABASE SETUP ---
+const dbConnected = database.connect();
+if (!dbConnected) {
+    systemError = "Failed to connect to SQLite database. Check folder permissions.";
+    console.error(`[CRITICAL] ${systemError}`);
+} else if (!database.isSchemaValid()) {
+    systemError = "Database schema not found. Run 'npm run db:setup' in the backend folder.";
+    console.error(`[CRITICAL] ${systemError}`);
+}
+
+// --- MAINTENANCE MIDDLEWARE ---
+app.use((req, res, next) => {
+    if (systemError && req.path.startsWith('/api/')) {
+        return res.status(503).json({ message: systemError, maintenance: true });
+    }
+    next();
+});
+
+// --- HEALTH CHECK ---
+app.get('/api/health', (req, res) => {
+    res.json({ status: systemError ? 'maintenance' : 'ok', error: systemError, branding: 'A-Baba Exchange' });
+});
 
 // --- AUTOMATIC GAME RESET SCHEDULER ---
 const PKT_OFFSET_HOURS = 5;
-const RESET_HOUR_PKT = 16; // 4:00 PM PKT
+const RESET_HOUR_PKT = 16; 
 
 function scheduleNextGameReset() {
+    if (systemError) return;
     const now = new Date();
     const resetHourUTC = RESET_HOUR_PKT - PKT_OFFSET_HOURS;
     let resetTime = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), resetHourUTC, 0, 5, 0));
@@ -63,10 +84,10 @@ function scheduleNextGameReset() {
         resetTime.setUTCDate(resetTime.getUTCDate() + 1);
     }
     const delay = resetTime.getTime() - now.getTime();
-    console.log(`[Scheduler] Next game reset scheduled for ${resetTime.toISOString()}`);
+    console.log(`[Scheduler] Next reset: ${resetTime.toISOString()}`);
     
     setTimeout(() => {
-        try { database.resetAllGames(); } catch (e) { console.error('[Scheduler] Reset error:', e); }
+        try { database.resetAllGames(); } catch (e) { console.error('[Scheduler] Error:', e); }
         scheduleNextGameReset();
     }, delay);
 }
@@ -104,13 +125,8 @@ app.get('/api/auth/verify', authMiddleware, (req, res) => {
 });
 
 app.get('/api/games', (req, res) => {
-    try {
-        const games = database.getAllFromTable('games');
-        res.json(games);
-    } catch (err) {
-        console.error('[API] Failed to fetch games:', err);
-        res.status(500).json({ message: "Database read error" });
-    }
+    const games = database.getAllFromTable('games');
+    res.json(games);
 });
 
 app.post('/api/user/ai-lucky-pick', authMiddleware, async (req, res) => {
@@ -129,21 +145,11 @@ app.post('/api/user/ai-lucky-pick', authMiddleware, async (req, res) => {
     }
 });
 
-const startServer = () => {
-  try {
-    database.connect();
-    database.verifySchema();
+const PORT = process.env.PORT || 3005;
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`\n============================================`);
+    console.log(`🚀 A-Baba Exchange API running on port ${PORT}`);
+    if (systemError) console.log(`⚠️ SYSTEM IN MAINTENANCE: ${systemError}`);
+    console.log(`============================================\n`);
     scheduleNextGameReset();
-    const PORT = process.env.PORT || 3005;
-    app.listen(PORT, '0.0.0.0', () => {
-        console.log(`\n============================================`);
-        console.log(`🚀 A-Baba Exchange API running on port ${PORT}`);
-        console.log(`🔗 Health Check: http://localhost:${PORT}/api/health`);
-        console.log(`============================================\n`);
-    });
-  } catch (err) {
-    console.error('[SERVER] Critical failure during startup:', err);
-    process.exit(1);
-  }
-};
-startServer();
+});

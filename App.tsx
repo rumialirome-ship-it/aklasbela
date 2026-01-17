@@ -60,6 +60,7 @@ const AppContent: React.FC = () => {
     const [bets, setBets] = useState<Bet[]>([]);
     const [hasInitialFetched, setHasInitialFetched] = useState(false);
     const [apiError, setApiError] = useState<string | null>(null);
+    const [isMaintenance, setIsMaintenance] = useState(false);
     
     const [activeReveal, setActiveReveal] = useState<{ name: string; number: string } | null>(null);
     const lastGamesRef = useRef<Game[]>([]);
@@ -77,15 +78,18 @@ const AppContent: React.FC = () => {
     const fetchPublicData = useCallback(async () => {
         try {
             const gamesResponse = await fetch('/api/games');
+            const data = await gamesResponse.json();
             if (gamesResponse.ok) {
-                const data = await gamesResponse.json();
                 setGames(data);
                 setApiError(null);
+                setIsMaintenance(false);
             } else {
-                setApiError(`Server error: ${gamesResponse.status}`);
+                setApiError(data.message || `Server error: ${gamesResponse.status}`);
+                setIsMaintenance(!!data.maintenance);
             }
         } catch (e) {
-            setApiError("Cannot connect to server API. Is the backend running?");
+            setApiError("Cannot connect to server. Is the backend running?");
+            setIsMaintenance(false);
         }
     }, []);
 
@@ -94,13 +98,17 @@ const AppContent: React.FC = () => {
         try {
             const endpoint = role === Role.Admin ? '/api/admin/data' : (role === Role.Dealer ? '/api/dealer/data' : '/api/user/data');
             const response = await fetchWithAuth(endpoint);
+            const data = await response.json();
             if (response.ok) {
-                const parsedData = parseAllDates(await response.json());
+                const parsedData = parseAllDates(data);
                 if (parsedData.account) setAccount(parsedData.account);
                 if (role === Role.Admin) { setUsers(parsedData.users); setDealers(parsedData.dealers); setBets(parsedData.bets); }
                 else if (role === Role.Dealer) { setUsers(parsedData.users); setBets(parsedData.bets); }
                 else { setBets(parsedData.bets); }
                 setHasInitialFetched(true);
+            } else {
+                setApiError(data.message);
+                setIsMaintenance(!!data.maintenance);
             }
         } catch (error) {
             console.error("Private fetch error", error);
@@ -174,8 +182,8 @@ const AppContent: React.FC = () => {
     return (
         <div className="min-h-screen flex flex-col">
             {apiError && (
-                <div className="bg-red-500 text-white text-center py-2 text-xs font-bold uppercase tracking-widest sticky top-0 z-[100]">
-                    ⚠️ Connection Warning: {apiError}
+                <div className={`${isMaintenance ? 'bg-amber-600' : 'bg-red-600'} text-white text-center py-3 text-xs font-bold uppercase tracking-widest sticky top-0 z-[100] shadow-xl px-4`}>
+                    {isMaintenance ? '🔧 Maintenance Required: ' : '⚠️ Connection Warning: '} {apiError}
                 </div>
             )}
             {!role || !account ? (

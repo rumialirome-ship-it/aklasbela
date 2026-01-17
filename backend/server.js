@@ -46,7 +46,7 @@ const API_KEY = process.env.API_KEY;
 
 if (!JWT_SECRET) {
     // FALLBACK for boot-up only (PREVENTS 503)
-    JWT_SECRET = "dev_secret_key_aklasbela_tv_2024";
+    JWT_SECRET = "dev_secret_key_a_baba_exchange_2024";
     systemWarning = "Security Warning: Using default JWT secret. Setup required in .env.";
     console.warn(`[WARNING] ${systemWarning}`);
 }

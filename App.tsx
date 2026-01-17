@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Role, User, Dealer, Admin, Game, Bet, LedgerEntry } from './types';
 import { Icons } from './constants';
@@ -13,39 +12,53 @@ const Header: React.FC = () => {
     const { role, account, logout } = useAuth();
     if (!role || !account) return null;
 
-    const roleColors: { [key in Role]: string } = {
-        [Role.Admin]: 'bg-red-500/20 text-red-300 border-red-500/30 shadow-[0_0_10px_rgba(239,68,68,0.5)]',
-        [Role.Dealer]: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.5)]',
-        [Role.User]: 'bg-amber-500/20 text-amber-300 border-amber-500/30 shadow-[0_0_10px_rgba(245,158,11,0.5)]',
+    const roleStyles: { [key in Role]: string } = {
+        [Role.Admin]: 'bg-red-500/10 text-red-400 border-red-500/20 shadow-[0_0_20px_rgba(239,68,68,0.1)]',
+        [Role.Dealer]: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.1)]',
+        [Role.User]: 'bg-amber-500/10 text-amber-400 border-amber-500/20 shadow-[0_0_20px_rgba(245,158,11,0.1)]',
     };
 
     return (
-        <header className="sticky top-0 z-40 bg-slate-900/50 backdrop-blur-lg border-b border-amber-400/20">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-20">
-                <div className="flex items-center gap-4">
-                    {account.avatarUrl ? (
-                        <img src={account.avatarUrl} alt={account.name} className="w-12 h-12 rounded-full object-cover border-2 border-amber-400/50" />
-                    ) : (
-                        <div className="w-12 h-12 rounded-full bg-slate-800 border-2 border-amber-400/50 flex items-center justify-center">
-                            <span className="font-bold text-xl text-amber-300">{account.name ? account.name.charAt(0) : '?'}</span>
-                        </div>
-                    )}
-                    <div>
-                        <h1 className="text-xl font-bold glitch-text hidden md:block" data-text="A-BABA EXCHANGE">A-BABA EXCHANGE</h1>
-                         <div className="flex items-center text-sm">
-                            <span className={`px-3 py-1 rounded-full text-xs font-semibold mr-2 ${roleColors[role] || 'bg-slate-700'}`}>{role}</span>
-                            <span className="text-slate-300 font-semibold tracking-wider">{account.name || 'Account'}</span>
+        <header className="sticky top-0 z-50 glass-panel border-b border-white/5 h-20">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-full">
+                <div className="flex items-center gap-5">
+                    <div className="relative group">
+                        <div className="absolute -inset-1 bg-amber-500/30 rounded-full blur opacity-0 group-hover:opacity-100 transition duration-500"></div>
+                        {account.avatarUrl ? (
+                            <img src={account.avatarUrl} alt={account.name} className="relative w-12 h-12 rounded-full object-cover border-2 border-amber-500/30" />
+                        ) : (
+                            <div className="relative w-12 h-12 rounded-full bg-slate-900 border-2 border-amber-500/30 flex items-center justify-center">
+                                <span className="russo text-xl text-amber-400">{account.name ? account.name.charAt(0) : '?'}</span>
+                            </div>
+                        )}
+                    </div>
+                    
+                    <div className="hidden sm:block">
+                        <h1 className="text-xl font-black russo tracking-tighter text-white" style={{letterSpacing: '-0.02em'}}>
+                            A-BABA <span className="text-amber-500">EXCHANGE</span>
+                        </h1>
+                         <div className="flex items-center mt-0.5">
+                            <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest mr-3 border ${roleStyles[role]}`}>{role}</span>
+                            <span className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">{account.name || 'Account'}</span>
                         </div>
                     </div>
                 </div>
-                <div className="flex items-center space-x-4">
+
+                <div className="flex items-center space-x-6">
                      { typeof account.wallet === 'number' && (
-                        <div className="hidden md:flex items-center bg-slate-800/50 px-4 py-2 rounded-md border border-slate-700 shadow-inner">
-                            {React.cloneElement(Icons.wallet, { className: "h-6 w-6 mr-3 text-amber-400" })}
-                            <span className="font-semibold text-white text-lg tracking-wider">PKR {account.wallet.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        <div className="hidden md:flex flex-col items-end">
+                            <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Total Liquidity</p>
+                            <div className="flex items-center bg-slate-950/50 px-4 py-1.5 rounded-xl border border-white/5 shadow-inner">
+                                <span className="font-black text-amber-500 text-lg font-mono">PKR {account.wallet.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                            </div>
                         </div>
                     )}
-                    <button onClick={logout} className="bg-slate-700/50 border border-slate-600 hover:bg-red-500/30 hover:border-red-500/50 text-white font-bold py-2 px-4 rounded-md transition-all duration-300">Logout</button>
+                    <button 
+                        onClick={logout} 
+                        className="bg-slate-900/80 border border-white/5 hover:border-red-500/40 hover:text-red-400 text-slate-400 text-[10px] font-black uppercase tracking-widest py-2.5 px-6 rounded-xl transition-all duration-300"
+                    >
+                        Disconnect
+                    </button>
                 </div>
             </div>
         </header>
@@ -88,7 +101,7 @@ const AppContent: React.FC = () => {
                 setIsMaintenance(!!data.maintenance);
             }
         } catch (e) {
-            setApiError("Cannot connect to server. Is the backend running?");
+            setApiError("Connection failure. Check node status.");
             setIsMaintenance(false);
         }
     }, []);
@@ -174,28 +187,34 @@ const AppContent: React.FC = () => {
         fetchPrivateData();
     };
 
-    if (loading) return <div className="min-h-screen flex flex-col items-center justify-center bg-slate-950">
-        <div className="w-12 h-12 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin mb-4"></div>
-        <div className="text-amber-400 text-xl font-bold uppercase tracking-widest animate-pulse">Establishing Secure Connection...</div>
-    </div>;
-
-    const isSystemCritical = !!apiError && isMaintenance;
-    const isSystemWarning = !!apiError && !isMaintenance;
+    if (loading) return (
+        <div className="min-h-screen flex flex-col items-center justify-center">
+            <div className="relative w-20 h-20 mb-8">
+                <div className="absolute inset-0 border-4 border-amber-500/20 rounded-full"></div>
+                <div className="absolute inset-0 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+            <div className="russo text-amber-500 text-lg md:text-xl tracking-[0.4em] animate-pulse">
+                INITIALIZING SECURE PROTOCOL...
+            </div>
+        </div>
+    );
 
     return (
-        <div className="min-h-screen flex flex-col">
+        <div className="min-h-screen flex flex-col relative">
             {apiError && (
-                <div className={`${isSystemCritical ? 'bg-red-600' : 'bg-amber-600'} text-white text-center py-2 text-[10px] md:text-xs font-bold uppercase tracking-widest sticky top-0 z-[100] shadow-xl px-4 flex items-center justify-center gap-2`}>
-                    <span className="animate-pulse">{isSystemCritical ? '🛑 CRITICAL:' : '⚠️ WARNING:'}</span>
-                    <span>{apiError}</span>
+                <div className={`fixed top-0 left-0 w-full z-[100] ${isMaintenance ? 'bg-red-600' : 'bg-amber-600'} text-white text-[10px] font-black uppercase tracking-[0.4em] py-2 text-center shadow-2xl`}>
+                    <span className="mr-4">{isMaintenance ? 'CRITICAL SYSTEM STATUS' : 'NODE WARNING'}</span>
+                    <span className="opacity-80">|</span>
+                    <span className="ml-4">{apiError}</span>
                 </div>
             )}
+            
             {!role || !account ? (
                 <LandingPage games={games} />
             ) : (
                 <>
                     <Header />
-                    <main className="flex-grow">
+                    <main className="flex-grow pb-20 relative z-10">
                         {role === Role.User && <UserPanel user={account as User} games={games} bets={bets} placeBet={placeBet} />}
                         {role === Role.Dealer && (
                             <DealerPanel 
@@ -232,5 +251,5 @@ const AppContent: React.FC = () => {
     );
 };
 
-function App() { return (<div className="App bg-transparent text-slate-200 h-full"><AuthProvider><AppContent /></AuthProvider></div>); }
+function App() { return (<AuthProvider><AppContent /></AuthProvider>); }
 export default App;

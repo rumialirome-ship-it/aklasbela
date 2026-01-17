@@ -12,6 +12,8 @@ const OPEN_HOUR_PKT = 16; // 4:00 PM in Pakistan
 
 function getGameCycle(drawTime) {
     const now = new Date(); // UTC
+    if (!drawTime) return { openTime: now, closeTime: now };
+    
     const [drawHoursPKT, drawMinutesPKT] = drawTime.split(':').map(Number);
 
     const year = now.getUTCFullYear();
@@ -44,6 +46,7 @@ function getGameCycle(drawTime) {
 }
 
 function isGameOpen(drawTime) {
+    if (!drawTime) return false;
     const now = new Date();
     const { openTime, closeTime } = getGameCycle(drawTime);
     return now >= openTime && now < closeTime;
@@ -54,9 +57,9 @@ const connect = () => {
         db = new Database(DB_PATH);
         db.pragma('journal_mode = WAL');
         db.pragma('foreign_keys = ON');
-        console.error('Database connected successfully.');
+        console.log('[DB] Database connected successfully.');
     } catch (error) {
-        console.error('Failed to connect to database:', error);
+        console.error('[DB] Failed to connect to database:', error);
         process.exit(1);
     }
 };
@@ -65,10 +68,11 @@ const verifySchema = () => {
     try {
         const stmt = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='admins'");
         if (!stmt.get()) {
-            console.error('Database schema missing. Run setup-database.js.');
+            console.error('[DB] Database schema missing! Run setup-database.js.');
             process.exit(1);
         }
     } catch (error) {
+        console.error('[DB] Schema verification error:', error);
         process.exit(1);
     }
 };
@@ -86,7 +90,7 @@ const findAccountById = (id, table) => {
         if (account.prizeRates) account.prizeRates = JSON.parse(account.prizeRates);
         if (account.betLimits) account.betLimits = JSON.parse(account.betLimits);
         if ('isRestricted' in account) account.isRestricted = !!account.isRestricted;
-    } catch (e) {}
+    } catch (e) { console.error('[DB] Parsing error in findAccountById:', e); }
     return account;
 };
 
@@ -94,9 +98,11 @@ const findAccountForLogin = (loginId) => {
     const lowerCaseLoginId = loginId.toLowerCase();
     const tables = [{ name: 'users', role: 'USER' }, { name: 'dealers', role: 'DEALER' }, { name: 'admins', role: 'ADMIN' }];
     for (const tableInfo of tables) {
-        const stmt = db.prepare(`SELECT * FROM ${tableInfo.name} WHERE LOWER(id) = ?`);
-        const account = stmt.get(lowerCaseLoginId);
-        if (account) return { account, role: tableInfo.role };
+        try {
+            const stmt = db.prepare(`SELECT * FROM ${tableInfo.name} WHERE LOWER(id) = ?`);
+            const account = stmt.get(lowerCaseLoginId);
+            if (account) return { account, role: tableInfo.role };
+        } catch (e) {}
     }
     return { account: null, role: null };
 };
@@ -111,17 +117,22 @@ const updatePassword = (accountId, contact, newPassword) => {
 };
 
 const getAllFromTable = (table, withLedger = false) => {
-    return db.prepare(`SELECT * FROM ${table}`).all().map(acc => {
-        try {
-            if (withLedger && acc.id) acc.ledger = db.prepare('SELECT * FROM ledgers WHERE LOWER(accountId) = LOWER(?) ORDER BY timestamp ASC').all(acc.id);
-            if (table === 'games' && acc.drawTime) acc.isMarketOpen = isGameOpen(acc.drawTime);
-            if (acc.prizeRates) acc.prizeRates = JSON.parse(acc.prizeRates);
-            if (acc.betLimits) acc.betLimits = JSON.parse(acc.betLimits);
-            if (table === 'bets' && acc.numbers) acc.numbers = JSON.parse(acc.numbers);
-            if ('isRestricted' in acc) acc.isRestricted = !!acc.isRestricted;
-        } catch (e) {}
-        return acc;
-    });
+    try {
+        return db.prepare(`SELECT * FROM ${table}`).all().map(acc => {
+            try {
+                if (withLedger && acc.id) acc.ledger = db.prepare('SELECT * FROM ledgers WHERE LOWER(accountId) = LOWER(?) ORDER BY timestamp ASC').all(acc.id);
+                if (table === 'games' && acc.drawTime) acc.isMarketOpen = isGameOpen(acc.drawTime);
+                if (acc.prizeRates) acc.prizeRates = typeof acc.prizeRates === 'string' ? JSON.parse(acc.prizeRates) : acc.prizeRates;
+                if (acc.betLimits) acc.betLimits = typeof acc.betLimits === 'string' ? JSON.parse(acc.betLimits) : acc.betLimits;
+                if (table === 'bets' && acc.numbers) acc.numbers = typeof acc.numbers === 'string' ? JSON.parse(acc.numbers) : acc.numbers;
+                if ('isRestricted' in acc) acc.isRestricted = !!acc.isRestricted;
+            } catch (e) { console.error(`[DB] Error parsing row in ${table}:`, e); }
+            return acc;
+        });
+    } catch (err) {
+        console.error(`[DB] Failed to fetch from table ${table}:`, err);
+        return [];
+    }
 };
 
 const runInTransaction = (fn) => db.transaction(fn)();
@@ -306,9 +317,6 @@ const updateUser = (u, uId, dId) => {
     return findAccountById(u.id, 'users');
 };
 
-/**
- * Allows Admin to update any user without dealerId context.
- */
 const updateUserByAdmin = (u, uId) => {
     const existing = db.prepare('SELECT * FROM users WHERE LOWER(id) = LOWER(?)').get(uId);
     if (!existing) throw { status: 404, message: "User not found." };
@@ -366,7 +374,8 @@ const getNumberStakeSummary = ({ gameId, dealerId, date }) => {
     bets.forEach(b => {
         summary['game-breakdown'].set(b.gameId, (summary['game-breakdown'].get(b.gameId) || 0) + b.totalAmount);
         try {
-            const nums = JSON.parse(b.numbers), amt = b.amountPerNumber;
+            const nums = typeof b.numbers === 'string' ? JSON.parse(b.numbers) : b.numbers;
+            const amt = b.amountPerNumber;
             let target;
             if (b.subGameType === '1 Digit Open') target = summary['1-open'];
             else if (b.subGameType === '1 Digit Close') target = summary['1-close'];
@@ -399,7 +408,7 @@ const placeBulkBets = (uId, gId, groups, placedBy = 'USER') => {
 
         const numberStakeMap = new Map();
         existingBets.forEach(b => {
-            const nums = JSON.parse(b.numbers);
+            const nums = typeof b.numbers === 'string' ? JSON.parse(b.numbers) : b.numbers;
             const type = b.subGameType;
             nums.forEach(n => {
                 const key = `${type}_${n}`;
@@ -480,11 +489,15 @@ function deleteNumberLimit(id) {
 }
 
 function resetAllGames() {
-    runInTransaction(() => {
-        db.prepare('UPDATE games SET winningNumber = NULL, payoutsApproved = 0').run();
-        db.prepare('DELETE FROM bets').run(); 
-    });
-    console.error('--- [DATABASE] 4:00 PM PKT Boundary Reached. Market Restarted. ---');
+    try {
+        runInTransaction(() => {
+            db.prepare('UPDATE games SET winningNumber = NULL, payoutsApproved = 0').run();
+            db.prepare('DELETE FROM bets').run(); 
+        });
+        console.log('[DB] 4:00 PM PKT Boundary Reached. Market Restarted.');
+    } catch (e) {
+        console.error('[DB] Failed to reset games:', e);
+    }
 }
 
 module.exports = {

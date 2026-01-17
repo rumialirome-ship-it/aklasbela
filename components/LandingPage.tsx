@@ -152,11 +152,18 @@ const LandingPage: React.FC<{ games: Game[] }> = ({ games }) => {
 
                 <section id="games" className="mb-20">
                     <h2 className="text-3xl font-bold text-center mb-10 text-white uppercase tracking-widest">Live Markets</h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8">
-                        {games.map(game => (
-                            <GameDisplayCard key={game.id} game={game} onClick={handleGameClick} />
-                        ))}
-                    </div>
+                    {games && games.length > 0 ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8">
+                            {games.map(game => (
+                                <GameDisplayCard key={game.id} game={game} onClick={handleGameClick} />
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center p-12 bg-slate-800/30 rounded-2xl border border-slate-700 border-dashed">
+                            <p className="text-slate-500 font-bold uppercase tracking-widest mb-2">No active markets found</p>
+                            <p className="text-sm text-slate-600">The systems might be undergoing maintenance. Please check back shortly.</p>
+                        </div>
+                    )}
                 </section>
 
                 <section id="login" className="max-w-md mx-auto scroll-mt-20">

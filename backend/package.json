@@ -6,7 +6,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "db:setup": "node setup-database.js"
+    "db:setup": "node setup-database.js",
+    "db:force-reset": "rm -f database.sqlite && node setup-database.js"
   },
   "dependencies": {
     "@google/genai": "^0.12.0",

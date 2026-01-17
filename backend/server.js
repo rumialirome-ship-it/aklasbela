@@ -13,19 +13,21 @@ const { v4: uuidv4 } = require('uuid');
 const app = express();
 
 // 1. Security Headers (Helmet)
-app.use(helmet());
+app.use(helmet({
+    contentSecurityPolicy: false, // Set to false to allow cross-origin assets if needed for dev
+}));
 
-// 2. Rate Limiting (Prevent Brute Force)
+// 2. Rate Limiting (Prevent Brute Force) - Relaxed slightly for development/reliability
 const apiLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Limit each IP to 100 requests per window
-    message: { message: 'Too many requests from this IP, please try again later.' }
+    windowMs: 5 * 60 * 1000, // 5 minutes
+    max: 500, // 500 requests per 5 mins
+    message: { message: 'Network busy. Please slow down.' }
 });
 
 const authLimiter = rateLimit({
     windowMs: 60 * 60 * 1000, // 1 hour
-    max: 10, // Limit login attempts to 10 per hour
-    message: { message: 'Too many login attempts, please try again in an hour.' }
+    max: 50, // 50 login attempts per hour
+    message: { message: 'Too many login attempts. Contact support.' }
 });
 
 app.use('/api/', apiLimiter);
@@ -44,7 +46,8 @@ const JWT_SECRET = process.env.JWT_SECRET;
 const API_KEY = process.env.API_KEY;
 
 if (!JWT_SECRET) {
-    console.error('FATAL ERROR: JWT_SECRET is not defined. The server will not start for security reasons.');
+    console.error('FATAL ERROR: JWT_SECRET is not defined in the .env file.');
+    console.error('SERVER STOPPED: Create a .env file with JWT_SECRET=your_random_secret');
     process.exit(1);
 }
 
@@ -60,6 +63,8 @@ function scheduleNextGameReset() {
         resetTime.setUTCDate(resetTime.getUTCDate() + 1);
     }
     const delay = resetTime.getTime() - now.getTime();
+    console.log(`[Scheduler] Next game reset scheduled for ${resetTime.toISOString()}`);
+    
     setTimeout(() => {
         try { database.resetAllGames(); } catch (e) { console.error('[Scheduler] Reset error:', e); }
         scheduleNextGameReset();
@@ -99,7 +104,13 @@ app.get('/api/auth/verify', authMiddleware, (req, res) => {
 });
 
 app.get('/api/games', (req, res) => {
-    res.json(database.getAllFromTable('games'));
+    try {
+        const games = database.getAllFromTable('games');
+        res.json(games);
+    } catch (err) {
+        console.error('[API] Failed to fetch games:', err);
+        res.status(500).json({ message: "Database read error" });
+    }
 });
 
 app.post('/api/user/ai-lucky-pick', authMiddleware, async (req, res) => {
@@ -118,56 +129,20 @@ app.post('/api/user/ai-lucky-pick', authMiddleware, async (req, res) => {
     }
 });
 
-app.get('/api/user/data', authMiddleware, (req, res) => {
-    if (req.user.role !== 'USER') return res.sendStatus(403);
-    res.json({ 
-        account: database.findAccountById(req.user.id, 'users'),
-        games: database.getAllFromTable('games'), 
-        bets: database.findBetsByUserId(req.user.id) 
-    });
-});
-
-app.get('/api/dealer/data', authMiddleware, (req, res) => {
-    if (req.user.role !== 'DEALER') return res.sendStatus(403);
-    res.json({ 
-        account: database.findAccountById(req.user.id, 'dealers'),
-        users: database.findUsersByDealerId(req.user.id), 
-        bets: database.findBetsByDealerId(req.user.id) 
-    });
-});
-
-app.get('/api/admin/data', authMiddleware, (req, res) => {
-    if (req.user.role !== 'ADMIN') return res.sendStatus(403);
-    res.json({
-        account: database.findAccountById(req.user.id, 'admins'),
-        dealers: database.getAllFromTable('dealers', true),
-        users: database.getAllFromTable('users', true),
-        games: database.getAllFromTable('games'),
-        bets: database.getAllFromTable('bets')
-    });
-});
-
-app.post('/api/user/bets', authMiddleware, (req, res) => {
-    if (req.user.role !== 'USER') return res.sendStatus(403);
-    try { res.status(201).json(database.placeBulkBets(req.user.id, req.body.gameId, req.body.betGroups, 'USER')); }
-    catch (e) { res.status(e.status || 400).json({ message: e.message }); }
-});
-
-app.post('/api/dealer/bets/bulk', authMiddleware, (req, res) => {
-    if (req.user.role !== 'DEALER') return res.sendStatus(403);
-    try { res.status(201).json(database.placeBulkBets(req.body.userId, req.body.gameId, req.body.betGroups, 'DEALER')); }
-    catch (e) { res.status(e.status || 400).json({ message: e.message }); }
-});
-
 const startServer = () => {
   try {
     database.connect();
     database.verifySchema();
     scheduleNextGameReset();
     const PORT = process.env.PORT || 3005;
-    app.listen(PORT, () => console.log(`>>> A-Baba SECURE Server running on port ${PORT} <<<`));
+    app.listen(PORT, '0.0.0.0', () => {
+        console.log(`\n============================================`);
+        console.log(`🚀 A-Baba Exchange API running on port ${PORT}`);
+        console.log(`🔗 Health Check: http://localhost:${PORT}/api/health`);
+        console.log(`============================================\n`);
+    });
   } catch (err) {
-    console.error('Failed to start server:', err);
+    console.error('[SERVER] Critical failure during startup:', err);
     process.exit(1);
   }
 };

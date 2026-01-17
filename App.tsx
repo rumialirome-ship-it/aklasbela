@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Role, User, Dealer, Admin, Game, Bet, LedgerEntry, SubGameType, PrizeRates } from './types';
-import { Icons, GAME_LOGOS } from './constants';
+import { Role, User, Dealer, Admin, Game, Bet, LedgerEntry } from './types';
+import { Icons } from './constants';
 import LandingPage from './components/LandingPage';
 import AdminPanel from './components/AdminPanel';
 import DealerPanel from './components/DealerPanel';
@@ -59,6 +59,7 @@ const AppContent: React.FC = () => {
     const [games, setGames] = useState<Game[]>([]);
     const [bets, setBets] = useState<Bet[]>([]);
     const [hasInitialFetched, setHasInitialFetched] = useState(false);
+    const [apiError, setApiError] = useState<string | null>(null);
     
     const [activeReveal, setActiveReveal] = useState<{ name: string; number: string } | null>(null);
     const lastGamesRef = useRef<Game[]>([]);
@@ -76,8 +77,16 @@ const AppContent: React.FC = () => {
     const fetchPublicData = useCallback(async () => {
         try {
             const gamesResponse = await fetch('/api/games');
-            if (gamesResponse.ok) setGames(await gamesResponse.json());
-        } catch (e) {}
+            if (gamesResponse.ok) {
+                const data = await gamesResponse.json();
+                setGames(data);
+                setApiError(null);
+            } else {
+                setApiError(`Server error: ${gamesResponse.status}`);
+            }
+        } catch (e) {
+            setApiError("Cannot connect to server API. Is the backend running?");
+        }
     }, []);
 
     const fetchPrivateData = useCallback(async () => {
@@ -157,10 +166,18 @@ const AppContent: React.FC = () => {
         fetchPrivateData();
     };
 
-    if (loading) return <div className="min-h-screen flex items-center justify-center text-amber-400 text-xl font-bold">Establishing Secure Connection...</div>;
+    if (loading) return <div className="min-h-screen flex flex-col items-center justify-center bg-slate-950">
+        <div className="w-12 h-12 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin mb-4"></div>
+        <div className="text-amber-400 text-xl font-bold uppercase tracking-widest animate-pulse">Establishing Secure Connection...</div>
+    </div>;
 
     return (
         <div className="min-h-screen flex flex-col">
+            {apiError && (
+                <div className="bg-red-500 text-white text-center py-2 text-xs font-bold uppercase tracking-widest sticky top-0 z-[100]">
+                    ⚠️ Connection Warning: {apiError}
+                </div>
+            )}
             {!role || !account ? (
                 <LandingPage games={games} />
             ) : (

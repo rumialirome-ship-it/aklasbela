@@ -102,6 +102,15 @@ const findAccountForLogin = (loginId) => {
     return { account: null, role: null };
 };
 
+const updatePassword = (accountId, contact, newPassword) => {
+    const tables = ['users', 'dealers'];
+    for (const table of tables) {
+        const result = db.prepare(`UPDATE ${table} SET password = ? WHERE LOWER(id) = LOWER(?) AND contact = ?`).run(newPassword, accountId, contact);
+        if (result.changes > 0) return true;
+    }
+    return false;
+};
+
 const getAllFromTable = (table, withLedger = false) => {
     if (!db) return [];
     try {

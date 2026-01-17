@@ -1,3 +1,4 @@
+
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
@@ -10,6 +11,15 @@ const { v4: uuidv4 } = require('uuid');
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// --- CRITICAL ENV CHECK ---
+const JWT_SECRET = process.env.JWT_SECRET;
+const API_KEY = process.env.API_KEY;
+
+if (!JWT_SECRET) {
+    console.error('FATAL ERROR: JWT_SECRET is not defined in .env file.');
+    process.exit(1);
+}
 
 // --- AUTOMATIC GAME RESET SCHEDULER ---
 const PKT_OFFSET_HOURS = 5;
@@ -26,19 +36,17 @@ function scheduleNextGameReset() {
     }
 
     const delay = resetTime.getTime() - now.getTime();
-    console.error(`--- Scheduling next game reset for ${resetTime.toUTCString()} (in approx ${Math.round(delay / 60000)} minutes) ---`);
+    console.log(`[Scheduler] Next game reset: ${resetTime.toUTCString()} (in ${Math.round(delay / 60000)} mins)`);
     
     setTimeout(() => {
         try { 
             database.resetAllGames(); 
         } catch (e) { 
-            console.error('Reset error:', e); 
+            console.error('[Scheduler] Reset error:', e); 
         }
         scheduleNextGameReset();
     }, delay);
 }
-
-const JWT_SECRET = process.env.JWT_SECRET;
 
 // --- AUTHENTICATION ROUTES ---
 app.post('/api/auth/login', (req, res) => {
@@ -58,7 +66,6 @@ app.get('/api/auth/verify', authMiddleware, (req, res) => {
     const account = database.findAccountById(req.user.id, table);
     if (!account) return res.status(404).json({ message: 'Account not found.' });
     
-    // Inject data immediately for faster page refreshes
     let extra = {};
     if (role === 'DEALER') {
         extra.users = database.findUsersByDealerId(req.user.id);
@@ -88,35 +95,18 @@ app.get('/api/games', (req, res) => {
 // --- AI LUCKY PICK ---
 app.post('/api/user/ai-lucky-pick', authMiddleware, async (req, res) => {
     const { gameType, count = 5 } = req.body;
-    const API_KEY = process.env.API_KEY;
-
-    if (!API_KEY) {
-        return res.status(503).json({ message: "AI services are currently unavailable." });
-    }
+    if (!API_KEY) return res.status(503).json({ message: "AI services unavailable." });
 
     try {
         const ai = new GoogleGenAI({ apiKey: API_KEY });
-        const prompt = `You are a lucky number oracle for the Aklasbela.tv lottery platform. 
-        Generate ${count} unique lucky numbers for a "${gameType}" game.
-        - For "2 Digit" games, provide numbers between 00 and 99.
-        - For "1 Digit" games, provide numbers between 0 and 9.
-        Return ONLY the numbers separated by commas, no other text.`;
-
         const response = await ai.models.generateContent({
             model: 'gemini-3-flash-preview',
-            contents: prompt,
-            config: {
-                systemInstruction: "You are a professional lottery analyst and lucky number generator.",
-                temperature: 0.9,
-                topP: 0.95,
-            }
+            contents: `Generate ${count} unique lucky numbers for a "${gameType}" game. Return only numbers separated by commas.`,
+            config: { temperature: 0.9 }
         });
-
-        const luckyNumbers = response.text.replace(/\s+/g, '');
-        res.json({ luckyNumbers });
+        res.json({ luckyNumbers: response.text.replace(/\s+/g, '') });
     } catch (error) {
-        console.error("Gemini AI Error:", error);
-        res.status(500).json({ message: "The oracle is silent today. Try again later." });
+        res.status(500).json({ message: "Oracle is silent." });
     }
 });
 
@@ -159,172 +149,20 @@ app.post('/api/user/bets', authMiddleware, (req, res) => {
 
 app.post('/api/dealer/bets/bulk', authMiddleware, (req, res) => {
     if (req.user.role !== 'DEALER') return res.sendStatus(403);
-    if (!database.findUserByDealer(req.body.userId, req.user.id)) return res.status(403).json({ message: "Invalid user" });
     try { res.status(201).json(database.placeBulkBets(req.body.userId, req.body.gameId, req.body.betGroups, 'DEALER')); }
     catch (e) { res.status(e.status || 400).json({ message: e.message }); }
 });
 
-app.post('/api/dealer/users', authMiddleware, (req, res) => {
-    if (req.user.role !== 'DEALER') return res.sendStatus(403);
-    try { res.status(201).json(database.createUser(req.body.userData, req.user.id, req.body.initialDeposit)); }
-    catch (e) { res.status(e.status || 500).json({ message: e.message }); }
-});
-
-app.put('/api/dealer/users/:id', authMiddleware, (req, res) => {
-    if (req.user.role !== 'DEALER') return res.sendStatus(403);
-    const userId = req.params.id;
-    const dealerId = req.user.id;
-    if (!userId) return res.status(400).json({ message: "User ID is required" });
-    try { 
-        const updatedUser = database.updateUser(req.body, userId, dealerId);
-        res.json(updatedUser); 
-    }
-    catch (e) { 
-        res.status(e.status || 500).json({ message: e.message }); 
-    }
-});
-
-app.put('/api/admin/users/:id', authMiddleware, (req, res) => {
-    if (req.user.role !== 'ADMIN') return res.sendStatus(403);
-    try { 
-        const updatedUser = database.updateUserByAdmin(req.body, req.params.id);
-        res.json(updatedUser); 
-    }
-    catch (e) { res.status(e.status || 500).json({ message: e.message }); }
-});
-
-app.delete('/api/dealer/users/:id', authMiddleware, (req, res) => {
-    if (req.user.role !== 'DEALER') return res.sendStatus(403);
-    try { database.deleteUserByDealer(req.params.id, req.user.id); res.sendStatus(204); }
-    catch (e) { res.status(e.status || 500).json({ message: e.message }); }
-});
-
-app.post('/api/dealer/topup/user', authMiddleware, (req, res) => {
-    if (req.user.role !== 'DEALER') return res.sendStatus(403);
-    try {
-        const dealer = database.findAccountById(req.user.id, 'dealers');
-        const user = database.findUserByDealer(req.body.userId, req.user.id);
-        if (!user || dealer.wallet < req.body.amount) throw { status: 400, message: "Invalid request" };
-        database.runInTransaction(() => {
-            database.addLedgerEntry(dealer.id, 'DEALER', `Top-Up for ${user.name}`, req.body.amount, 0);
-            database.addLedgerEntry(user.id, 'USER', `Top-up from Dealer`, 0, req.body.amount);
-        });
-        res.json({ message: "Success" });
-    } catch (e) { res.status(e.status || 500).json({ message: e.message }); }
-});
-
-app.post('/api/dealer/withdraw/user', authMiddleware, (req, res) => {
-    if (req.user.role !== 'DEALER') return res.sendStatus(403);
-    try {
-        const dealer = database.findAccountById(req.user.id, 'dealers');
-        const user = database.findUserByDealer(req.body.userId, req.user.id);
-        if (!user || user.wallet < req.body.amount) throw { status: 400, message: "Invalid request" };
-        database.runInTransaction(() => {
-            database.addLedgerEntry(user.id, 'USER', `Withdrawal by Dealer`, req.body.amount, 0);
-            database.addLedgerEntry(dealer.id, 'DEALER', `Withdrawn from ${user.name}`, 0, req.body.amount);
-        });
-        res.json({ message: "Success" });
-    } catch (e) { res.status(e.status || 500).json({ message: e.message }); }
-});
-
-app.put('/api/dealer/users/:id/toggle-restriction', authMiddleware, (req, res) => {
-    if (req.user.role !== 'DEALER') return res.sendStatus(403);
-    try { res.json(database.toggleUserRestrictionByDealer(req.params.id, req.user.id)); }
-    catch (e) { res.status(e.status || 500).json({ message: e.message }); }
-});
-
-app.get('/api/admin/summary', authMiddleware, (req, res) => {
-    if (req.user.role !== 'ADMIN') return res.sendStatus(403);
-    res.json(database.getFinancialSummary());
-});
-
-app.get('/api/admin/number-summary', authMiddleware, (req, res) => {
-    if (req.user.role !== 'ADMIN') return res.sendStatus(403);
-    res.json(database.getNumberStakeSummary(req.query));
-});
-
-app.post('/api/admin/dealers', authMiddleware, (req, res) => {
-    if (req.user.role !== 'ADMIN') return res.sendStatus(403);
-    try { res.status(201).json(database.createDealer(req.body)); }
-    catch (e) { res.status(e.status || 500).json({ message: e.message }); }
-});
-
-app.put('/api/admin/dealers/:id', authMiddleware, (req, res) => {
-    if (req.user.role !== 'ADMIN') return res.sendStatus(403);
-    try { res.json(database.updateDealer(req.body, req.params.id)); }
-    catch (e) { res.status(e.status || 500).json({ message: e.message }); }
-});
-
-app.post('/api/admin/topup/dealer', authMiddleware, (req, res) => {
-    if (req.user.role !== 'ADMIN') return res.sendStatus(403);
-    try {
-        const dealer = database.findAccountById(req.body.dealerId, 'dealers');
-        const admin = database.findAccountById('Guru', 'admins');
-        if (!dealer || admin.wallet < req.body.amount) throw { status: 400, message: "Invalid request" };
-        database.runInTransaction(() => {
-            database.addLedgerEntry('Guru', 'ADMIN', `Top-up for ${dealer.name}`, req.body.amount, 0);
-            database.addLedgerEntry(dealer.id, 'DEALER', 'Top-up from Admin', 0, req.body.amount);
-        });
-        res.json({ message: "Success" });
-    } catch (e) { res.status(e.status || 500).json({ message: e.message }); }
-});
-
-app.post('/api/admin/withdraw/dealer', authMiddleware, (req, res) => {
-    if (req.user.role !== 'ADMIN') return res.sendStatus(403);
-    try {
-        const dealer = database.findAccountById(req.body.dealerId, 'dealers');
-        if (!dealer || dealer.wallet < req.body.amount) throw { status: 400, message: "Invalid request" };
-        database.runInTransaction(() => {
-            database.addLedgerEntry(dealer.id, 'DEALER', 'Withdrawal by Admin', req.body.amount, 0);
-            database.addLedgerEntry('Guru', 'ADMIN', `Withdrawn from ${dealer.name}`, 0, req.body.amount);
-        });
-        res.json({ message: "Success" });
-    } catch (e) { res.status(e.status || 500).json({ message: e.message }); }
-});
-
-app.put('/api/admin/accounts/:type/:id/toggle-restriction', authMiddleware, (req, res) => {
-    if (req.user.role !== 'ADMIN') return res.sendStatus(403);
-    try { res.json(database.toggleAccountRestrictionByAdmin(req.params.id, req.params.type)); }
-    catch (e) { res.status(e.status || 500).json({ message: e.message }); }
-});
-
-app.post('/api/admin/games/:id/declare-winner', authMiddleware, (req, res) => {
-    if (req.user.role !== 'ADMIN') return res.sendStatus(403);
-    res.json(database.declareWinnerForGame(req.params.id, req.body.winningNumber));
-});
-
-app.put('/api/admin/games/:id/update-winner', authMiddleware, (req, res) => {
-    if (req.user.role !== 'ADMIN') return res.sendStatus(403);
-    try { res.json(database.updateWinningNumber(req.params.id, req.body.newWinningNumber)); }
-    catch (e) { res.status(e.status || 500).json({ message: e.message }); }
-});
-
-app.put('/api/admin/games/:id/draw-time', authMiddleware, (req, res) => {
-    if (req.user.role !== 'ADMIN') return res.sendStatus(403);
-    try {
-        const updatedGame = database.updateGameDrawTime(req.params.id, req.body.newDrawTime);
-        res.json(updatedGame);
-    } catch (e) {
-        res.status(e.status || 500).json({ message: e.message });
-    }
-});
-
-app.post('/api/admin/games/:id/approve-payouts', authMiddleware, (req, res) => {
-    if (req.user.role !== 'ADMIN') return res.sendStatus(403);
-    try { res.json(database.approvePayoutsForGame(req.params.id)); }
-    catch (e) { res.status(e.status || 500).json({ message: e.message }); }
-});
-
-app.get('/api/admin/number-limits', authMiddleware, (req, res) => res.json(database.getAllNumberLimits()));
-app.post('/api/admin/number-limits', authMiddleware, (req, res) => res.json(database.saveNumberLimit(req.body)));
-app.delete('/api/admin/number-limits/:id', authMiddleware, (req, res) => { database.deleteNumberLimit(req.params.id); res.sendStatus(204); });
-
 const startServer = () => {
-  database.connect();
-  database.verifySchema();
-  // CRITICAL FIX: Removed automatic resetAllGames() from startup.
-  // Data will only clear at the scheduled 4:00 PM PKT time.
-  scheduleNextGameReset();
-  app.listen(3005, () => console.error('>>> AKLASBELA.TV BACKEND IS LIVE ON PORT 3005 <<<'));
+  try {
+    database.connect();
+    database.verifySchema();
+    scheduleNextGameReset();
+    const PORT = process.env.PORT || 3005;
+    app.listen(PORT, () => console.log(`>>> Server running on port ${PORT} <<<`));
+  } catch (err) {
+    console.error('Failed to start server:', err);
+    process.exit(1);
+  }
 };
 startServer();

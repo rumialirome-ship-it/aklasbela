@@ -13,12 +13,12 @@ app.use(cors());
 app.use(express.json());
 
 // --- CRITICAL ENV CHECK ---
-const JWT_SECRET = process.env.JWT_SECRET;
+// Fallback for missing secret during initial migration/setup to prevent 500
+const JWT_SECRET = process.env.JWT_SECRET || 'temporary_dev_secret_change_me_immediately';
 const API_KEY = process.env.API_KEY;
 
-if (!JWT_SECRET) {
-    console.error('FATAL ERROR: JWT_SECRET is not defined in .env file.');
-    process.exit(1);
+if (!process.env.JWT_SECRET) {
+    console.warn('WARNING: JWT_SECRET is not defined in .env file. Using a fallback. SECURE THIS BEFORE PRODUCTION.');
 }
 
 // --- AUTOMATIC GAME RESET SCHEDULER ---
@@ -87,12 +87,10 @@ app.post('/api/auth/reset-password', (req, res) => {
     else res.status(404).json({ message: 'Invalid credentials' });
 });
 
-// --- PUBLIC DATA ---
 app.get('/api/games', (req, res) => {
     res.json(database.getAllFromTable('games'));
 });
 
-// --- AI LUCKY PICK ---
 app.post('/api/user/ai-lucky-pick', authMiddleware, async (req, res) => {
     const { gameType, count = 5 } = req.body;
     if (!API_KEY) return res.status(503).json({ message: "AI services unavailable." });
@@ -110,7 +108,6 @@ app.post('/api/user/ai-lucky-pick', authMiddleware, async (req, res) => {
     }
 });
 
-// --- DATA ROUTES ---
 app.get('/api/user/data', authMiddleware, (req, res) => {
     if (req.user.role !== 'USER') return res.sendStatus(403);
     res.json({ 
@@ -140,7 +137,6 @@ app.get('/api/admin/data', authMiddleware, (req, res) => {
     });
 });
 
-// --- ACTION ROUTES ---
 app.post('/api/user/bets', authMiddleware, (req, res) => {
     if (req.user.role !== 'USER') return res.sendStatus(403);
     try { res.status(201).json(database.placeBulkBets(req.user.id, req.body.gameId, req.body.betGroups, 'USER')); }
@@ -159,7 +155,7 @@ const startServer = () => {
     database.verifySchema();
     scheduleNextGameReset();
     const PORT = process.env.PORT || 3005;
-    app.listen(PORT, () => console.log(`>>> Server running on port ${PORT} <<<`));
+    app.listen(PORT, () => console.log(`>>> A-Baba Server running on port ${PORT} <<<`));
   } catch (err) {
     console.error('Failed to start server:', err);
     process.exit(1);

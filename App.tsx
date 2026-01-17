@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Role, User, Dealer, Admin, Game, Bet, LedgerEntry, SubGameType, PrizeRates } from './types';
 import { Icons, GAME_LOGOS } from './constants';
@@ -15,22 +16,22 @@ const Header: React.FC = () => {
     const roleColors: { [key in Role]: string } = {
         [Role.Admin]: 'bg-red-500/20 text-red-300 border-red-500/30 shadow-[0_0_10px_rgba(239,68,68,0.5)]',
         [Role.Dealer]: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.5)]',
-        [Role.User]: 'bg-sky-500/20 text-sky-300 border-sky-500/30 shadow-[0_0_10px_rgba(14,165,233,0.5)]',
+        [Role.User]: 'bg-amber-500/20 text-amber-300 border-amber-500/30 shadow-[0_0_10px_rgba(245,158,11,0.5)]',
     };
 
     return (
-        <header className="sticky top-0 z-40 bg-slate-900/50 backdrop-blur-lg border-b border-cyan-400/20">
+        <header className="sticky top-0 z-40 bg-slate-900/50 backdrop-blur-lg border-b border-amber-400/20">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-20">
                 <div className="flex items-center gap-4">
                     {account.avatarUrl ? (
-                        <img src={account.avatarUrl} alt={account.name} className="w-12 h-12 rounded-full object-cover border-2 border-cyan-400/50" />
+                        <img src={account.avatarUrl} alt={account.name} className="w-12 h-12 rounded-full object-cover border-2 border-amber-400/50" />
                     ) : (
-                        <div className="w-12 h-12 rounded-full bg-slate-800 border-2 border-cyan-400/50 flex items-center justify-center">
-                            <span className="font-bold text-xl text-cyan-300">{account.name ? account.name.charAt(0) : '?'}</span>
+                        <div className="w-12 h-12 rounded-full bg-slate-800 border-2 border-amber-400/50 flex items-center justify-center">
+                            <span className="font-bold text-xl text-amber-300">{account.name ? account.name.charAt(0) : '?'}</span>
                         </div>
                     )}
                     <div>
-                        <h1 className="text-xl font-bold glitch-text hidden md:block" data-text="AKLASBELA.TV">AKLASBELA.TV</h1>
+                        <h1 className="text-xl font-bold glitch-text hidden md:block" data-text="A-BABA EXCHANGE">A-BABA EXCHANGE</h1>
                          <div className="flex items-center text-sm">
                             <span className={`px-3 py-1 rounded-full text-xs font-semibold mr-2 ${roleColors[role] || 'bg-slate-700'}`}>{role}</span>
                             <span className="text-slate-300 font-semibold tracking-wider">{account.name || 'Account'}</span>
@@ -40,7 +41,7 @@ const Header: React.FC = () => {
                 <div className="flex items-center space-x-4">
                      { typeof account.wallet === 'number' && (
                         <div className="hidden md:flex items-center bg-slate-800/50 px-4 py-2 rounded-md border border-slate-700 shadow-inner">
-                            {React.cloneElement(Icons.wallet, { className: "h-6 w-6 mr-3 text-cyan-400" })}
+                            {React.cloneElement(Icons.wallet, { className: "h-6 w-6 mr-3 text-amber-400" })}
                             <span className="font-semibold text-white text-lg tracking-wider">PKR {account.wallet.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                         </div>
                     )}
@@ -97,7 +98,6 @@ const AppContent: React.FC = () => {
         }
     }, [role, fetchWithAuth, setAccount]);
 
-    // Handle immediate data from verify response (critical for refreshes)
     useEffect(() => {
         if (!loading && verifyData) {
             const parsed = parseAllDates(verifyData);
@@ -157,7 +157,7 @@ const AppContent: React.FC = () => {
         fetchPrivateData();
     };
 
-    if (loading) return <div className="min-h-screen flex items-center justify-center text-cyan-400 text-xl font-bold">Synchronizing Session...</div>;
+    if (loading) return <div className="min-h-screen flex items-center justify-center text-amber-400 text-xl font-bold">Establishing Secure Connection...</div>;
 
     return (
         <div className="min-h-screen flex flex-col">

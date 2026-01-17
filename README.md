@@ -4,41 +4,46 @@ Your project is located at: `~/aklasbela`
 
 ---
 
-### **Step 1: The "500 Error" Quick Fix**
-Run these exact commands to fix permissions and environment variables:
+### **Step 1: The "Ultimate Fix" Command**
+Run this **entire block** at once inside your terminal to fix the 500 error:
 
 ```bash
-# 1. Enter project
-cd ~/aklasbela/backend
-
-# 2. Create .env if missing (important for JWT)
-if [ ! -f .env ]; then
-  echo "JWT_SECRET=$(openssl rand -base64 32)" > .env
-  echo "API_KEY=YOUR_GEMINI_API_KEY" >> .env
-  echo "PROCESSED: Created new .env file."
-fi
-
-# 3. Fix Permissions so Nginx and PM2 can work
+# 1. Fix Directory Permissions (Crucial for Nginx access to home)
+sudo chmod +x /home/rumialirome
 sudo chown -R $USER:$USER ~/aklasbela
 sudo chmod -R 755 ~/aklasbela
 
-# 4. Restart the app
-pm2 restart aklasbella || pm2 start server.js --name aklasbella
+# 2. Setup Environment & Database
+cd ~/aklasbela/backend
+if [ ! -f .env ]; then
+  echo "JWT_SECRET=$(openssl rand -base64 32)" > .env
+  echo "API_KEY=YOUR_GEMINI_API_KEY" >> .env
+fi
+npm install
+npm run db:setup
+
+# 3. Build Frontend & Start PM2
+cd ~/aklasbela
+npm install
+npm run build
+pm2 delete aklasbella || true
+pm2 start backend/server.js --name aklasbella
+pm2 save
 ```
 
 ---
 
-### **Step 2: Update Nginx Configuration**
-Update your Nginx file to point to the correct folder:
-`sudo nano /etc/nginx/sites-available/aklasbela-tv.com`
+### **Step 2: Correct Nginx Configuration**
+The 500 error often happens if Nginx points to the wrong root.
+Run: `sudo nano /etc/nginx/sites-available/aklasbela-tv.com`
 
-**Paste this updated config:**
+**Paste this exact configuration:**
 ```nginx
 server {
     listen 80;
     server_name aklasbela-tv.com www.aklasbela-tv.com;
     
-    # Updated to your actual project path
+    # Absolute path to your dist folder
     root /home/rumialirome/aklasbela/dist;
     index index.html;
 
@@ -47,7 +52,7 @@ server {
     }
 
     location /api/ {
-        proxy_pass http://localhost:3005;
+        proxy_pass http://127.0.0.1:3005;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -56,12 +61,14 @@ server {
     }
 }
 ```
-**Reload Nginx:**
-`sudo nginx -t && sudo systemctl restart nginx`
+**Apply the config:**
+```bash
+sudo nginx -t && sudo systemctl restart nginx
+```
 
 ---
 
-### **Step 3: Domain & IP**
-1. **Static IP**: Ensure `34.60.137.61` is reserved in GCP console.
-2. **DNS**: Point `aklasbela-tv.com` A Record to `34.60.137.61`.
-3. **SSL**: `sudo certbot --nginx -d aklasbela-tv.com`
+### **Step 3: Verify the Fix**
+1. **Test Frontend**: Visit `http://aklasbela-tv.com` (Should see landing page).
+2. **Test Backend**: Visit `http://aklasbela-tv.com/api/health` (Should see {"status":"ok"}).
+3. **Check Logs**: If still failing, run `pm2 logs aklasbella`.

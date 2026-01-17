@@ -12,13 +12,17 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// --- HEALTH CHECK ---
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok', time: new Date().toISOString(), branding: 'A-Baba Exchange' });
+});
+
 // --- CRITICAL ENV CHECK ---
-// Fallback for missing secret during initial migration/setup to prevent 500
 const JWT_SECRET = process.env.JWT_SECRET || 'temporary_dev_secret_change_me_immediately';
 const API_KEY = process.env.API_KEY;
 
 if (!process.env.JWT_SECRET) {
-    console.warn('WARNING: JWT_SECRET is not defined in .env file. Using a fallback. SECURE THIS BEFORE PRODUCTION.');
+    console.warn('WARNING: JWT_SECRET is not defined in .env file. Using a fallback.');
 }
 
 // --- AUTOMATIC GAME RESET SCHEDULER ---

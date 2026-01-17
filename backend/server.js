@@ -23,7 +23,7 @@ app.use(helmet({
 // 2. Rate Limiting (Prevent Brute Force)
 const apiLimiter = rateLimit({
     windowMs: 5 * 60 * 1000, 
-    max: 1000, 
+    max: 2000, 
     message: { message: 'Network busy. Please slow down.' }
 });
 
@@ -40,15 +40,14 @@ app.use(cors());
 app.use(express.json());
 
 // --- STRICT ENV VALIDATION ---
-let JWT_SECRET = process.env.JWT_SECRET;
-const API_KEY = process.env.API_KEY;
-
-if (!JWT_SECRET) {
-    // FALLBACK for boot-up only (PREVENTS 503)
-    JWT_SECRET = "dev_secret_key_aklasbela_tv_2024";
+// CRITICAL FIX: Ensure process.env is actually updated so middleware sees the same secret
+if (!process.env.JWT_SECRET) {
+    process.env.JWT_SECRET = "dev_secret_key_aklasbela_tv_2024";
     systemWarning = "Security Warning: Using default JWT secret. Setup required in .env.";
     console.warn(`[WARNING] ${systemWarning}`);
 }
+const JWT_SECRET = process.env.JWT_SECRET;
+const API_KEY = process.env.API_KEY;
 
 // --- DATABASE SETUP ---
 const dbConnected = database.connect();
@@ -64,8 +63,7 @@ if (!dbConnected) {
 app.use((req, res, next) => {
     // Only block on systemError (Database issues)
     if (systemError && req.path.startsWith('/api/')) {
-        // Allow health check even in maintenance
-        if (req.path === '/api/health') return next();
+        if (req.path === '/api/health' || req.path === '/api/games') return next();
         return res.status(503).json({ message: systemError, maintenance: true });
     }
     next();
@@ -94,10 +92,10 @@ function scheduleNextGameReset() {
         resetTime.setUTCDate(resetTime.getUTCDate() + 1);
     }
     const delay = resetTime.getTime() - now.getTime();
-    console.log(`[Scheduler] Next reset: ${resetTime.toISOString()}`);
+    console.log(`[Scheduler] Next reset scheduled for: ${resetTime.toISOString()}`);
     
     setTimeout(() => {
-        try { database.resetAllGames(); } catch (e) { console.error('[Scheduler] Error:', e); }
+        try { database.resetAllGames(); } catch (e) { console.error('[Scheduler] Error during reset:', e); }
         scheduleNextGameReset();
     }, delay);
 }
@@ -105,13 +103,18 @@ function scheduleNextGameReset() {
 // --- AUTHENTICATION ROUTES ---
 app.post('/api/auth/login', (req, res) => {
     const { loginId, password } = req.body;
-    const { account, role } = database.findAccountForLogin(loginId);
-    if (account && account.password === password) {
-        const fullAccount = database.findAccountById(account.id, role.toLowerCase() + 's');
-        const token = jwt.sign({ id: account.id, role }, JWT_SECRET, { expiresIn: '1d' });
-        return res.json({ token, role, account: fullAccount });
+    try {
+        const { account, role } = database.findAccountForLogin(loginId);
+        if (account && account.password === password) {
+            const fullAccount = database.findAccountById(account.id, role.toLowerCase() + 's');
+            const token = jwt.sign({ id: account.id, role }, JWT_SECRET, { expiresIn: '1d' });
+            return res.json({ token, role, account: fullAccount });
+        }
+        res.status(401).json({ message: 'Invalid Account ID or Password.' });
+    } catch (err) {
+        console.error('[Auth] Login error:', err);
+        res.status(500).json({ message: 'Internal server error during login.' });
     }
-    res.status(401).json({ message: 'Invalid Account ID or Password.' });
 });
 
 app.get('/api/auth/verify', authMiddleware, (req, res) => {
@@ -135,9 +138,6 @@ app.get('/api/auth/verify', authMiddleware, (req, res) => {
 });
 
 app.get('/api/games', (req, res) => {
-    if (systemError && systemError.includes("Database")) {
-        return res.status(503).json({ message: systemError, maintenance: true });
-    }
     const games = database.getAllFromTable('games');
     res.json(games);
 });

@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import { Role, User, Dealer, Admin } from '../types';
 
@@ -32,18 +31,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [verifyData, setVerifyData] = useState<any>(null);
 
     const logout = useCallback(() => {
-        setRole(null); setAccount(null); setToken(null); setVerifyData(null);
+        setRole(null); 
+        setAccount(null); 
+        setToken(null); 
+        setVerifyData(null);
         localStorage.removeItem('authToken');
     }, []);
     
     const fetchWithAuth = useCallback(async (url: string, options: RequestInit = {}) => {
         const headers = new Headers(options.headers || {});
         const currentToken = token || localStorage.getItem('authToken');
-        if (currentToken) headers.append('Authorization', `Bearer ${currentToken}`);
-        if (!headers.has('Content-Type') && !(options.body instanceof FormData)) headers.append('Content-Type', 'application/json');
+        
+        if (currentToken) {
+            headers.append('Authorization', `Bearer ${currentToken}`);
+        }
+        
+        if (!headers.has('Content-Type') && !(options.body instanceof FormData)) {
+            headers.append('Content-Type', 'application/json');
+        }
         
         const response = await fetch(url, { ...options, headers });
-        if (response.status === 401 || response.status === 403) { logout(); throw new Error('Session expired'); }
+        
+        // Only force logout on authentication failure
+        if (response.status === 401 || response.status === 403) { 
+            logout(); 
+            throw new Error('Session expired'); 
+        }
         
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
@@ -55,26 +68,57 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     useEffect(() => {
         let poll: ReturnType<typeof setInterval>;
+        
         const verify = async () => {
-            if (!token) { setLoading(false); return; }
+            const currentToken = localStorage.getItem('authToken');
+            if (!currentToken) { 
+                setLoading(false); 
+                return; 
+            }
+            
             try {
-                const response = await fetch('/api/auth/verify', { headers: { 'Authorization': `Bearer ${token}` } });
-                if (!response.ok) throw new Error('Fail');
-                const data = await response.json();
-                setAccount(parseAccountDates(data.account));
-                setRole(data.role);
-                setVerifyData(data);
-                setLoading(false);
+                const response = await fetch('/api/auth/verify', { 
+                    headers: { 'Authorization': `Bearer ${currentToken}` } 
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    setAccount(parseAccountDates(data.account));
+                    setRole(data.role);
+                    setVerifyData(data);
+                    setLoading(false);
 
-                if (data.role !== Role.Admin) {
-                    poll = setInterval(async () => {
-                        const r = await fetch('/api/auth/verify', { headers: { 'Authorization': `Bearer ${token}` }});
-                        if (r.ok) { const d = await r.json(); setAccount(parseAccountDates(d.account)); }
-                        else logout();
-                    }, 2000);
+                    // Only poll if not an admin to reduce server load
+                    if (data.role !== Role.Admin) {
+                        poll = setInterval(async () => {
+                            try {
+                                const r = await fetch('/api/auth/verify', { 
+                                    headers: { 'Authorization': `Bearer ${currentToken}` }
+                                });
+                                if (r.ok) { 
+                                    const d = await r.json(); 
+                                    setAccount(parseAccountDates(d.account)); 
+                                } else if (r.status === 401 || r.status === 403) {
+                                    logout();
+                                }
+                            } catch (e) {
+                                // Ignore network errors during polling to prevent random logouts
+                            }
+                        }, 5000);
+                    }
+                } else if (response.status === 401 || response.status === 403) {
+                    logout();
+                    setLoading(false);
+                } else {
+                    // Server error (500, 503, etc) - Keep session but stop loading
+                    setLoading(false);
                 }
-            } catch (e) { logout(); setLoading(false); }
+            } catch (e) { 
+                // Network error - Keep session but stop loading
+                setLoading(false); 
+            }
         };
+
         verify();
         return () => poll && clearInterval(poll);
     }, [token, logout]);
@@ -85,7 +129,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ loginId: id, password: pass })
         });
-        if (!response.ok) throw new Error("Login failed");
+        
+        if (!response.ok) {
+            const data = await response.json().catch(() => ({}));
+            throw new Error(data.message || "Login failed");
+        }
+        
         const data = await response.json();
         localStorage.setItem('authToken', data.token);
         setAccount(parseAccountDates(data.account));
@@ -94,7 +143,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
     
     return (
-        <AuthContext.Provider value={{ role, account, token, loading, verifyData, login, logout, setAccount, resetPassword: async (id, c, p) => "Reset logic stub", fetchWithAuth }}>
+        <AuthContext.Provider value={{ 
+            role, 
+            account, 
+            token, 
+            loading, 
+            verifyData, 
+            login, 
+            logout, 
+            setAccount, 
+            resetPassword: async (id, c, p) => "Reset logic stub", 
+            fetchWithAuth 
+        }}>
             {children}
         </AuthContext.Provider>
     );

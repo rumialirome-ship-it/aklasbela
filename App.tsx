@@ -214,7 +214,7 @@ const AppContent: React.FC = () => {
             ) : (
                 <>
                     <Header />
-                    <main className="flex-grow pb-20 relative z-10">
+                    <main className={`flex-grow pb-20 relative z-10 ${apiError ? 'pt-10' : ''}`}>
                         {role === Role.User && <UserPanel user={account as User} games={games} bets={bets} placeBet={placeBet} />}
                         {role === Role.Dealer && (
                             <DealerPanel 

@@ -1,8 +1,7 @@
-
 {
-  "name": "a-baba-exchange-backend",
+  "name": "aklasbela-tv-backend",
   "version": "1.0.0",
-  "description": "Backend for A-Baba Exchange",
+  "description": "Backend for Aklasbela-tv",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

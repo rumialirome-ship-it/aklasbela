@@ -35,7 +35,7 @@ const Header: React.FC = () => {
                     
                     <div className="hidden sm:block">
                         <h1 className="text-xl font-black russo tracking-tighter text-white" style={{letterSpacing: '-0.02em'}}>
-                            A-BABA <span className="text-amber-500">EXCHANGE</span>
+                            AKLASBELA <span className="text-amber-500">TV</span>
                         </h1>
                          <div className="flex items-center mt-0.5">
                             <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest mr-3 border ${roleStyles[role]}`}>{role}</span>

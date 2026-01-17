@@ -1,4 +1,3 @@
-
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
@@ -46,7 +45,7 @@ const API_KEY = process.env.API_KEY;
 
 if (!JWT_SECRET) {
     // FALLBACK for boot-up only (PREVENTS 503)
-    JWT_SECRET = "dev_secret_key_a_baba_exchange_2024";
+    JWT_SECRET = "dev_secret_key_aklasbela_tv_2024";
     systemWarning = "Security Warning: Using default JWT secret. Setup required in .env.";
     console.warn(`[WARNING] ${systemWarning}`);
 }
@@ -78,7 +77,7 @@ app.get('/api/health', (req, res) => {
         status: systemError ? 'maintenance' : (systemWarning ? 'warning' : 'ok'), 
         error: systemError, 
         warning: systemWarning,
-        branding: 'A-Baba Exchange' 
+        branding: 'Aklasbela-tv' 
     });
 });
 
@@ -162,7 +161,7 @@ app.post('/api/user/ai-lucky-pick', authMiddleware, async (req, res) => {
 const PORT = process.env.PORT || 3005;
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`\n============================================`);
-    console.log(`🚀 A-Baba Exchange API running on port ${PORT}`);
+    console.log(`🚀 Aklasbela-tv API running on port ${PORT}`);
     if (systemError) console.log(`⚠️ SYSTEM IN MAINTENANCE: ${systemError}`);
     if (systemWarning) console.log(`⚠️ SYSTEM WARNING: ${systemWarning}`);
     console.log(`============================================\n`);

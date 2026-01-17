@@ -163,8 +163,8 @@ const LandingPage: React.FC<{ games: Game[] }> = ({ games }) => {
                             Institutional Grade Lottery
                         </div>
                     </div>
-                    <h1 className="text-5xl md:text-8xl font-black mb-6 tracking-tighter glitch-text leading-none" data-text="A-BABA EXCHANGE">
-                        A-BABA EXCHANGE
+                    <h1 className="text-5xl md:text-8xl font-black mb-6 tracking-tighter glitch-text leading-none" data-text="AKLASBELA-TV">
+                        AKLASBELA-TV
                     </h1>
                     <p className="text-base md:text-xl text-slate-500 max-w-2xl mx-auto font-medium leading-relaxed">
                         The gold standard of digital lotteries. Track results in real-time and trade with absolute confidence on our secure node.
@@ -214,11 +214,11 @@ const LandingPage: React.FC<{ games: Game[] }> = ({ games }) => {
 
                 <footer className="mt-auto border-t border-white/5 py-12 flex flex-col md:flex-row justify-between items-center gap-6">
                     <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center font-black text-slate-950 text-xs">AB</div>
-                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-600">A-Baba Protocol v4.2</span>
+                        <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center font-black text-slate-950 text-xs">AK</div>
+                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-600">Aklasbela Protocol v4.2</span>
                     </div>
                     <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">
-                        &copy; {new Date().getFullYear()} A-Baba Exchange. Digital Assets Security Certified.
+                        &copy; {new Date().getFullYear()} Aklasbela-tv. Digital Assets Security Certified.
                     </p>
                     <div className="flex gap-6">
                         <div className="text-[10px] font-bold text-slate-700 uppercase tracking-widest hover:text-amber-500 cursor-pointer transition-colors">Terminals</div>

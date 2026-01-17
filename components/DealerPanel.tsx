@@ -1,8 +1,15 @@
-
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Dealer, User, PrizeRates, LedgerEntry, BetLimits, Bet, Game, SubGameType } from '../types';
-import { Icons } from '../constants';
+import { Icons, GAME_LOGOS } from '../constants';
 import { useCountdown } from '../hooks/useCountdown';
+
+const formatTime12h = (time24: string) => {
+    if (!time24) return '';
+    const [hours, minutes] = time24.split(':').map(Number);
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const hours12 = hours % 12 || 12;
+    return `${String(hours12).padStart(2, '0')}:${String(minutes).padStart(2, '0')} ${ampm}`;
+};
 
 const getTodayDateString = () => new Date().toISOString().split('T')[0];
 
@@ -173,7 +180,7 @@ export const UserForm: React.FC<{
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="sm:col-span-1">
                     <label className={labelClass}>Username / Login ID</label>
-                    <input type="text" name="id" value={formData.id} onChange={handleChange} className={inputClass} required disabled={!!user} placeholder="e.g. jhon123" />
+                    <input type="text" name="id" value={formData.id} className={inputClass} required disabled={!!user} placeholder="e.g. jhon123" />
                 </div>
                 <div className="sm:col-span-1">
                     <label className={labelClass}>Full Display Name</label>
@@ -472,7 +479,7 @@ const WalletView: React.FC<{ dealer: Dealer }> = ({ dealer }) => {
 const OpenGameOption: React.FC<{ game: Game }> = ({ game }) => {
     const { status, text } = useCountdown(game.drawTime);
     if (status !== 'OPEN') return null;
-    return <option value={game.id}>{game.name} (Closes: {text})</option>;
+    return <option value={game.id}>{game.name} (Draw: {formatTime12h(game.drawTime)} - Closes in: {text})</option>;
 };
 
 const BettingTerminalView: React.FC<{ users: User[]; games: Game[]; placeBetAsDealer: (details: any) => Promise<void> }> = ({ users, games, placeBetAsDealer }) => {

@@ -1,9 +1,19 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { Dealer, User, Game, PrizeRates, LedgerEntry, Bet, NumberLimit, SubGameType, Admin } from '../types';
 import { Icons } from '../constants';
 import { useAuth } from '../hooks/useAuth';
 import { UserForm } from './DealerPanel'; // Import UserForm to reuse it
+
+// --- HELPERS ---
+const formatTime12h = (time24: string) => {
+    if (!time24) return '';
+    const [hours, minutes] = time24.split(':').map(Number);
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const hours12 = hours % 12 || 12;
+    return `${String(hours12).padStart(2, '0')}:${String(minutes).padStart(2, '0')} ${ampm}`;
+};
+
+const getTodayDateString = () => new Date().toISOString().split('T')[0];
 
 // --- TYPE DEFINITIONS ---
 interface GameSummary {
@@ -30,8 +40,6 @@ interface FinancialSummary {
 
 type SortKey = 'name' | 'wallet' | 'status';
 type SortDirection = 'asc' | 'desc';
-
-const getTodayDateString = () => new Date().toISOString().split('T')[0];
 
 // --- HELPER COMPONENTS (DEFINED OUTSIDE TO PREVENT REMOUNTING) ---
 
@@ -1394,7 +1402,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ admin, dealers, onSaveDealer, u
 
                     return (
                     <div key={game.id} className="bg-slate-800/50 p-4 rounded-lg border border-slate-700">
-                        <h4 className="font-bold text-lg text-white">{game.name}</h4>
+                        <div className="flex items-center gap-3 mb-2">
+                             <img src={game.logo} alt={game.name} className="w-10 h-10 rounded-full" />
+                             <h4 className="font-bold text-lg text-white">{game.name}</h4>
+                        </div>
                         {game.winningNumber ? (
                             game.payoutsApproved ? (
                                 <div className="flex items-center justify-between my-2">
@@ -1485,7 +1496,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ admin, dealers, onSaveDealer, u
                               </>
                           ) : (
                               <>
-                                  <span className="font-semibold text-slate-300">{game.drawTime}</span>
+                                  <span className="font-semibold text-slate-300 uppercase tracking-tighter">{formatTime12h(game.drawTime)}</span>
                                   <button 
                                       onClick={() => setEditingDrawTime({ gameId: game.id, time: game.drawTime })}
                                       className="bg-slate-700 hover:bg-slate-600 text-cyan-400 font-semibold py-1 px-2 rounded-md text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed"

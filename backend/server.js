@@ -1,4 +1,3 @@
-
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
@@ -11,6 +10,9 @@ const database = require('./database');
 const { v4: uuidv4 } = require('uuid');
 
 const app = express();
+
+// --- MAINTENANCE CHECK ---
+let systemError = null;
 
 // 1. Security Headers (Helmet)
 app.use(helmet({
@@ -36,14 +38,13 @@ app.use('/api/auth/login', authLimiter);
 app.use(cors());
 app.use(express.json());
 
-// --- MAINTENANCE CHECK ---
-let systemError = null;
-
 // --- STRICT ENV VALIDATION ---
-const JWT_SECRET = process.env.JWT_SECRET;
+let JWT_SECRET = process.env.JWT_SECRET;
 const API_KEY = process.env.API_KEY;
 
 if (!JWT_SECRET) {
+    // FALLBACK for boot-up only (STOPS CRASHING)
+    JWT_SECRET = "fallback_secret_change_me_now_123456";
     systemError = "JWT_SECRET is not defined in .env. Setup required.";
     console.error(`[CRITICAL] ${systemError}`);
 }
@@ -61,6 +62,8 @@ if (!dbConnected) {
 // --- MAINTENANCE MIDDLEWARE ---
 app.use((req, res, next) => {
     if (systemError && req.path.startsWith('/api/')) {
+        // Allow health check even in maintenance
+        if (req.path === '/api/health') return next();
         return res.status(503).json({ message: systemError, maintenance: true });
     }
     next();
@@ -76,7 +79,7 @@ const PKT_OFFSET_HOURS = 5;
 const RESET_HOUR_PKT = 16; 
 
 function scheduleNextGameReset() {
-    if (systemError) return;
+    if (systemError && systemError.includes("Database")) return;
     const now = new Date();
     const resetHourUTC = RESET_HOUR_PKT - PKT_OFFSET_HOURS;
     let resetTime = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), resetHourUTC, 0, 5, 0));
@@ -125,6 +128,9 @@ app.get('/api/auth/verify', authMiddleware, (req, res) => {
 });
 
 app.get('/api/games', (req, res) => {
+    if (systemError && systemError.includes("Database")) {
+        return res.status(503).json({ message: systemError, maintenance: true });
+    }
     const games = database.getAllFromTable('games');
     res.json(games);
 });

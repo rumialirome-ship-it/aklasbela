@@ -1,4 +1,3 @@
-
 const path = require('path');
 const Database = require('better-sqlite3');
 const { v4: uuidv4 } = require('uuid');
@@ -64,7 +63,8 @@ const isSchemaValid = () => {
     try {
         if (!db) return false;
         const stmt = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='admins'");
-        return !!stmt.get();
+        const result = stmt.get();
+        return !!result;
     } catch (error) {
         return false;
     }
@@ -72,20 +72,26 @@ const isSchemaValid = () => {
 
 const findAccountById = (id, table) => {
     if (!db) return null;
-    const stmt = db.prepare(`SELECT * FROM ${table} WHERE LOWER(id) = LOWER(?)`);
-    const account = stmt.get(id);
-    if (!account) return null;
     try {
+        const stmt = db.prepare(`SELECT * FROM ${table} WHERE LOWER(id) = LOWER(?)`);
+        const account = stmt.get(id);
+        if (!account) return null;
+        
         if (table !== 'games') {
             account.ledger = db.prepare('SELECT * FROM ledgers WHERE LOWER(accountId) = LOWER(?) ORDER BY timestamp ASC').all(id);
         } else {
             account.isMarketOpen = isGameOpen(account.drawTime);
         }
+        
         if (account.prizeRates) account.prizeRates = JSON.parse(account.prizeRates);
         if (account.betLimits) account.betLimits = JSON.parse(account.betLimits);
         if ('isRestricted' in account) account.isRestricted = !!account.isRestricted;
-    } catch (e) { console.error('[DB] Parsing error:', e); }
-    return account;
+        
+        return account;
+    } catch (e) {
+        console.error('[DB] findAccountById error:', e);
+        return null;
+    }
 };
 
 const findAccountForLogin = (loginId) => {
@@ -103,10 +109,13 @@ const findAccountForLogin = (loginId) => {
 };
 
 const updatePassword = (accountId, contact, newPassword) => {
+    if (!db) return false;
     const tables = ['users', 'dealers'];
     for (const table of tables) {
-        const result = db.prepare(`UPDATE ${table} SET password = ? WHERE LOWER(id) = LOWER(?) AND contact = ?`).run(newPassword, accountId, contact);
-        if (result.changes > 0) return true;
+        try {
+            const result = db.prepare(`UPDATE ${table} SET password = ? WHERE LOWER(id) = LOWER(?) AND contact = ?`).run(newPassword, accountId, contact);
+            if (result.changes > 0) return true;
+        } catch (e) {}
     }
     return false;
 };

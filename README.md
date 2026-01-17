@@ -1,49 +1,39 @@
-# A-Baba Exchange - Google Cloud Deployment Guide
+# A-Baba Exchange - Security & Deployment Guide
 
-Your project is located at: `~/aklasbela`
+Follow these steps to secure **https://aklasbela-tv.com**.
 
 ---
 
-### **Step 1: The "Ultimate Fix" Command**
-Run this **entire block** at once inside your terminal to fix the 500 error:
-
+### **Step 1: Install SSL (HTTPS)**
+Run these commands in your VM to get a free certificate:
 ```bash
-# 1. Fix Directory Permissions (Crucial for Nginx access to home)
-sudo chmod +x /home/rumialirome
-sudo chown -R $USER:$USER ~/aklasbela
-sudo chmod -R 755 ~/aklasbela
-
-# 2. Setup Environment & Database
-cd ~/aklasbela/backend
-if [ ! -f .env ]; then
-  echo "JWT_SECRET=$(openssl rand -base64 32)" > .env
-  echo "API_KEY=YOUR_GEMINI_API_KEY" >> .env
-fi
-npm install
-npm run db:setup
-
-# 3. Build Frontend & Start PM2
-cd ~/aklasbela
-npm install
-npm run build
-pm2 delete aklasbella || true
-pm2 start backend/server.js --name aklasbella
-pm2 save
+sudo apt-get update
+sudo apt-get install certbot python3-certbot-nginx -y
+sudo certbot --nginx -d aklasbela-tv.com -d www.aklasbela-tv.com
 ```
+*Note: This will automatically update your Nginx configuration.*
 
 ---
 
-### **Step 2: Correct Nginx Configuration**
-The 500 error often happens if Nginx points to the wrong root.
-Run: `sudo nano /etc/nginx/sites-available/aklasbela-tv.com`
+### **Step 2: Hardened Nginx Config**
+Ensure your `/etc/nginx/sites-available/aklasbela-tv.com` looks like this after Certbot runs:
 
-**Paste this exact configuration:**
 ```nginx
 server {
     listen 80;
     server_name aklasbela-tv.com www.aklasbela-tv.com;
+    return 301 https://$host$request_uri; # Force HTTPS
+}
+
+server {
+    listen 443 ssl;
+    server_name aklasbela-tv.com www.aklasbela-tv.com;
+
+    # Certbot will add SSL paths here...
     
-    # Absolute path to your dist folder
+    # Hide Nginx Version
+    server_tokens off;
+
     root /home/rumialirome/aklasbela/dist;
     index index.html;
 
@@ -57,18 +47,31 @@ server {
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
         proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
     }
 }
-```
-**Apply the config:**
-```bash
-sudo nginx -t && sudo systemctl restart nginx
 ```
 
 ---
 
-### **Step 3: Verify the Fix**
-1. **Test Frontend**: Visit `http://aklasbela-tv.com` (Should see landing page).
-2. **Test Backend**: Visit `http://aklasbela-tv.com/api/health` (Should see {"status":"ok"}).
-3. **Check Logs**: If still failing, run `pm2 logs aklasbella`.
+### **Step 3: Server Protection**
+1. **Firewall (GCP Console)**:
+   - Allow `TCP:80` (HTTP)
+   - Allow `TCP:443` (HTTPS)
+   - Allow `TCP:22` (SSH - restrict to your IP if possible)
+   - **DENY** all other ports (like 3005). Nginx acts as the only gateway.
+
+2. **Environment Protection**:
+   ```bash
+   cd ~/aklasbela/backend
+   npm install # Install new security packages
+   pm2 restart aklasbella
+   ```
+
+3. **Database Security**:
+   Ensure `~/aklasbela/backend/database.sqlite` is not readable by anyone except the app user.
+   ```bash
+   chmod 600 ~/aklasbela/backend/database.sqlite
+   ```

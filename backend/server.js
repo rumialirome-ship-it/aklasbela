@@ -2,6 +2,8 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 const jwt = require('jsonwebtoken');
 const authMiddleware = require('./authMiddleware');
 const { GoogleGenAI } = require('@google/genai');
@@ -9,6 +11,26 @@ const database = require('./database');
 const { v4: uuidv4 } = require('uuid');
 
 const app = express();
+
+// 1. Security Headers (Helmet)
+app.use(helmet());
+
+// 2. Rate Limiting (Prevent Brute Force)
+const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limit each IP to 100 requests per window
+    message: { message: 'Too many requests from this IP, please try again later.' }
+});
+
+const authLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 10, // Limit login attempts to 10 per hour
+    message: { message: 'Too many login attempts, please try again in an hour.' }
+});
+
+app.use('/api/', apiLimiter);
+app.use('/api/auth/login', authLimiter);
+
 app.use(cors());
 app.use(express.json());
 
@@ -17,12 +39,13 @@ app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', time: new Date().toISOString(), branding: 'A-Baba Exchange' });
 });
 
-// --- CRITICAL ENV CHECK ---
-const JWT_SECRET = process.env.JWT_SECRET || 'temporary_dev_secret_change_me_immediately';
+// --- STRICT ENV VALIDATION ---
+const JWT_SECRET = process.env.JWT_SECRET;
 const API_KEY = process.env.API_KEY;
 
-if (!process.env.JWT_SECRET) {
-    console.warn('WARNING: JWT_SECRET is not defined in .env file. Using a fallback.');
+if (!JWT_SECRET) {
+    console.error('FATAL ERROR: JWT_SECRET is not defined. The server will not start for security reasons.');
+    process.exit(1);
 }
 
 // --- AUTOMATIC GAME RESET SCHEDULER ---
@@ -32,22 +55,13 @@ const RESET_HOUR_PKT = 16; // 4:00 PM PKT
 function scheduleNextGameReset() {
     const now = new Date();
     const resetHourUTC = RESET_HOUR_PKT - PKT_OFFSET_HOURS;
-
     let resetTime = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), resetHourUTC, 0, 5, 0));
-
     if (now >= resetTime) {
         resetTime.setUTCDate(resetTime.getUTCDate() + 1);
     }
-
     const delay = resetTime.getTime() - now.getTime();
-    console.log(`[Scheduler] Next game reset: ${resetTime.toUTCString()} (in ${Math.round(delay / 60000)} mins)`);
-    
     setTimeout(() => {
-        try { 
-            database.resetAllGames(); 
-        } catch (e) { 
-            console.error('[Scheduler] Reset error:', e); 
-        }
+        try { database.resetAllGames(); } catch (e) { console.error('[Scheduler] Reset error:', e); }
         scheduleNextGameReset();
     }, delay);
 }
@@ -81,14 +95,7 @@ app.get('/api/auth/verify', authMiddleware, (req, res) => {
         extra.users = database.getAllFromTable('users', true);
         extra.bets = database.getAllFromTable('bets');
     }
-    
     res.json({ account, role, ...extra });
-});
-
-app.post('/api/auth/reset-password', (req, res) => {
-    const { accountId, contact, newPassword } = req.body;
-    if (database.updatePassword(accountId, contact, newPassword)) res.json({ message: 'Success' });
-    else res.status(404).json({ message: 'Invalid credentials' });
 });
 
 app.get('/api/games', (req, res) => {
@@ -98,7 +105,6 @@ app.get('/api/games', (req, res) => {
 app.post('/api/user/ai-lucky-pick', authMiddleware, async (req, res) => {
     const { gameType, count = 5 } = req.body;
     if (!API_KEY) return res.status(503).json({ message: "AI services unavailable." });
-
     try {
         const ai = new GoogleGenAI({ apiKey: API_KEY });
         const response = await ai.models.generateContent({
@@ -159,7 +165,7 @@ const startServer = () => {
     database.verifySchema();
     scheduleNextGameReset();
     const PORT = process.env.PORT || 3005;
-    app.listen(PORT, () => console.log(`>>> A-Baba Server running on port ${PORT} <<<`));
+    app.listen(PORT, () => console.log(`>>> A-Baba SECURE Server running on port ${PORT} <<<`));
   } catch (err) {
     console.error('Failed to start server:', err);
     process.exit(1);

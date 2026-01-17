@@ -1,3 +1,4 @@
+
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
@@ -11,8 +12,9 @@ const { v4: uuidv4 } = require('uuid');
 
 const app = express();
 
-// --- MAINTENANCE CHECK ---
+// --- MAINTENANCE & WARNING CHECK ---
 let systemError = null;
+let systemWarning = null;
 
 // 1. Security Headers (Helmet)
 app.use(helmet({
@@ -43,10 +45,10 @@ let JWT_SECRET = process.env.JWT_SECRET;
 const API_KEY = process.env.API_KEY;
 
 if (!JWT_SECRET) {
-    // FALLBACK for boot-up only (STOPS CRASHING)
-    JWT_SECRET = "fallback_secret_change_me_now_123456";
-    systemError = "JWT_SECRET is not defined in .env. Setup required.";
-    console.error(`[CRITICAL] ${systemError}`);
+    // FALLBACK for boot-up only (PREVENTS 503)
+    JWT_SECRET = "dev_secret_key_aklasbela_tv_2024";
+    systemWarning = "Security Warning: Using default JWT secret. Setup required in .env.";
+    console.warn(`[WARNING] ${systemWarning}`);
 }
 
 // --- DATABASE SETUP ---
@@ -61,6 +63,7 @@ if (!dbConnected) {
 
 // --- MAINTENANCE MIDDLEWARE ---
 app.use((req, res, next) => {
+    // Only block on systemError (Database issues)
     if (systemError && req.path.startsWith('/api/')) {
         // Allow health check even in maintenance
         if (req.path === '/api/health') return next();
@@ -71,7 +74,12 @@ app.use((req, res, next) => {
 
 // --- HEALTH CHECK ---
 app.get('/api/health', (req, res) => {
-    res.json({ status: systemError ? 'maintenance' : 'ok', error: systemError, branding: 'A-Baba Exchange' });
+    res.json({ 
+        status: systemError ? 'maintenance' : (systemWarning ? 'warning' : 'ok'), 
+        error: systemError, 
+        warning: systemWarning,
+        branding: 'A-Baba Exchange' 
+    });
 });
 
 // --- AUTOMATIC GAME RESET SCHEDULER ---
@@ -156,6 +164,7 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log(`\n============================================`);
     console.log(`🚀 A-Baba Exchange API running on port ${PORT}`);
     if (systemError) console.log(`⚠️ SYSTEM IN MAINTENANCE: ${systemError}`);
+    if (systemWarning) console.log(`⚠️ SYSTEM WARNING: ${systemWarning}`);
     console.log(`============================================\n`);
     scheduleNextGameReset();
 });

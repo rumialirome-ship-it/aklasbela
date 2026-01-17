@@ -1,3 +1,4 @@
+
 const path = require('path');
 const Database = require('better-sqlite3');
 const { v4: uuidv4 } = require('uuid');
@@ -83,8 +84,8 @@ const findAccountById = (id, table) => {
             account.isMarketOpen = isGameOpen(account.drawTime);
         }
         
-        if (account.prizeRates) account.prizeRates = JSON.parse(account.prizeRates);
-        if (account.betLimits) account.betLimits = JSON.parse(account.betLimits);
+        if (account.prizeRates && typeof account.prizeRates === 'string') account.prizeRates = JSON.parse(account.prizeRates);
+        if (account.betLimits && typeof account.betLimits === 'string') account.betLimits = JSON.parse(account.betLimits);
         if ('isRestricted' in account) account.isRestricted = !!account.isRestricted;
         
         return account;
@@ -127,9 +128,9 @@ const getAllFromTable = (table, withLedger = false) => {
             try {
                 if (withLedger && acc.id) acc.ledger = db.prepare('SELECT * FROM ledgers WHERE LOWER(accountId) = LOWER(?) ORDER BY timestamp ASC').all(acc.id);
                 if (table === 'games' && acc.drawTime) acc.isMarketOpen = isGameOpen(acc.drawTime);
-                if (acc.prizeRates) acc.prizeRates = typeof acc.prizeRates === 'string' ? JSON.parse(acc.prizeRates) : acc.prizeRates;
-                if (acc.betLimits) acc.betLimits = typeof acc.betLimits === 'string' ? JSON.parse(acc.betLimits) : acc.betLimits;
-                if (table === 'bets' && acc.numbers) acc.numbers = typeof acc.numbers === 'string' ? JSON.parse(acc.numbers) : acc.numbers;
+                if (acc.prizeRates && typeof acc.prizeRates === 'string') acc.prizeRates = JSON.parse(acc.prizeRates);
+                if (acc.betLimits && typeof acc.betLimits === 'string') acc.betLimits = JSON.parse(acc.betLimits);
+                if (table === 'bets' && acc.numbers && typeof acc.numbers === 'string') acc.numbers = JSON.parse(acc.numbers);
                 if ('isRestricted' in acc) acc.isRestricted = !!acc.isRestricted;
             } catch (e) { console.error(`[DB] Row parse error in ${table}:`, e); }
             return acc;

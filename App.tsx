@@ -179,11 +179,15 @@ const AppContent: React.FC = () => {
         <div className="text-amber-400 text-xl font-bold uppercase tracking-widest animate-pulse">Establishing Secure Connection...</div>
     </div>;
 
+    const isSystemCritical = !!apiError && isMaintenance;
+    const isSystemWarning = !!apiError && !isMaintenance;
+
     return (
         <div className="min-h-screen flex flex-col">
             {apiError && (
-                <div className={`${isMaintenance ? 'bg-amber-600' : 'bg-red-600'} text-white text-center py-3 text-xs font-bold uppercase tracking-widest sticky top-0 z-[100] shadow-xl px-4`}>
-                    {isMaintenance ? '🔧 Maintenance Required: ' : '⚠️ Connection Warning: '} {apiError}
+                <div className={`${isSystemCritical ? 'bg-red-600' : 'bg-amber-600'} text-white text-center py-2 text-[10px] md:text-xs font-bold uppercase tracking-widest sticky top-0 z-[100] shadow-xl px-4 flex items-center justify-center gap-2`}>
+                    <span className="animate-pulse">{isSystemCritical ? '🛑 CRITICAL:' : '⚠️ WARNING:'}</span>
+                    <span>{apiError}</span>
                 </div>
             )}
             {!role || !account ? (

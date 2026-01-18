@@ -31,62 +31,63 @@ h1, h2, h3, .russo {
   flex-direction: column;
 }
 
-/* --- ADVANCED MECHANICAL PHYSICS ENGINE --- */
+/* --- ADVANCED 3D MECHANICAL PHYSICS --- */
 
-/* The 45-Second Tumbling Storm: High-velocity wall-to-wall collisions */
-@keyframes physics-storm-v3 {
+/* The 45-Second Tumbling Storm: Maximum Agitation */
+@keyframes physics-storm-v4 {
   0% { transform: translate(0, 0) rotate(0deg) scale(1); }
-  12% { transform: translate(180px, -260px) rotate(140deg) scale(0.95); }
-  24% { transform: translate(-200px, 120px) rotate(280deg) scale(1.05); }
-  36% { transform: translate(240px, -100px) rotate(420deg) scale(0.9); }
-  48% { transform: translate(-220px, -320px) rotate(560deg) scale(1.1); }
-  60% { transform: translate(100px, 240px) rotate(700deg) scale(1); }
-  72% { transform: translate(-260px, -80px) rotate(840deg) scale(0.95); }
-  84% { transform: translate(210px, 300px) rotate(980deg) scale(1.05); }
-  92% { transform: translate(-120px, -340px) rotate(1120deg) scale(0.85); }
-  100% { transform: translate(0, 0) rotate(1260deg) scale(1); }
+  10% { transform: translate(160px, -220px) rotate(140deg) scale(0.9); }
+  20% { transform: translate(-190px, 140px) rotate(280deg) scale(1.1); }
+  30% { transform: translate(220px, -90px) rotate(420deg) scale(0.85); }
+  40% { transform: translate(-210px, -280px) rotate(560deg) scale(1.15); }
+  50% { transform: translate(70px, 190px) rotate(700deg) scale(0.95); }
+  60% { transform: translate(-230px, -50px) rotate(840deg) scale(1.05); }
+  70% { transform: translate(170px, 240px) rotate(980deg) scale(0.9); }
+  80% { transform: translate(-90px, -300px) rotate(1120deg) scale(1.1); }
+  90% { transform: translate(240px, 110px) rotate(1260deg) scale(0.8); }
+  100% { transform: translate(0, 0) rotate(1400deg) scale(1); }
 }
 
-/* Realistic Settling: Balls fall and micro-jostle at the base */
-@keyframes ball-settle-pro {
-  0% { transform: translateY(-400px) rotate(0deg); }
-  45% { transform: translateY(240px) rotate(20deg); }
-  70% { transform: translateY(200px) rotate(-10deg); }
-  100% { transform: translateY(230px) rotate(0deg); }
+/* Background Settling: Continuous realism in the lower port */
+@keyframes ball-rest-gentle {
+  0% { transform: translateY(240px) rotate(0deg); }
+  50% { transform: translateY(230px) rotate(5deg); }
+  100% { transform: translateY(240px) rotate(0deg); }
 }
 
-/* Entry into Curved Path: Smooth transition from chamber to chute */
-@keyframes arc-isolation {
-  0% { transform: translate(0, 230px) scale(0.8); }
-  100% { transform: translate(280px, 180px) scale(0.7) rotate(45deg); }
+/* Upward Drawing: Ball lifted through top suction point */
+@keyframes vertical-ascent {
+  0% { transform: translate(0, 240px) scale(0.8) rotate(0deg); }
+  30% { transform: translate(0, 0) scale(0.7) rotate(180deg); }
+  100% { transform: translate(0, -500px) scale(0.6) rotate(720deg); }
 }
 
-/* THE CINEMATIC CURVED PATH: Ball travels along a visible arc to the reveal zone */
-@keyframes curved-path-transit {
-  0% { transform: translate(280px, 180px) scale(0.7) rotate(45deg); opacity: 1; filter: blur(0px); }
-  30% { transform: translate(320px, -50px) scale(0.65) rotate(90deg); }
-  60% { transform: translate(100px, -350px) scale(1.2) rotate(180deg); filter: blur(1px); }
-  100% { transform: translate(0, -600px) scale(2.2) rotate(360deg); opacity: 0; filter: blur(10px); }
+/* Overhead Exit to Foreground: Downward travel to the result zone */
+@keyframes foreground-descent {
+  0% { transform: translate(0, -600px) scale(0.6) rotate(0deg); opacity: 0; }
+  20% { transform: translate(0, -400px) scale(0.8) rotate(90deg); opacity: 1; }
+  60% { transform: translate(0, 0) scale(1.5) rotate(180deg); filter: blur(0px); }
+  100% { transform: translate(0, 300px) scale(2.5) rotate(360deg); opacity: 0; filter: blur(10px); }
 }
 
-@keyframes draw-declaration-slam {
-  0% { transform: scale(12) translateY(600px); opacity: 0; filter: blur(100px); }
-  50% { transform: scale(0.8) translateY(-60px); opacity: 1; filter: blur(0px); }
-  75% { transform: scale(1.2) translateY(30px); }
+@keyframes result-slam-final {
+  0% { transform: scale(15) translateY(400px); opacity: 0; filter: blur(120px); }
+  55% { transform: scale(0.7) translateY(-40px); opacity: 1; filter: blur(0px); }
+  75% { transform: scale(1.15) translateY(20px); }
   100% { transform: scale(1) translateY(0); }
 }
 
-@keyframes led-rim-agitation {
-  0%, 100% { border-color: rgba(56, 189, 248, 0.1); box-shadow: 0 0 40px rgba(56, 189, 248, 0.2), inset 0 0 30px rgba(255,255,255,0.05); }
-  50% { border-color: rgba(56, 189, 248, 0.7); box-shadow: 0 0 120px rgba(56, 189, 248, 0.5), inset 0 0 60px rgba(56, 189, 248, 0.2); }
+@keyframes shine-sweep {
+  0% { left: -100%; }
+  100% { left: 200%; }
 }
 
-@keyframes agitator-blade-spin {
-  from { transform: translate(-50%, -50%) rotate(0deg); }
-  to { transform: translate(-50%, -50%) rotate(360deg); }
+@keyframes rim-aura-pulse {
+  0%, 100% { border-color: rgba(56, 189, 248, 0.1); box-shadow: 0 0 40px rgba(56, 189, 248, 0.1), inset 0 0 20px rgba(255,255,255,0.05); }
+  50% { border-color: rgba(56, 189, 248, 0.5); box-shadow: 0 0 100px rgba(56, 189, 248, 0.4), inset 0 0 50px rgba(56, 189, 248, 0.2); }
 }
 
-.lottery-ball-v3 {
+.lottery-sphere-pro {
     position: absolute;
     border-radius: 50%;
     display: flex;
@@ -97,37 +98,30 @@ h1, h2, h3, .russo {
     font-weight: 900;
     background: radial-gradient(circle at 35% 35%, rgba(255,255,255,1) 0%, rgba(255,255,255,0) 30%),
                 radial-gradient(circle at 50% 50%, var(--ball-color, #fbbf24) 0%, #000 100%);
-    box-shadow: inset -6px -6px 18px rgba(0,0,0,0.8), 0 12px 24px rgba(0,0,0,0.7);
+    box-shadow: inset -6px -6px 16px rgba(0,0,0,0.8), 0 12px 24px rgba(0,0,0,0.7);
     user-select: none;
     pointer-events: none;
     border: 1px solid rgba(255,255,255,0.1);
 }
 
-.transparent-chamber-pro {
-  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.12) 0%, transparent 60%),
-              radial-gradient(circle at 70% 70%, rgba(56, 189, 248, 0.08) 0%, transparent 70%);
-  backdrop-filter: blur(10px);
-  border: 18px solid rgba(255, 255, 255, 0.1);
-  animation: led-rim-agitation 4s infinite ease-in-out;
+.glass-chamber-massive {
+  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.1) 0%, transparent 60%),
+              radial-gradient(circle at 70% 70%, rgba(56, 189, 248, 0.05) 0%, transparent 70%);
+  backdrop-filter: blur(12px);
+  border: 20px solid rgba(255, 255, 255, 0.1);
+  animation: rim-aura-pulse 5s infinite ease-in-out;
 }
 
-.curved-delivery-chute {
-  background: linear-gradient(to right, rgba(255,255,255,0.05), rgba(255,255,255,0.15), rgba(255,255,255,0.05));
-  backdrop-filter: blur(4px);
-  border: 2px solid rgba(255,255,255,0.1);
-  box-shadow: 0 0 40px rgba(56, 189, 248, 0.1), inset 0 0 20px rgba(255,255,255,0.05);
+.overhead-suction-pipe {
+  background: linear-gradient(to right, rgba(255,255,255,0.05), rgba(255,255,255,0.2), rgba(255,255,255,0.05));
+  border-left: 2px solid rgba(255,255,255,0.1);
+  border-right: 2px solid rgba(255,255,255,0.1);
+  box-shadow: 0 0 50px rgba(56, 189, 248, 0.1);
 }
 
-.arc-tube-visual {
-    position: absolute;
-    width: 300px;
-    height: 400px;
-    border-radius: 50%;
-    border: 30px solid rgba(255,255,255,0.08);
-    border-top-color: transparent;
-    border-left-color: transparent;
-    transform: rotate(-15deg);
-    pointer-events: none;
+.lower-port-floor {
+  background: linear-gradient(to top, #020617, #0f172a);
+  box-shadow: inset 0 -15px 30px rgba(0,0,0,0.9), 0 5px 25px rgba(56, 189, 248, 0.3);
 }
 
 .premium-gold-text {

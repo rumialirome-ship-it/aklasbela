@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -31,97 +32,102 @@ h1, h2, h3, .russo {
   flex-direction: column;
 }
 
-/* --- ADVANCED 3D MECHANICAL PHYSICS --- */
+/* --- REFINED LOTTERY PHYSICS (MATCHING VIDEO) --- */
 
-/* The 45-Second Tumbling Storm: Maximum Agitation */
-@keyframes physics-storm-v4 {
-  0% { transform: translate(0, 0) rotate(0deg) scale(1); }
-  10% { transform: translate(160px, -220px) rotate(140deg) scale(0.9); }
-  20% { transform: translate(-190px, 140px) rotate(280deg) scale(1.1); }
-  30% { transform: translate(220px, -90px) rotate(420deg) scale(0.85); }
-  40% { transform: translate(-210px, -280px) rotate(560deg) scale(1.15); }
-  50% { transform: translate(70px, 190px) rotate(700deg) scale(0.95); }
-  60% { transform: translate(-230px, -50px) rotate(840deg) scale(1.05); }
-  70% { transform: translate(170px, 240px) rotate(980deg) scale(0.9); }
-  80% { transform: translate(-90px, -300px) rotate(1120deg) scale(1.1); }
-  90% { transform: translate(240px, 110px) rotate(1260deg) scale(0.8); }
-  100% { transform: translate(0, 0) rotate(1400deg) scale(1); }
+.glass-bowl {
+    background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.1) 0%, transparent 60%),
+                radial-gradient(circle at 70% 70%, rgba(56, 189, 248, 0.05) 0%, transparent 70%);
+    backdrop-filter: blur(10px);
+    border: 15px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 100px rgba(0,0,0,0.5), inset 0 0 50px rgba(0,0,0,0.3);
 }
 
-/* Background Settling: Continuous realism in the lower port */
-@keyframes ball-rest-gentle {
-  0% { transform: translateY(240px) rotate(0deg); }
-  50% { transform: translateY(230px) rotate(5deg); }
-  100% { transform: translateY(240px) rotate(0deg); }
-}
-
-/* Upward Drawing: Ball lifted through top suction point */
-@keyframes vertical-ascent {
-  0% { transform: translate(0, 240px) scale(0.8) rotate(0deg); }
-  30% { transform: translate(0, 0) scale(0.7) rotate(180deg); }
-  100% { transform: translate(0, -500px) scale(0.6) rotate(720deg); }
-}
-
-/* Overhead Exit to Foreground: Downward travel to the result zone */
-@keyframes foreground-descent {
-  0% { transform: translate(0, -600px) scale(0.6) rotate(0deg); opacity: 0; }
-  20% { transform: translate(0, -400px) scale(0.8) rotate(90deg); opacity: 1; }
-  60% { transform: translate(0, 0) scale(1.5) rotate(180deg); filter: blur(0px); }
-  100% { transform: translate(0, 300px) scale(2.5) rotate(360deg); opacity: 0; filter: blur(10px); }
-}
-
-@keyframes result-slam-final {
-  0% { transform: scale(15) translateY(400px); opacity: 0; filter: blur(120px); }
-  55% { transform: scale(0.7) translateY(-40px); opacity: 1; filter: blur(0px); }
-  75% { transform: scale(1.15) translateY(20px); }
-  100% { transform: scale(1) translateY(0); }
-}
-
-@keyframes shine-sweep {
-  0% { left: -100%; }
-  100% { left: 200%; }
-}
-
-@keyframes rim-aura-pulse {
-  0%, 100% { border-color: rgba(56, 189, 248, 0.1); box-shadow: 0 0 40px rgba(56, 189, 248, 0.1), inset 0 0 20px rgba(255,255,255,0.05); }
-  50% { border-color: rgba(56, 189, 248, 0.5); box-shadow: 0 0 100px rgba(56, 189, 248, 0.4), inset 0 0 50px rgba(56, 189, 248, 0.2); }
-}
-
-.lottery-sphere-pro {
+.lottery-ball {
     position: absolute;
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-family: 'Russo One', sans-serif;
-    color: white;
-    font-weight: 900;
-    background: radial-gradient(circle at 35% 35%, rgba(255,255,255,1) 0%, rgba(255,255,255,0) 30%),
-                radial-gradient(circle at 50% 50%, var(--ball-color, #fbbf24) 0%, #000 100%);
-    box-shadow: inset -6px -6px 16px rgba(0,0,0,0.8), 0 12px 24px rgba(0,0,0,0.7);
-    user-select: none;
-    pointer-events: none;
+    box-shadow: inset -3px -3px 6px rgba(0,0,0,0.6), 2px 4px 8px rgba(0,0,0,0.4);
+    background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 30%),
+                radial-gradient(circle at 50% 50%, var(--ball-color, #fff) 0%, #000 100%);
     border: 1px solid rgba(255,255,255,0.1);
+    transition: transform 0.1s linear;
 }
 
-.glass-chamber-massive {
-  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.1) 0%, transparent 60%),
-              radial-gradient(circle at 70% 70%, rgba(56, 189, 248, 0.05) 0%, transparent 70%);
-  backdrop-filter: blur(12px);
-  border: 20px solid rgba(255, 255, 255, 0.1);
-  animation: rim-aura-pulse 5s infinite ease-in-out;
+@media (min-width: 640px) {
+    .lottery-ball { width: 34px; height: 34px; }
 }
 
-.overhead-suction-pipe {
-  background: linear-gradient(to right, rgba(255,255,255,0.05), rgba(255,255,255,0.2), rgba(255,255,255,0.05));
-  border-left: 2px solid rgba(255,255,255,0.1);
-  border-right: 2px solid rgba(255,255,255,0.1);
-  box-shadow: 0 0 50px rgba(56, 189, 248, 0.1);
+.ball-text {
+    font-size: 10px;
+    font-family: 'Russo One', sans-serif;
+    font-weight: 900;
+    color: white;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
 }
 
-.lower-port-floor {
-  background: linear-gradient(to top, #020617, #0f172a);
-  box-shadow: inset 0 -15px 30px rgba(0,0,0,0.9), 0 5px 25px rgba(56, 189, 248, 0.3);
+@media (min-width: 640px) {
+    .ball-text { font-size: 12px; }
+}
+
+/* Shuffling Animation */
+@keyframes ball-shuffle {
+    0% { transform: translate(var(--ix), var(--iy)) rotate(0deg); }
+    25% { transform: translate(calc(var(--ix) + 40px), calc(var(--iy) - 40px)) rotate(90deg); }
+    50% { transform: translate(calc(var(--ix) - 40px), calc(var(--iy) + 20px)) rotate(180deg); }
+    75% { transform: translate(calc(var(--ix) + 20px), calc(var(--iy) + 40px)) rotate(270deg); }
+    100% { transform: translate(var(--ix), var(--iy)) rotate(360deg); }
+}
+
+.ball-shuffling {
+    animation: ball-shuffle var(--duration) infinite alternate ease-in-out;
+    animation-delay: var(--delay);
+}
+
+.ball-resting {
+    transform: translate(var(--ix), 140px);
+    transition: transform 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Pipe Travel Animation (The Winning Ball Path) */
+@keyframes ball-pipe-zigzag {
+    0%   { transform: translate(0, 160px) scale(1); }
+    15%  { transform: translate(0, 220px) scale(0.9); }
+    40%  { transform: translate(120px, 260px) scale(0.85); }
+    70%  { transform: translate(-120px, 320px) scale(0.8); }
+    100% { transform: translate(0, 360px) scale(0.7); }
+}
+
+.ball-pipe-descent {
+    left: 50%;
+    top: 50%;
+    margin-left: -14px;
+    margin-top: -14px;
+    animation: ball-pipe-zigzag 2.5s forwards cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ball-at-exit {
+    left: 50%;
+    top: 50%;
+    margin-left: -14px;
+    margin-top: -14px;
+    transform: translate(0, 360px) scale(0);
+    opacity: 0;
+    transition: all 0.5s ease-out;
+}
+
+/* Final Reveal Impact */
+@keyframes result-slam {
+    0% { transform: scale(0.1); opacity: 0; filter: blur(20px); }
+    60% { transform: scale(1.1); opacity: 1; filter: blur(0px); }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.animate-result-slam {
+    animation: result-slam 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 
 .premium-gold-text {

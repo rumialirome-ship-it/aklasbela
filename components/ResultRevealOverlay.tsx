@@ -9,7 +9,6 @@ interface ResultRevealOverlayProps {
 
 const PHOTO_COLORS = ['#fbbf24', '#10b981', '#ec4899', '#3b82f6', '#f97316', '#ef4444'];
 
-// --- AUDIO ENGINE ---
 class DrawAudioEngine {
     ctx: AudioContext | null = null;
     masterGain: GainNode | null = null;
@@ -39,13 +38,13 @@ class DrawAudioEngine {
         const osc = this.ctx.createOscillator();
         const g = this.ctx.createGain();
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(1500 + Math.random() * 500, this.ctx.currentTime);
-        g.gain.setValueAtTime(0.1, this.ctx.currentTime);
-        g.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
+        osc.frequency.setValueAtTime(1200 + Math.random() * 500, this.ctx.currentTime);
+        g.gain.setValueAtTime(0.08, this.ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
         osc.connect(g);
         g.connect(this.masterGain);
         osc.start();
-        osc.stop(this.ctx.currentTime + 0.1);
+        osc.stop(this.ctx.currentTime + 0.15);
     }
 
     playReveal() {
@@ -53,14 +52,14 @@ class DrawAudioEngine {
         const osc = this.ctx.createOscillator();
         const g = this.ctx.createGain();
         osc.type = 'triangle';
-        osc.frequency.setValueAtTime(120, this.ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(40, this.ctx.currentTime + 1);
-        g.gain.setValueAtTime(0.5, this.ctx.currentTime);
-        g.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 1);
+        osc.frequency.setValueAtTime(100, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(30, this.ctx.currentTime + 1);
+        g.gain.setValueAtTime(0.6, this.ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 1.2);
         osc.connect(g);
         g.connect(this.masterGain);
         osc.start();
-        osc.stop(this.ctx.currentTime + 1);
+        osc.stop(this.ctx.currentTime + 1.2);
     }
 
     stop() {
@@ -77,27 +76,15 @@ const Ball: React.FC<{
     isWinner: boolean; 
     winningNumber: string; 
     bowlRadius: number;
-    isOutside?: boolean;
-}> = ({ index, phase, isWinner, winningNumber, bowlRadius, isOutside = false }) => {
+}> = ({ index, phase, isWinner, winningNumber, bowlRadius }) => {
     const color = useMemo(() => PHOTO_COLORS[index % PHOTO_COLORS.length], [index]);
     const num = index.toString().padStart(2, '0');
     
     const physics = useMemo(() => {
-        const ballSize = window.innerWidth < 640 ? 11 : 14;
-        const maxR = bowlRadius - ballSize - 10;
+        const ballSize = window.innerWidth < 640 ? 12 : 16;
+        const maxR = bowlRadius - ballSize - 12;
         
-        if (isOutside) {
-            const angle = Math.random() * Math.PI * 2;
-            const dist = bowlRadius + 40 + Math.random() * 60;
-            return {
-                sx: dist * Math.cos(angle),
-                sy: dist * Math.sin(angle),
-                path: [],
-                delay: 0,
-                duration: 0
-            };
-        }
-
+        // Settle at bottom with overlap prevention
         const settleTheta = (Math.PI * 0.35) + (Math.random() * Math.PI * 0.3); 
         const settleDist = maxR * (0.6 + Math.random() * 0.4);
         
@@ -112,26 +99,26 @@ const Ball: React.FC<{
             sy: settleDist * Math.sin(settleTheta),
             path,
             delay: Math.random() * -5,
-            duration: 0.6 + Math.random() * 0.5
+            duration: 0.6 + Math.random() * 0.6
         };
-    }, [bowlRadius, isOutside]);
+    }, [bowlRadius]);
 
     if (isWinner && (phase === 'EXITING' || phase === 'REVEAL')) {
         return (
             <div 
-                className={`lottery-ball winner-ball ${phase === 'EXITING' ? 'ball-flow-down-zigzag' : 'ball-at-reveal-point'}`}
+                className={`lottery-ball winner-ball-3d ${phase === 'EXITING' ? 'ball-flow-down-zigzag' : 'ball-at-reveal-point'}`}
                 style={{ '--ball-color': '#ec4899', zIndex: 100 } as any}
             >
-                <span className="ball-text">{winningNumber}</span>
+                <span className="ball-text-3d">{winningNumber}</span>
             </div>
         );
     }
 
-    const currentPhase = (phase === 'REVEAL' || isOutside) ? 'STATIC' : phase;
+    const currentPhase = phase === 'REVEAL' ? 'STATIC' : phase;
 
     return (
         <div 
-            className={`lottery-ball ${currentPhase === 'SHUFFLE' ? 'ball-shuffling' : 'ball-static-pile'}`}
+            className={`lottery-ball-3d ${currentPhase === 'SHUFFLE' ? 'ball-shuffling' : 'ball-static-pile'}`}
             style={{ 
                 '--ball-color': color,
                 '--delay': `${physics.delay}s`,
@@ -143,7 +130,7 @@ const Ball: React.FC<{
                 top: `calc(50% + ${physics.sy}px)`,
             } as any}
         >
-            <span className="ball-text">{num}</span>
+            <span className="ball-text-3d">{num}</span>
         </div>
     );
 };
@@ -152,9 +139,7 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
   const [phase, setPhase] = useState<'STATIC' | 'SHUFFLE' | 'EXITING' | 'REVEAL'>('STATIC');
   const [progress, setProgress] = useState(0);
   const audioRef = useRef<DrawAudioEngine | null>(null);
-  
-  const insideBalls = useMemo(() => Array.from({ length: 85 }).map((_, i) => i), []);
-  const outsideBalls = useMemo(() => Array.from({ length: 15 }).map((_, i) => i + 100), []);
+  const balls = useMemo(() => Array.from({ length: 90 }).map((_, i) => i), []);
 
   const INITIAL_DELAY = 4000; 
   const SHUFFLE_DURATION = 45000;
@@ -180,15 +165,15 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
             clearInterval(progressInterval);
             setPhase('EXITING');
             
-            // Sound effects for hitting the zigzag corners
-            setTimeout(() => audioRef.current?.playClink(), 500);
-            setTimeout(() => audioRef.current?.playClink(), 1200);
-            setTimeout(() => audioRef.current?.playClink(), 2000);
+            // Sounds matching tube corners
+            setTimeout(() => audioRef.current?.playClink(), 600);
+            setTimeout(() => audioRef.current?.playClink(), 1300);
+            setTimeout(() => audioRef.current?.playClink(), 2100);
 
             setTimeout(() => {
                 setPhase('REVEAL');
                 audioRef.current?.playReveal();
-            }, 3500);
+            }, 3600);
         }
     }, 100);
 
@@ -199,107 +184,135 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
     };
   }, []);
 
-  const bowlRadius = window.innerWidth < 640 ? 130 : 200;
+  const bowlRadius = window.innerWidth < 640 ? 120 : 180;
 
   return (
     <div className="fixed inset-0 z-[5000] bg-black flex flex-col items-center justify-center overflow-hidden">
       
-      {/* HEADER INFO */}
-      <div className="absolute top-10 text-center z-[60] w-full px-4 animate-fade-in">
-          <p className="text-pink-500 text-[10px] font-black uppercase tracking-[0.5em] mb-2">Authenticated Sequence</p>
-          <h2 className="text-white text-3xl sm:text-6xl font-black russo tracking-tighter uppercase drop-shadow-2xl">
-              {gameName} <span className="text-white/20">XCH</span>
+      {/* 3D ATMOSPHERIC HEADER */}
+      <div className="absolute top-12 text-center z-[60] w-full px-4 animate-fade-in">
+          <div className="inline-block bg-white/5 border border-white/10 rounded-full px-4 py-1 mb-3">
+            <p className="text-pink-500 text-[9px] font-black uppercase tracking-[0.4em]">Live Mechanical Verification</p>
+          </div>
+          <h2 className="text-white text-4xl sm:text-7xl font-black russo tracking-tighter uppercase drop-shadow-[0_10px_20px_rgba(0,0,0,0.8)]">
+              {gameName} <span className="text-pink-500">3D</span>
           </h2>
-          <div className="max-w-[250px] mx-auto mt-4">
-              <div className="h-1 bg-white/10 rounded-full overflow-hidden">
-                  <div className="h-full bg-pink-500 transition-all duration-300 linear shadow-[0_0_10px_#ec4899]" style={{ width: `${progress}%` }} />
+          <div className="max-w-[300px] mx-auto mt-6">
+              <div className="h-1 bg-white/5 rounded-full overflow-hidden p-[1px] border border-white/10">
+                  <div className="h-full bg-gradient-to-r from-pink-600 to-pink-400 rounded-full transition-all duration-300 linear shadow-[0_0_15px_#ec4899]" style={{ width: `${progress}%` }} />
               </div>
           </div>
       </div>
 
-      {/* THE MACHINE - MATCHING PHOTO */}
-      <div className="relative flex items-center justify-center w-full h-[600px] sm:h-[800px]">
+      <div className="relative flex items-center justify-center w-full h-full">
         
-        {/* ZIGZAG PIPE - NOW STARTS AT TOP AND GOES DOWN */}
-        <div className="absolute inset-0 pointer-events-none z-10">
+        {/* 3D ZIGZAG TUBE - WRAPPING PORT */}
+        <div className="absolute inset-0 pointer-events-none z-20">
             <svg className="w-full h-full" viewBox="0 0 500 800" fill="none" preserveAspectRatio="xMidYMid meet">
-                {/* Visual Pipe Outline */}
+                <defs>
+                    <filter id="tubeGlow">
+                        <feGaussianBlur stdDeviation="2.5" result="blur" />
+                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                    </filter>
+                    <linearGradient id="pipeGrad" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stopColor="rgba(255,255,255,0.15)" />
+                        <stop offset="50%" stopColor="rgba(255,255,255,0.4)" />
+                        <stop offset="100%" stopColor="rgba(255,255,255,0.15)" />
+                    </linearGradient>
+                </defs>
+                
+                {/* Main 3D Tube Body */}
                 <path 
-                    d="M 250 200 L 250 150 L 480 250 L 20 500 L 250 650 L 250 750" 
-                    stroke="rgba(255,255,255,0.25)" 
-                    strokeWidth="3" 
+                    d="M 250 220 L 250 140 L 460 250 L 40 500 L 250 680 L 250 780" 
+                    stroke="rgba(255,255,255,0.15)" 
+                    strokeWidth="16" 
                     strokeLinecap="round"
                     strokeLinejoin="round"
+                />
+                
+                {/* Inner Specular Highlight for 3D depth */}
+                <path 
+                    d="M 250 220 L 250 140 L 460 250 L 40 500 L 250 680 L 250 780" 
+                    stroke="rgba(255,255,255,0.4)" 
+                    strokeWidth="2" 
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    filter="url(#tubeGlow)"
                 />
             </svg>
         </div>
 
-        {/* PORT CHAMBER */}
-        <div className="relative w-[260px] h-[260px] sm:w-[400px] sm:h-[400px] border-[1px] border-white/40 rounded-full flex items-center justify-center bg-black/40 backdrop-blur-sm">
+        {/* 3D SPHERICAL PORT CHAMBER */}
+        <div className="relative w-[280px] h-[280px] sm:w-[420px] sm:h-[420px] rounded-full flex items-center justify-center bg-black">
+            {/* Outer Bezel */}
+            <div className="absolute inset-0 rounded-full border-[6px] border-white/10 shadow-[0_0_40px_rgba(0,0,0,1),inset_0_0_60px_rgba(255,255,255,0.05)]"></div>
             
-            {/* Inside Balls */}
-            {insideBalls.map(i => (
-                <Ball 
-                    key={i} 
-                    index={i} 
-                    phase={phase} 
-                    isWinner={false} 
-                    winningNumber={winningNumber} 
-                    bowlRadius={bowlRadius} 
-                />
-            ))}
+            {/* 3D Glass Surface effect */}
+            <div className="absolute inset-2 rounded-full bg-radial-3d opacity-60"></div>
+            
+            {/* Glass Highlight */}
+            <div className="absolute top-[15%] left-[15%] w-[40%] h-[40%] bg-gradient-to-br from-white/10 to-transparent rounded-full blur-2xl"></div>
 
-            {/* Winner Ball (Initially inside, then exits top) */}
+            {/* Internal Shadow for depth */}
+            <div className="absolute inset-0 rounded-full shadow-[inset_0_20px_40px_rgba(0,0,0,0.8),inset_0_-20px_40px_rgba(255,255,255,0.02)]"></div>
+
+            {/* Balls - Restricted inside */}
+            <div className="relative w-full h-full rounded-full overflow-hidden">
+                {balls.map(i => (
+                    <Ball 
+                        key={i} 
+                        index={i} 
+                        phase={phase} 
+                        isWinner={false} 
+                        winningNumber={winningNumber} 
+                        bowlRadius={bowlRadius} 
+                    />
+                ))}
+            </div>
+
+            {/* Winning Ball Layer */}
             <Ball 
-                index={parseInt(winningNumber) || 0} 
+                index={parseInt(winningNumber) || 7} 
                 phase={phase} 
                 isWinner={true} 
                 winningNumber={winningNumber} 
                 bowlRadius={bowlRadius} 
             />
 
-            {/* EXIT AT TOP */}
-            <div className="absolute top-[-2px] left-1/2 -translate-x-1/2 w-16 h-3 bg-black"></div>
+            {/* Physical Top Exit Node */}
+            <div className="absolute top-[-4px] left-1/2 -translate-x-1/2 w-20 h-4 bg-black border-x border-white/20 rounded-t-lg"></div>
         </div>
 
-        {/* Outside Decorative Balls */}
-        {outsideBalls.map(i => (
-             <Ball 
-                key={i}
-                index={i}
-                phase={phase}
-                isWinner={false}
-                winningNumber={winningNumber}
-                bowlRadius={bowlRadius}
-                isOutside={true}
-             />
-        ))}
-
       </div>
 
-      {/* BOTTOM REVEAL AREA */}
-      <div className="absolute bottom-10 w-full flex flex-col items-center justify-center z-[100]">
-           <div className="relative bg-black border border-white/10 rounded-3xl p-6 px-12 min-w-[200px] text-center shadow-2xl">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2">Declared Winner</span>
-                <div className="text-7xl sm:text-9xl font-black russo text-white tracking-tighter drop-shadow-[0_0_20px_rgba(255,255,255,0.3)]">
-                    {phase === 'REVEAL' ? winningNumber : '--'}
-                </div>
-           </div>
+      {/* REVEAL PANEL - 3D CLIMAX */}
+      {phase === 'REVEAL' && (
+          <div className="absolute inset-0 z-[6000] bg-black/95 backdrop-blur-3xl flex flex-col items-center justify-center animate-fade-in px-6">
+              <div className="relative animate-result-slam-3d mb-12">
+                  <div className="absolute -inset-20 bg-pink-600/30 blur-[100px] rounded-full animate-pulse"></div>
+                  <div className="relative bg-white text-black rounded-[4rem] px-20 sm:px-32 py-10 sm:py-16 border-[12px] border-pink-500 shadow-[0_0_100px_rgba(236,72,153,0.6)]">
+                      <span className="text-[10rem] sm:text-[18rem] font-black russo tracking-tighter leading-none block drop-shadow-2xl">{winningNumber}</span>
+                  </div>
+              </div>
+              
+              <div className="text-center">
+                  <h3 className="text-white text-4xl sm:text-6xl font-black russo tracking-tight uppercase mb-10 gold-shimmer">
+                      WINNER <span className="text-pink-500">DECLARED</span>
+                  </h3>
+                  <button 
+                      onClick={onClose}
+                      className="bg-pink-600 hover:bg-pink-500 text-white font-black px-16 py-6 rounded-2xl transition-all active:scale-95 shadow-[0_15px_30px_rgba(236,72,153,0.3)] text-xl uppercase tracking-widest"
+                  >
+                      Complete Feed
+                  </button>
+              </div>
+          </div>
+      )}
 
-           {phase === 'REVEAL' && (
-               <button 
-                   onClick={onClose}
-                   className="mt-8 bg-pink-600 hover:bg-pink-500 text-white font-black px-12 py-4 rounded-2xl text-xs uppercase tracking-widest transition-all transform active:scale-95 shadow-xl shadow-pink-900/40"
-               >
-                   Confirm & Return
-               </button>
-           )}
-      </div>
-
-      {/* PHOTO STYLE RESET BUTTON UI */}
-      <div className="absolute right-8 bottom-40 opacity-40 hover:opacity-100 transition-opacity">
-          <div className="w-14 h-14 bg-blue-600 rounded-full border-4 border-blue-400 flex flex-col items-center justify-center shadow-2xl">
-              <span className="text-[8px] font-black text-white uppercase">Reset</span>
+      {/* RESET BUTTON STYLED AS 3D BUTTON */}
+      <div className="absolute right-12 bottom-12 opacity-30 hover:opacity-100 transition-all cursor-pointer">
+          <div className="w-16 h-16 bg-blue-600 rounded-full border-[4px] border-blue-400 shadow-[0_10px_20px_rgba(0,0,0,0.5),inset_0_4px_4px_rgba(255,255,255,0.4)] flex items-center justify-center">
+              <span className="text-[9px] font-black text-white uppercase tracking-tighter">Reset</span>
           </div>
       </div>
 

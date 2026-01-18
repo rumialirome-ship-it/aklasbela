@@ -3,51 +3,66 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ... Base Styles ... */
+/* ... Base UI Styles ... */
 
-.lottery-ball {
+/* --- 3D MECHANICAL DRAW ENGINE --- */
+
+.lottery-ball-3d {
     position: absolute;
-    width: 22px;
-    height: 22px;
+    width: 26px;
+    height: 26px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     box-shadow: 
-        inset -2px -2px 4px rgba(0,0,0,0.5),
-        inset 1px 1px 3px rgba(255,255,255,0.3);
-    background: radial-gradient(circle at 35% 35%, #fff 0%, var(--ball-color, #fff) 60%, #000 100%);
+        inset -4px -4px 8px rgba(0,0,0,0.6),
+        inset 2px 2px 5px rgba(255,255,255,0.4),
+        0 8px 16px rgba(0,0,0,0.5);
+    background: radial-gradient(circle at 35% 35%, #fff 0%, var(--ball-color, #fff) 55%, #000 100%);
     transform: translate(-50%, -50%);
-    transition: left 0.4s ease-out, top 0.4s ease-out;
+    transition: left 0.4s cubic-bezier(0.25, 1, 0.5, 1), top 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+    z-index: 5;
 }
 
 @media (min-width: 640px) {
-    .lottery-ball { width: 28px; height: 28px; }
+    .lottery-ball-3d { width: 34px; height: 34px; }
 }
 
-.ball-text {
-    font-size: 8px;
+.ball-text-3d {
+    font-size: 10px;
     font-family: 'Inter', sans-serif;
-    font-weight: 900;
-    color: #111;
+    font-weight: 950;
+    color: #000;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.2);
+    transform: translateY(0.5px);
 }
 
 @media (min-width: 640px) {
-    .ball-text { font-size: 10px; }
+    .ball-text-3d { font-size: 14px; }
 }
 
-/* Static Pile */
-.ball-static-pile {
-    animation: ball-idle-shimmy 0.3s infinite alternate;
+.winner-ball-3d {
+    z-index: 100 !important;
+    width: 32px;
+    height: 32px;
+    box-shadow: 
+        inset -5px -5px 10px rgba(0,0,0,0.7),
+        inset 3px 3px 6px rgba(255,255,255,0.5),
+        0 0 30px rgba(236,72,153,0.8);
 }
 
-@keyframes ball-idle-shimmy {
-    from { transform: translate(-50%, -50%) rotate(-2deg); }
-    to { transform: translate(-49%, -49%) rotate(2deg); }
+@media (min-width: 640px) {
+    .winner-ball-3d { width: 42px; height: 42px; }
 }
 
-/* Shuffling */
-@keyframes ball-shuffle-contain {
+/* Internal Surface Rendering */
+.bg-radial-3d {
+    background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0.85) 100%);
+}
+
+/* Animations */
+@keyframes mechanical-shuffle-contain {
     0%   { transform: translate(calc(-50% + var(--x1)), calc(-50% + var(--y1))) rotate(0deg); }
     33%  { transform: translate(calc(-50% + var(--x2)), calc(-50% + var(--y2))) rotate(120deg); }
     66%  { transform: translate(calc(-50% + var(--x3)), calc(-50% + var(--y3))) rotate(240deg); }
@@ -55,38 +70,58 @@
 }
 
 .ball-shuffling {
-    animation: ball-shuffle-contain var(--duration) infinite linear;
+    animation: mechanical-shuffle-contain var(--duration) infinite linear;
     animation-delay: var(--delay);
 }
 
-/* WINNER BALL - FLOWING DOWN THROUGH ZIGZAG PIPE */
-@keyframes ball-down-zigzag {
-    0%   { transform: translate(-50%, 0) scale(1); top: 50%; left: 50%; opacity: 1; }
+.ball-static-pile {
+    animation: idle-micro-bounce 0.25s infinite alternate ease-in-out;
+}
+
+@keyframes idle-micro-bounce {
+    from { transform: translate(-50%, -50%) scale(1); }
+    to { transform: translate(-50%, -49%) scale(1.02); }
+}
+
+/* 3D WINNER DELIVERY PATH - MATCHING VOLUMETRIC TUBE */
+@keyframes ball-down-3d-tube {
+    0%   { transform: translate(-50%, 0) scale(1); top: 50%; left: 50%; opacity: 1; filter: blur(0); }
     
-    /* Exits through top */
-    10%  { transform: translate(-50%, -200px) scale(0.95); top: 50%; left: 50%; }
-    15%  { transform: translate(-50%, -250px) scale(0.95); top: 50%; left: 50%; }
+    /* Stage 1: Ascend to Top Vent */
+    12%  { transform: translate(-50%, -180px) scale(0.95); top: 50%; left: 50%; }
+    16%  { transform: translate(-50%, -240px) scale(0.9); top: 50%; left: 50%; }
     
-    /* First corner (Right) */
-    35%  { transform: translate(230px, -150px) scale(0.9); top: 50%; left: 50%; }
+    /* Stage 2: Right Bend High-Speed */
+    40%  { transform: translate(210px, -150px) scale(0.85); top: 50%; left: 50%; }
     
-    /* Second corner (Left) */
-    60%  { transform: translate(-230px, 100px) scale(0.85); top: 50%; left: 50%; }
+    /* Stage 3: Long Left Zigzag */
+    70%  { transform: translate(-210px, 100px) scale(0.8); top: 50%; left: 50%; }
     
-    /* Third corner (Center/End) */
-    85%  { transform: translate(0px, 250px) scale(0.8); top: 50%; left: 50%; }
+    /* Stage 4: Central Terminal Drop */
+    90%  { transform: translate(0, 280px) scale(0.75); top: 50%; left: 50%; }
     
-    /* Arrives at bottom terminal */
-    100% { transform: translate(0px, 350px) scale(0.7); top: 50%; left: 50%; opacity: 0; }
+    /* Final: Arrival at Terminal */
+    100% { transform: translate(0, 380px) scale(0.6); top: 50%; left: 50%; opacity: 0; filter: blur(10px); }
 }
 
 .ball-flow-down-zigzag {
-    animation: ball-down-zigzag 3.5s forwards cubic-bezier(0.45, 0, 0.55, 1);
+    animation: ball-down-3d-tube 3.6s forwards cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .ball-at-reveal-point {
     opacity: 0;
     transform: scale(0);
+}
+
+/* Result Slam 3D */
+@keyframes result-slam-3d {
+    0% { transform: perspective(1000px) scale(5) rotateX(45deg); opacity: 0; filter: blur(50px); }
+    70% { transform: perspective(1000px) scale(0.9) rotateX(-5deg); opacity: 1; filter: blur(0); }
+    100% { transform: perspective(1000px) scale(1) rotateX(0deg); opacity: 1; }
+}
+
+.animate-result-slam-3d {
+    animation: result-slam-3d 0.8s cubic-bezier(0.19, 1, 0.22, 1) forwards;
 }
 
 .gold-shimmer {

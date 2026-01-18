@@ -95,6 +95,7 @@ const PotentialWinners: React.FC<{ gameId: string; winningNum: string; bets: Bet
 const AdminPanel: React.FC<any> = ({ 
     admin, dealers, onSaveDealer, users, games, bets, 
     declareWinner, updateWinner, approvePayouts, toggleGameVisibility,
+    topUpDealerWallet, withdrawFromDealerWallet,
     onRefreshData 
 }) => {
     const [activeTab, setActiveTab] = useState('dashboard');
@@ -105,6 +106,7 @@ const AdminPanel: React.FC<any> = ({
     const [isDealerModalOpen, setIsDealerModalOpen] = useState(false);
     const [isUserModalOpen, setIsUserModalOpen] = useState(false);
     const [isLimitModalOpen, setIsLimitModalOpen] = useState(false);
+    const [isFundingModalOpen, setIsFundingModalOpen] = useState(false);
     const [selectedDealer, setSelectedDealer] = useState<Dealer | undefined>(undefined);
     const [selectedUser, setSelectedUser] = useState<User | undefined>(undefined);
     const [viewingLedger, setViewingLedger] = useState<any>(null);
@@ -507,7 +509,8 @@ const AdminPanel: React.FC<any> = ({
                                         <td className="p-6 text-emerald-500 font-black">{dealer.commissionRate}%</td>
                                         <td className="p-6 text-right font-mono text-white">PKR {dealer.wallet.toLocaleString()}</td>
                                         <td className="p-6 text-right space-x-4">
-                                            <button onClick={() => setViewingLedger(dealer)} className="text-[10px] font-black text-sky-500 hover:text-white uppercase tracking-widest underline underline-offset-4">View Ledger</button>
+                                            <button onClick={() => { setSelectedDealer(dealer); setIsFundingModalOpen(true); }} className="text-[10px] font-black text-amber-500 hover:text-white uppercase tracking-widest underline underline-offset-4">Funding</button>
+                                            <button onClick={() => setViewingLedger(dealer)} className="text-[10px] font-black text-sky-500 hover:text-white uppercase tracking-widest underline underline-offset-4">Ledger</button>
                                             <button onClick={() => { setSelectedDealer(dealer); setIsDealerModalOpen(true); }} className="text-[10px] font-black text-red-500 hover:text-red-400 uppercase tracking-widest">Config</button>
                                         </td>
                                     </tr>
@@ -565,6 +568,14 @@ const AdminPanel: React.FC<any> = ({
                 <DealerForm dealer={selectedDealer} onClose={() => setIsDealerModalOpen(false)} onSave={onSaveDealer} />
             </Modal>
 
+            <Modal isOpen={isFundingModalOpen} onClose={() => setIsFundingModalOpen(false)} title={`Wallet Access: ${selectedDealer?.name}`} themeColor="amber">
+                <DealerFundingForm 
+                    dealer={selectedDealer} 
+                    onTopUp={async (amt) => { if(selectedDealer) await topUpDealerWallet(selectedDealer.id, amt); refreshAnalyticalData(); setIsFundingModalOpen(false); }} 
+                    onWithdraw={async (amt) => { if(selectedDealer) await withdrawFromDealerWallet(selectedDealer.id, amt); refreshAnalyticalData(); setIsFundingModalOpen(false); }} 
+                />
+            </Modal>
+
             <Modal isOpen={isUserModalOpen} onClose={() => setIsUserModalOpen(false)} title="Edit User Node">
                 <UserForm user={selectedUser} onClose={() => setIsUserModalOpen(false)} onSave={async (u, id) => {
                     await fetchWithAuth(`/api/admin/users/${id}`, { method: 'PUT', body: JSON.stringify(u) });
@@ -603,6 +614,47 @@ const AdminPanel: React.FC<any> = ({
 };
 
 // --- FORMS ---
+
+const DealerFundingForm: React.FC<{ dealer?: Dealer; onTopUp: (amt: number) => Promise<void>; onWithdraw: (amt: number) => Promise<void> }> = ({ dealer, onTopUp, onWithdraw }) => {
+    const [amount, setAmount] = useState<number | ''>('');
+    const inputClass = "w-full bg-slate-950/50 border border-white/5 rounded-2xl p-4 text-white text-sm outline-none";
+    const labelClass = "block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2";
+
+    return (
+        <div className="space-y-6">
+            <div className="p-4 bg-slate-950/50 rounded-2xl border border-white/5 flex justify-between items-center">
+                <div>
+                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Available Liquidity</p>
+                    <p className="text-xl font-black text-white russo">PKR {dealer?.wallet.toLocaleString()}</p>
+                </div>
+            </div>
+            <div>
+                <label className={labelClass}>Transaction Amount (PKR)</label>
+                <input 
+                    type="number" 
+                    value={amount} 
+                    onChange={e => setAmount(e.target.value === '' ? '' : parseFloat(e.target.value))} 
+                    placeholder="Enter amount..."
+                    className={inputClass} 
+                />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+                <button 
+                    onClick={() => amount && onTopUp(amount)}
+                    className="bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-2xl uppercase tracking-widest text-xs transition-all shadow-lg shadow-emerald-900/20"
+                >
+                    Deposit
+                </button>
+                <button 
+                    onClick={() => amount && onWithdraw(amount)}
+                    className="bg-red-600 hover:bg-red-500 text-white font-black py-4 rounded-2xl uppercase tracking-widest text-xs transition-all shadow-lg shadow-red-900/20"
+                >
+                    Withdraw
+                </button>
+            </div>
+        </div>
+    );
+};
 
 const LimitForm: React.FC<{ onSave: (limit: Partial<NumberLimit>) => void }> = ({ onSave }) => {
     const [gameType, setGameType] = useState<'2-digit' | '1-open' | '1-close'>('2-digit');

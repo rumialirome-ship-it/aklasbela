@@ -53,7 +53,6 @@ const GameCard: React.FC<{ game: Game; onPlay: (game: Game) => void; isRestricte
 
     return (
         <div className={`group relative flex flex-col bg-slate-900/40 rounded-3xl border border-white/5 transition-all duration-500 overflow-hidden ${!isPlayable ? 'opacity-70 grayscale-[0.3]' : 'hover:border-amber-500/30 hover:bg-slate-900/60 hover:-translate-y-1'}`}>
-            {/* Glossy Overlay */}
             <div className="absolute top-0 left-0 w-full h-24 sm:h-32 bg-gradient-to-b from-white/5 to-transparent pointer-events-none"></div>
             
             <div className="p-5 sm:p-6 relative z-10 h-full flex flex-col">
@@ -64,7 +63,7 @@ const GameCard: React.FC<{ game: Game; onPlay: (game: Game) => void; isRestricte
                     </div>
                     <div className="text-right ml-2">
                         <h3 className="text-lg sm:text-xl font-black text-white russo tracking-tighter leading-none mb-1 truncate max-w-[120px] sm:max-w-none">{game.name}</h3>
-                        <p className="text-[9px] sm:text-[10px] font-bold text-slate-500 uppercase tracking-widest">Draw @ {formatTime12h(game.drawTime)}</p>
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Draw @ {formatTime12h(game.drawTime)}</p>
                     </div>
                 </div>
 
@@ -106,8 +105,6 @@ const GameCard: React.FC<{ game: Game; onPlay: (game: Game) => void; isRestricte
                     </button>
                 </div>
             </div>
-
-            {/* Accent light on bottom */}
             <div className="h-1 w-full bg-gradient-to-r from-transparent via-amber-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
         </div>
     );
@@ -159,7 +156,7 @@ const ActivityCenter: React.FC<{ bets: Bet[]; games: Game[]; user: User }> = ({ 
     return (
         <div className="mt-10 sm:mt-16 bg-slate-900/30 rounded-[1.5rem] sm:rounded-[2rem] border border-white/5 p-4 sm:p-8 backdrop-blur-xl">
             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-8 sm:mb-10">
-                <div className="flex gap-1.5 sm:gap-2 p-1 sm:p-1.5 bg-slate-950/40 rounded-2xl border border-white/5 w-full sm:w-auto">
+                <div className="flex gap-1.5 sm:gap-2 p-1 sm:p-1.5 bg-slate-950/40 rounded-2xl border border-white/5 w-full sm:w-auto overflow-x-auto no-scrollbar">
                     <ActivityTab 
                         active={activeTab === 'history'} 
                         onClick={() => setActiveTab('history')} 
@@ -285,19 +282,35 @@ const BettingModal: React.FC<{
 
     const isSingleDigitGame = game.name === 'AK' || game.name === 'AKC';
 
+    const calculatedNumbers = useMemo(() => {
+        const rawList = numbers.split(/[-.,\s]+/).filter(n => n.length > 0);
+        if (subGameType === SubGameType.Combo) {
+            // Generate all unique 2-digit combinations from digits provided
+            const digits = rawList.join('').split('').filter((v, i, a) => a.indexOf(v) === i);
+            const combos: string[] = [];
+            for (let i = 0; i < digits.length; i++) {
+                for (let j = 0; j < digits.length; j++) {
+                    if (i !== j) combos.push(digits[i] + digits[j]);
+                }
+            }
+            return combos;
+        }
+        return rawList;
+    }, [numbers, subGameType]);
+
+    const totalStake = calculatedNumbers.length * (Number(amount) || 0);
+
     const handleConfirm = async () => {
-        if (!amount || !numbers) return;
+        if (!amount || calculatedNumbers.length === 0) return;
         setIsProcessing(true);
         clearApiError();
 
-        const numList = numbers.split(/[-.,\s]+/).filter(n => n.length > 0);
-        
         try {
             await onPlaceBet({
                 gameId: game.id,
                 betGroups: [{
-                    subGameType,
-                    numbers: numList,
+                    subGameType: subGameType === SubGameType.Combo || subGameType === SubGameType.Bulk ? SubGameType.TwoDigit : subGameType,
+                    numbers: calculatedNumbers,
                     amountPerNumber: Number(amount)
                 }]
             });
@@ -310,53 +323,69 @@ const BettingModal: React.FC<{
         }
     };
 
-    const totalStake = (numbers.split(/[-.,\s]+/).filter(n => n.length > 0).length) * (Number(amount) || 0);
+    const modeInfo = {
+        [SubGameType.TwoDigit]: { label: '2-Digit', desc: 'Enter pairs (00-99)', color: 'amber' },
+        [SubGameType.OneDigitOpen]: { label: 'Open', desc: 'Enter first digit (0-9)', color: 'sky' },
+        [SubGameType.OneDigitClose]: { label: 'Close', desc: 'Enter second digit (0-9)', color: 'emerald' },
+        [SubGameType.Bulk]: { label: 'Bulk', desc: 'Paste many numbers for same stake', color: 'indigo' },
+        [SubGameType.Combo]: { label: 'Combo', desc: 'Enter digits to play all pairs', color: 'pink' }
+    };
 
     return (
         <div className="fixed inset-0 z-[100] bg-slate-950/90 backdrop-blur-xl flex items-center justify-center p-4">
-            <div className="bg-slate-900 border border-amber-500/20 rounded-[2.5rem] w-full max-w-lg overflow-hidden shadow-2xl animate-fade-in">
+            <div className="bg-slate-900 border border-white/10 rounded-[2.5rem] w-full max-w-lg overflow-hidden shadow-2xl animate-fade-in">
                 <div className="p-8 sm:p-10">
                     <div className="flex justify-between items-start mb-8">
                         <div>
-                            <h3 className="text-2xl font-black text-white russo tracking-tighter mb-1 uppercase">Contract Entry</h3>
+                            <h3 className="text-2xl font-black text-white russo tracking-tighter mb-1 uppercase">EXCHANGE CONTRACT</h3>
                             <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{game.name} // DRAW @ {formatTime12h(game.drawTime)}</p>
                         </div>
                         <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full text-slate-500 hover:text-white transition-all">{Icons.close}</button>
                     </div>
 
                     <div className="space-y-6">
-                        <div className="grid grid-cols-3 gap-2">
+                        <div className="flex gap-1.5 p-1 bg-slate-950/40 rounded-2xl border border-white/5 overflow-x-auto no-scrollbar">
                             {(isSingleDigitGame 
                                 ? [SubGameType.OneDigitOpen, SubGameType.OneDigitClose] 
-                                : [SubGameType.TwoDigit, SubGameType.OneDigitOpen, SubGameType.OneDigitClose]
+                                : [SubGameType.TwoDigit, SubGameType.OneDigitOpen, SubGameType.OneDigitClose, SubGameType.Bulk, SubGameType.Combo]
                             ).map(type => (
                                 <button
                                     key={type}
                                     onClick={() => setSubGameType(type)}
-                                    className={`py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${
+                                    className={`shrink-0 py-3 px-5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${
                                         subGameType === type 
-                                        ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/10' 
-                                        : 'bg-slate-950/50 text-slate-500 border border-white/5 hover:border-white/10'
+                                        ? 'bg-amber-500 text-slate-950 shadow-lg' 
+                                        : 'bg-transparent text-slate-500 hover:text-slate-300'
                                     }`}
                                 >
-                                    {type}
+                                    {modeInfo[type].label}
                                 </button>
                             ))}
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Number Pool (Separated by space or comma)</label>
-                            <input 
-                                type="text" 
-                                value={numbers}
-                                onChange={e => setNumbers(e.target.value)}
-                                className="w-full bg-slate-950/50 p-4 rounded-2xl border border-white/5 focus:ring-2 focus:ring-amber-500/50 focus:outline-none text-white font-mono placeholder-slate-800"
-                                placeholder={subGameType === SubGameType.TwoDigit ? "e.g. 14, 88, 92" : "e.g. 1, 5, 9"}
-                            />
+                            <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">{modeInfo[subGameType].desc}</label>
+                            {subGameType === SubGameType.Bulk ? (
+                                <textarea 
+                                    rows={4}
+                                    value={numbers}
+                                    onChange={e => setNumbers(e.target.value)}
+                                    className="w-full bg-slate-950/50 p-4 rounded-2xl border border-white/5 focus:ring-2 focus:ring-amber-500/50 focus:outline-none text-white font-mono placeholder-slate-800 text-sm"
+                                    placeholder="Paste multiple numbers here..."
+                                />
+                            ) : (
+                                <input 
+                                    type="text" 
+                                    value={numbers}
+                                    onChange={e => setNumbers(e.target.value)}
+                                    className="w-full bg-slate-950/50 p-4 rounded-2xl border border-white/5 focus:ring-2 focus:ring-amber-500/50 focus:outline-none text-white font-mono placeholder-slate-800"
+                                    placeholder={subGameType === SubGameType.Combo ? "e.g. 123 for pairs 12,13,21,23,31,32" : "e.g. 14, 88, 92"}
+                                />
+                            )}
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Stake Per Number (PKR)</label>
+                            <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Stake Per Unit (PKR)</label>
                             <input 
                                 type="number" 
                                 value={amount}
@@ -365,6 +394,16 @@ const BettingModal: React.FC<{
                                 placeholder="Enter amount..."
                             />
                         </div>
+
+                        {calculatedNumbers.length > 0 && (
+                            <div className="p-3 bg-white/5 rounded-xl border border-white/5">
+                                <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">Generated Pairs</p>
+                                <div className="text-[10px] text-amber-500 font-mono flex flex-wrap gap-x-2">
+                                    {calculatedNumbers.slice(0, 20).join(', ')}{calculatedNumbers.length > 20 ? '...' : ''}
+                                    <span className="text-white">({calculatedNumbers.length} units)</span>
+                                </div>
+                            </div>
+                        )}
 
                         {apiError && (
                             <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-[10px] font-bold uppercase tracking-widest animate-shake">
@@ -379,7 +418,7 @@ const BettingModal: React.FC<{
                             </div>
                             <button
                                 onClick={handleConfirm}
-                                disabled={isProcessing || !amount || !numbers}
+                                disabled={isProcessing || !amount || calculatedNumbers.length === 0}
                                 className="bg-amber-500 hover:bg-amber-400 disabled:bg-slate-800 disabled:text-slate-600 text-slate-950 font-black px-8 py-3 rounded-xl transition-all uppercase tracking-widest text-[11px] shadow-lg shadow-amber-500/10"
                             >
                                 {isProcessing ? 'PROCESSING...' : 'CONFIRM TRADE'}
@@ -419,7 +458,6 @@ const UserPanel: React.FC<any> = ({ user, games, bets, placeBet }) => {
 
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 animate-fade-in">
-            {/* Header Dashboard Section */}
             <div className="flex flex-col xl:flex-row gap-6 sm:gap-8 items-start justify-between mb-10 sm:mb-16">
                 <div className="space-y-2 w-full xl:w-auto">
                     <div className="inline-block bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-full text-[8px] sm:text-[9px] font-black text-amber-500 uppercase tracking-[0.3em] mb-2 animate-pulse">
@@ -438,7 +476,6 @@ const UserPanel: React.FC<any> = ({ user, games, bets, placeBet }) => {
                 </div>
             </div>
 
-            {/* Market Grid Section */}
             <div className="mb-10">
                 <div className="flex items-center gap-3 mb-6 sm:mb-8">
                     <div className="w-8 sm:w-10 h-1 bg-amber-500 rounded-full"></div>
@@ -449,10 +486,8 @@ const UserPanel: React.FC<any> = ({ user, games, bets, placeBet }) => {
                 </div>
             </div>
 
-            {/* Activity Hub Section */}
             <ActivityCenter bets={bets} games={games} user={user} />
 
-            {/* Betting Interface Modal */}
             <BettingModal 
                 game={selectedGame} 
                 games={games}

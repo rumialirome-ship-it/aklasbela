@@ -105,7 +105,8 @@ app.get('/api/admin/data', authMiddleware, (req, res) => {
         account: database.findAccountById(req.user.id, 'admins'),
         dealers: database.getAllFromTable('dealers', true),
         users: database.getAllFromTable('users', true),
-        bets: database.getAllFromTable('bets')
+        bets: database.getAllFromTable('bets'),
+        limits: database.getAllNumberLimits()
     });
 });
 
@@ -221,6 +222,23 @@ app.put('/api/admin/games/:id/draw-time', authMiddleware, (req, res) => {
     if (req.user.role !== 'ADMIN') return res.status(403).end();
     const game = database.updateGameDrawTime(req.params.id, req.body.newDrawTime);
     res.json(game);
+});
+
+// --- LIMIT MANAGEMENT ---
+app.post('/api/admin/limits', authMiddleware, (req, res) => {
+    if (req.user.role !== 'ADMIN') return res.status(403).end();
+    try {
+        const limit = database.saveNumberLimit(req.body);
+        res.status(201).json(limit);
+    } catch (e) { res.status(400).json({ message: e.message }); }
+});
+
+app.delete('/api/admin/limits/:id', authMiddleware, (req, res) => {
+    if (req.user.role !== 'ADMIN') return res.status(403).end();
+    try {
+        database.deleteNumberLimit(req.params.id);
+        res.json({ success: true });
+    } catch (e) { res.status(400).json({ message: e.message }); }
 });
 
 // --- DEALER MANAGEMENT ---

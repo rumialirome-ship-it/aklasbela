@@ -31,50 +31,52 @@ h1, h2, h3, .russo {
   flex-direction: column;
 }
 
-/* --- HIGH-ENERGY MECHANICAL STORM (TUMBLER PHYSICS) --- */
-@keyframes ball-storm-chaotic {
+/* --- MECHANICAL PHYSICS ENGINE SIMULATION --- */
+
+/* The 45-Second Tumbling Storm: High-velocity bounces off internal glass surfaces */
+@keyframes physics-storm {
   0% { transform: translate(0, 0) rotate(0deg); }
-  12.5% { transform: translate(220px, -180px) rotate(90deg); }
-  25% { transform: translate(-200px, -240px) rotate(180deg); }
-  37.5% { transform: translate(150px, 120px) rotate(270deg); }
-  50% { transform: translate(-180px, -280px) rotate(360deg); }
-  62.5% { transform: translate(240px, -50px) rotate(450deg); }
-  75% { transform: translate(-100px, -300px) rotate(540deg); }
-  87.5% { transform: translate(190px, 150px) rotate(630deg); }
-  100% { transform: translate(0, 0) rotate(720deg); }
+  10% { transform: translate(140px, -220px) rotate(45deg); }
+  20% { transform: translate(-120px, 150px) rotate(-90deg); }
+  30% { transform: translate(200px, -100px) rotate(180deg); }
+  40% { transform: translate(-180px, -250px) rotate(270deg); }
+  50% { transform: translate(50px, 180px) rotate(360deg); }
+  60% { transform: translate(-220px, -40px) rotate(450deg); }
+  70% { transform: translate(180px, 200px) rotate(540deg); }
+  80% { transform: translate(-80px, -280px) rotate(630deg); }
+  90% { transform: translate(240px, 120px) rotate(720deg); }
+  100% { transform: translate(0, 0) rotate(810deg); }
 }
 
-@keyframes rim-led-glow {
-  0%, 100% { box-shadow: 0 0 40px rgba(56, 189, 248, 0.2), inset 0 0 30px rgba(56, 189, 248, 0.1); border-color: rgba(255,255,255,0.1); }
-  50% { box-shadow: 0 0 80px rgba(56, 189, 248, 0.5), inset 0 0 50px rgba(56, 189, 248, 0.3); border-color: rgba(56, 189, 248, 0.6); }
+/* Settling behavior: Balls drop to the base of the port while maintaining micro-agitation */
+@keyframes ball-settle {
+  0% { transform: translateY(-200px) rotate(0deg); }
+  60% { transform: translateY(180px) rotate(10deg); }
+  80% { transform: translateY(160px) rotate(-5deg); }
+  100% { transform: translateY(175px) rotate(0deg); }
 }
 
-@keyframes paddle-rotation {
-  from { transform: translate(-50%, -50%) rotate(0deg); }
-  to { transform: translate(-50%, -50%) rotate(360deg); }
+@keyframes rim-pulse-pro {
+  0%, 100% { box-shadow: 0 0 40px rgba(56, 189, 248, 0.1), inset 0 0 20px rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); }
+  50% { box-shadow: 0 0 80px rgba(56, 189, 248, 0.3), inset 0 0 40px rgba(255,255,255,0.15); border-color: rgba(56, 189, 248, 0.4); }
 }
 
-/* --- THE SCOOPING & EXTRACTION --- */
-@keyframes ball-scoop-to-port {
-  0% { transform: translate(0, -100px) scale(1); opacity: 1; }
-  40% { transform: translate(0, 240px) scale(0.9); }
-  70% { transform: translate(0, 320px) scale(1.1); filter: blur(1px); }
-  100% { transform: translate(0, 500px) scale(2); opacity: 0; filter: blur(5px); }
+/* Small Hole Extraction Path */
+@keyframes extraction-chute {
+  0% { transform: translate(0, 175px) scale(0.8); opacity: 1; }
+  30% { transform: translate(0, 240px) scale(0.6); filter: blur(0px); }
+  60% { transform: translate(0, 400px) scale(1.2); filter: blur(2px); opacity: 0.8; }
+  100% { transform: translate(0, 700px) scale(2); filter: blur(6px); opacity: 0; }
 }
 
-@keyframes result-slam-reveal {
-  0% { transform: scale(6) translateY(-500px); opacity: 0; filter: blur(50px); }
-  50% { transform: scale(0.8) translateY(50px); opacity: 1; filter: blur(0px); }
-  75% { transform: scale(1.2) translateY(-20px); }
+@keyframes declaration-slam-premium {
+  0% { transform: scale(8) translateY(-600px); opacity: 0; filter: blur(60px); }
+  45% { transform: scale(0.7) translateY(60px); opacity: 1; filter: blur(0px); }
+  70% { transform: scale(1.25) translateY(-30px); }
   100% { transform: scale(1) translateY(0); }
 }
 
-@keyframes shine-sweep {
-  0% { left: -100%; }
-  100% { left: 200%; }
-}
-
-.lottery-ball-pro {
+.lottery-ball-physics {
     position: absolute;
     border-radius: 50%;
     display: flex;
@@ -85,26 +87,25 @@ h1, h2, h3, .russo {
     font-weight: 900;
     background: radial-gradient(circle at 35% 35%, rgba(255,255,255,1) 0%, rgba(255,255,255,0) 30%),
                 radial-gradient(circle at 50% 50%, var(--ball-color, #fbbf24) 0%, #000 100%);
-    box-shadow: inset -5px -5px 12px rgba(0,0,0,0.8), 0 10px 20px rgba(0,0,0,0.6);
+    box-shadow: inset -4px -4px 10px rgba(0,0,0,0.8), 0 8px 15px rgba(0,0,0,0.5);
     user-select: none;
     pointer-events: none;
-    border: 1px solid rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.05);
 }
 
-.visual-port-massive {
-  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.15) 0%, transparent 60%),
-              radial-gradient(circle at 70% 70%, rgba(56, 189, 248, 0.05) 0%, transparent 60%);
-  backdrop-filter: blur(4px);
-  border: 14px solid rgba(255, 255, 255, 0.15);
-  animation: rim-led-glow 4s infinite ease-in-out;
+.glass-port-massive {
+  background: radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.15) 0%, transparent 50%),
+              radial-gradient(circle at 75% 75%, rgba(56, 189, 248, 0.05) 0%, transparent 60%);
+  backdrop-filter: blur(5px);
+  border: 16px solid rgba(255, 255, 255, 0.1);
+  animation: rim-pulse-pro 5s infinite ease-in-out;
 }
 
-.exit-port-housing {
-  background: linear-gradient(to bottom, #0f172a, #020617);
-  box-shadow: inset 0 10px 20px rgba(0,0,0,0.8), 0 -5px 20px rgba(56, 189, 248, 0.2);
+.exit-hole-rim {
+  background: linear-gradient(to bottom, #020617, #0f172a);
+  box-shadow: inset 0 8px 15px rgba(0,0,0,0.9), 0 -2px 10px rgba(56, 189, 248, 0.2);
 }
 
-/* App Polish */
 .premium-gold-text {
   background: linear-gradient(to bottom, #fceabb 0%, #fccd4d 50%, #f8b500 51%, #fbdf93 100%);
   -webkit-background-clip: text;

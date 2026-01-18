@@ -31,55 +31,71 @@ h1, h2, h3, .russo {
   flex-direction: column;
 }
 
-/* Dynamic Background */
-.animated-bg {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100vh;
-  z-index: -2;
-  background-image: 
-    linear-gradient(rgba(251, 191, 36, 0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(251, 191, 36, 0.02) 1px, transparent 1px);
-  background-size: 50px 50px;
-  animation: pan-grid 120s linear infinite;
+/* 3D Tumbling Ball Physics */
+@keyframes ball-tumble {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  20% { transform: translate(140px, -180px) rotate(72deg); }
+  40% { transform: translate(-120px, -240px) rotate(144deg); }
+  60% { transform: translate(100px, -60px) rotate(216deg); }
+  80% { transform: translate(-150px, -130px) rotate(288deg); }
+  100% { transform: translate(0, 0) rotate(360deg); }
 }
 
-.bg-mesh {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100vh;
-  z-index: -1;
-  background: radial-gradient(circle at 50% 50%, #0f172a 0%, #020617 100%);
-  overflow: hidden;
+@keyframes drum-rotation {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
-.bg-mesh::after {
-  content: "";
+@keyframes winner-extraction {
+  0% { transform: translateY(0) scale(1); opacity: 1; }
+  50% { transform: translateY(150px) scale(1.5); opacity: 1; filter: blur(2px); }
+  100% { transform: translateY(400px) scale(2); opacity: 0; }
+}
+
+@keyframes ball-slam-reveal {
+  0% { transform: scale(3) translateY(-200px); opacity: 0; filter: blur(20px); }
+  60% { transform: scale(0.9) translateY(20px); opacity: 1; filter: blur(0px); }
+  80% { transform: scale(1.1) translateY(-10px); }
+  100% { transform: scale(1) translateY(0); }
+}
+
+.lottery-ball-mechanical {
+    position: absolute;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Russo One', sans-serif;
+    color: white;
+    font-weight: 900;
+    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 40%),
+                radial-gradient(circle at 50% 50%, var(--ball-color, #fbbf24) 0%, #000 100%);
+    box-shadow: inset -2px -2px 6px rgba(0,0,0,0.8), 0 4px 10px rgba(0,0,0,0.5);
+    user-select: none;
+    pointer-events: none;
+}
+
+/* Glass & Glow */
+.glass-globe {
+  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.15) 0%, transparent 60%),
+              radial-gradient(circle at 70% 70%, rgba(56, 189, 248, 0.05) 0%, transparent 60%);
+  backdrop-filter: blur(1px);
+  border: 4px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 100px rgba(56, 189, 248, 0.1), inset 0 0 50px rgba(255, 255, 255, 0.05);
+}
+
+.globe-shine {
   position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle at 20% 30%, rgba(251, 191, 36, 0.05) 0%, transparent 40%),
-              radial-gradient(circle at 80% 70%, rgba(6, 182, 212, 0.05) 0%, transparent 40%);
-  animation: rotate-mesh 30s linear infinite;
+  top: 10%;
+  left: 15%;
+  width: 30%;
+  height: 20%;
+  background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 80%);
+  border-radius: 50%;
+  transform: rotate(-15deg);
 }
 
-@keyframes rotate-mesh {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-@keyframes pan-grid {
-  0% { background-position: 0 0; }
-  100% { background-position: 1000px 1000px; }
-}
-
-/* Attractive Title Styling */
+/* App Title Styling */
 .premium-gold-text {
   background: linear-gradient(to bottom, #fceabb 0%, #fccd4d 50%, #f8b500 51%, #fbdf93 100%);
   -webkit-background-clip: text;
@@ -87,26 +103,6 @@ h1, h2, h3, .russo {
   color: transparent;
   filter: drop-shadow(0 0 15px rgba(251, 191, 36, 0.4));
   position: relative;
-}
-
-.premium-gold-text::after {
-  content: attr(data-text);
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-  background-size: 200% 100%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  animation: shine-sweep 4s infinite linear;
-  pointer-events: none;
-}
-
-@keyframes shine-sweep {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
 }
 
 .glitch-layer {
@@ -120,64 +116,5 @@ h1, h2, h3, .russo {
   66% { transform: translate(2px, -1px); text-shadow: -2px 0 #06b6d4, 2px 0 #ef4444; }
 }
 
-/* 3D Ball Physics Simulations */
-@keyframes ball-swirl {
-  0% { transform: translate(0, 0) scale(1) rotate(0deg); }
-  25% { transform: translate(150px, -100px) scale(0.9) rotate(90deg); }
-  50% { transform: translate(-100px, -150px) scale(1.1) rotate(180deg); }
-  75% { transform: translate(-150px, 80px) scale(0.95) rotate(270deg); }
-  100% { transform: translate(0, 0) scale(1) rotate(360deg); }
-}
-
-@keyframes ball-drop-cinematic {
-  0% { transform: translateY(-400px) scale(0.3) rotate(-45deg); opacity: 0; filter: blur(10px); }
-  50% { transform: translateY(50px) scale(1.2) rotate(10deg); opacity: 1; filter: blur(0px); }
-  75% { transform: translateY(-20px) scale(0.9); }
-  100% { transform: translateY(0) scale(1) rotate(0deg); }
-}
-
-@keyframes glass-shimmer {
-  0% { transform: translateX(-100%) skewX(-30deg); }
-  100% { transform: translateX(200%) skewX(-30deg); }
-}
-
-.glass-pot-glow {
-  box-shadow: 0 0 60px rgba(56, 189, 248, 0.1), inset 0 0 40px rgba(255, 255, 255, 0.1);
-}
-
-.lottery-ball-3d {
-    position: absolute;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: 'Russo One', sans-serif;
-    font-size: 10px;
-    color: rgba(255, 255, 255, 0.9);
-    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-    background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 30%),
-                radial-gradient(circle at 50% 50%, var(--ball-color, #fff) 0%, #000 100%);
-    box-shadow: inset -4px -4px 8px rgba(0,0,0,0.6), 0 10px 20px rgba(0,0,0,0.4);
-}
-
-/* UI Elements */
-.gold-shimmer {
-  background: linear-gradient(90deg, #fbbf24, #fcd34d, #fbbf24);
-  background-size: 200% auto;
-  color: transparent;
-  -webkit-background-clip: text;
-  background-clip: text;
-  animation: shimmer 2s linear infinite;
-}
-
-@keyframes shimmer {
-  to { background-position: 200% center; }
-}
-
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-.mobile-scroll-x {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(251, 191, 36, 0.3) transparent;
-}

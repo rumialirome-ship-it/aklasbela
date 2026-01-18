@@ -35,22 +35,26 @@ h1, h2, h3, .russo {
 /* --- REFINED LOTTERY PHYSICS (MATCHING VIDEO) --- */
 
 .glass-bowl {
-    background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.1) 0%, transparent 60%),
-                radial-gradient(circle at 70% 70%, rgba(56, 189, 248, 0.05) 0%, transparent 70%);
-    backdrop-filter: blur(10px);
-    border: 15px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 0 100px rgba(0,0,0,0.5), inset 0 0 50px rgba(0,0,0,0.3);
+    background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.15) 0%, transparent 60%),
+                radial-gradient(circle at 70% 70%, rgba(56, 189, 248, 0.08) 0%, transparent 70%);
+    backdrop-filter: blur(12px);
+    border: 18px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 0 120px rgba(0,0,0,0.6), inset 0 0 80px rgba(0,0,0,0.4);
+}
+
+.bg-radial-inner {
+    background: radial-gradient(circle at center, transparent 40%, rgba(0,0,0,0.2) 100%);
 }
 
 .lottery-ball {
     position: absolute;
-    width: 28px;
-    height: 28px;
+    width: 26px;
+    height: 26px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: inset -3px -3px 6px rgba(0,0,0,0.6), 2px 4px 8px rgba(0,0,0,0.4);
+    box-shadow: inset -3px -3px 6px rgba(0,0,0,0.7), 2px 4px 8px rgba(0,0,0,0.5);
     background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 30%),
                 radial-gradient(circle at 50% 50%, var(--ball-color, #fff) 0%, #000 100%);
     border: 1px solid rgba(255,255,255,0.1);
@@ -58,11 +62,15 @@ h1, h2, h3, .russo {
 }
 
 @media (min-width: 640px) {
-    .lottery-ball { width: 34px; height: 34px; }
+    .lottery-ball { width: 32px; height: 32px; }
+}
+
+@media (min-width: 1024px) {
+    .lottery-ball { width: 36px; height: 36px; }
 }
 
 .ball-text {
-    font-size: 10px;
+    font-size: 9px;
     font-family: 'Russo One', sans-serif;
     font-weight: 900;
     color: white;
@@ -70,15 +78,15 @@ h1, h2, h3, .russo {
 }
 
 @media (min-width: 640px) {
-    .ball-text { font-size: 12px; }
+    .ball-text { font-size: 11px; }
 }
 
-/* Shuffling Animation */
+/* Shuffling Animation - Wider range for larger chamber */
 @keyframes ball-shuffle {
     0% { transform: translate(var(--ix), var(--iy)) rotate(0deg); }
-    25% { transform: translate(calc(var(--ix) + 40px), calc(var(--iy) - 40px)) rotate(90deg); }
-    50% { transform: translate(calc(var(--ix) - 40px), calc(var(--iy) + 20px)) rotate(180deg); }
-    75% { transform: translate(calc(var(--ix) + 20px), calc(var(--iy) + 40px)) rotate(270deg); }
+    25% { transform: translate(calc(var(--ix) + 60px), calc(var(--iy) - 60px)) rotate(90deg); }
+    50% { transform: translate(calc(var(--ix) - 60px), calc(var(--iy) + 40px)) rotate(180deg); }
+    75% { transform: translate(calc(var(--ix) + 40px), calc(var(--iy) + 60px)) rotate(270deg); }
     100% { transform: translate(var(--ix), var(--iy)) rotate(360deg); }
 }
 
@@ -88,41 +96,41 @@ h1, h2, h3, .russo {
 }
 
 .ball-resting {
-    transform: translate(var(--ix), 140px);
-    transition: transform 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transform: translate(var(--ix), 180px);
+    transition: transform 2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 /* Pipe Travel Animation (The Winning Ball Path) */
 @keyframes ball-pipe-zigzag {
-    0%   { transform: translate(0, 160px) scale(1); }
-    15%  { transform: translate(0, 220px) scale(0.9); }
-    40%  { transform: translate(120px, 260px) scale(0.85); }
-    70%  { transform: translate(-120px, 320px) scale(0.8); }
-    100% { transform: translate(0, 360px) scale(0.7); }
+    0%   { transform: translate(0, 200px) scale(1.1); }
+    15%  { transform: translate(0, 240px) scale(0.95); }
+    40%  { transform: translate(140px, 280px) scale(0.9); }
+    70%  { transform: translate(-140px, 340px) scale(0.85); }
+    100% { transform: translate(0, 380px) scale(0.8); }
 }
 
 .ball-pipe-descent {
     left: 50%;
     top: 50%;
-    margin-left: -14px;
-    margin-top: -14px;
+    margin-left: -16px;
+    margin-top: -16px;
     animation: ball-pipe-zigzag 2.5s forwards cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .ball-at-exit {
     left: 50%;
     top: 50%;
-    margin-left: -14px;
-    margin-top: -14px;
-    transform: translate(0, 360px) scale(0);
+    margin-left: -16px;
+    margin-top: -16px;
+    transform: translate(0, 380px) scale(0);
     opacity: 0;
     transition: all 0.5s ease-out;
 }
 
 /* Final Reveal Impact */
 @keyframes result-slam {
-    0% { transform: scale(0.1); opacity: 0; filter: blur(20px); }
-    60% { transform: scale(1.1); opacity: 1; filter: blur(0px); }
+    0% { transform: scale(0.1); opacity: 0; filter: blur(30px); }
+    60% { transform: scale(1.15); opacity: 1; filter: blur(0px); }
     100% { transform: scale(1); opacity: 1; }
 }
 

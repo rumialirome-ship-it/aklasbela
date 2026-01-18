@@ -52,15 +52,6 @@ const connect = () => {
         db = new Database(DB_PATH, { timeout: 5000 });
         db.pragma('journal_mode = WAL');
         db.pragma('foreign_keys = ON');
-        
-        // Ensure isVisible column exists
-        try {
-            db.prepare("ALTER TABLE games ADD COLUMN isVisible INTEGER DEFAULT 1").run();
-            console.log('[DB] Migration: Added isVisible to games.');
-        } catch (e) {
-            // Column already exists
-        }
-
         console.log('[DB] Database connected.');
         return true;
     } catch (error) {
@@ -91,7 +82,6 @@ const findAccountById = (id, table) => {
             account.ledger = db.prepare('SELECT * FROM ledgers WHERE LOWER(accountId) = LOWER(?) ORDER BY timestamp ASC').all(id);
         } else {
             account.isMarketOpen = isGameOpen(account.drawTime);
-            account.isVisible = !!account.isVisible;
         }
         
         if (account.prizeRates && typeof account.prizeRates === 'string') account.prizeRates = JSON.parse(account.prizeRates);
@@ -137,10 +127,7 @@ const getAllFromTable = (table, withLedger = false) => {
         return db.prepare(`SELECT * FROM ${table}`).all().map(acc => {
             try {
                 if (withLedger && acc.id) acc.ledger = db.prepare('SELECT * FROM ledgers WHERE LOWER(accountId) = LOWER(?) ORDER BY timestamp ASC').all(acc.id);
-                if (table === 'games' && acc.drawTime) {
-                    acc.isMarketOpen = isGameOpen(acc.drawTime);
-                    acc.isVisible = !!acc.isVisible;
-                }
+                if (table === 'games' && acc.drawTime) acc.isMarketOpen = isGameOpen(acc.drawTime);
                 if (acc.prizeRates && typeof acc.prizeRates === 'string') acc.prizeRates = JSON.parse(acc.prizeRates);
                 if (acc.betLimits && typeof acc.betLimits === 'string') acc.betLimits = JSON.parse(acc.betLimits);
                 if (table === 'bets' && acc.numbers && typeof acc.numbers === 'string') acc.numbers = JSON.parse(acc.numbers);
@@ -152,18 +139,6 @@ const getAllFromTable = (table, withLedger = false) => {
         console.error(`[DB] Fetch failed for ${table}:`, err.message);
         return [];
     }
-};
-
-const toggleGameVisibility = (gameId) => {
-    let result;
-    runInTransaction(() => {
-        const game = db.prepare('SELECT isVisible FROM games WHERE id = ?').get(gameId);
-        if (!game) throw { status: 404, message: 'Game not found.' };
-        const newStatus = game.isVisible ? 0 : 1;
-        db.prepare('UPDATE games SET isVisible = ? WHERE id = ?').run(newStatus, gameId);
-        result = findAccountById(gameId, 'games');
-    });
-    return result;
 };
 
 const runInTransaction = (fn) => {
@@ -517,5 +492,5 @@ function resetAllGames() {
 }
 
 module.exports = {
-    connect, isSchemaValid, findAccountById, findAccountForLogin, updatePassword, getAllFromTable, runInTransaction, addLedgerEntry, createDealer, updateDealer, findUsersByDealerId, findUserByDealer, findBetsByUserId, createUser, updateUser, updateUserByAdmin, deleteUserByDealer, toggleAccountRestrictionByAdmin, toggleUserRestrictionByDealer, declareWinnerForGame, updateWinningNumber, approvePayoutsForGame, getFinancialSummary, getNumberStakeSummary, placeBulkBets, updateGameDrawTime, resetAllGames, getAllNumberLimits, saveNumberLimit, deleteNumberLimit, findBetsByDealerId, findBetsByGameId, toggleGameVisibility
+    connect, isSchemaValid, findAccountById, findAccountForLogin, updatePassword, getAllFromTable, runInTransaction, addLedgerEntry, createDealer, updateDealer, findUsersByDealerId, findUserByDealer, findBetsByUserId, createUser, updateUser, updateUserByAdmin, deleteUserByDealer, toggleAccountRestrictionByAdmin, toggleUserRestrictionByDealer, declareWinnerForGame, updateWinningNumber, approvePayoutsForGame, getFinancialSummary, getNumberStakeSummary, placeBulkBets, updateGameDrawTime, resetAllGames, getAllNumberLimits, saveNumberLimit, deleteNumberLimit, findBetsByDealerId, findBetsByGameId
 };

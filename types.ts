@@ -1,4 +1,3 @@
-
 export enum Role {
   Admin = 'ADMIN',
   Dealer = 'DEALER',
@@ -67,7 +66,6 @@ export interface Game {
   winningNumber?: string;
   payoutsApproved?: boolean;
   isMarketOpen?: boolean;
-  isVisible?: boolean;
 }
 
 export enum SubGameType {

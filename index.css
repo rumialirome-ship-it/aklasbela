@@ -40,7 +40,7 @@
 }
 
 .winner-ball-3d {
-    z-index: 2000 !important;
+    z-index: 3000 !important;
     width: 32px;
     height: 32px;
     box-shadow: 
@@ -95,35 +95,40 @@
 }
 
 /* 
-   REFINED MECHANICAL DELIVERY:
-   Pathing follows the Zigzag Pipe SVG coordinate system.
-   Starts center -> exits gate -> down tube bends -> terminal.
+   REFINED MECHANICAL DELIVERY SEQUENCE:
+   1. Port Center -> Exit Gate (Head)
+   2. Junction -> Zigzag Pipe Start
+   3. Journey Down Pipe Bends
+   4. Exit Terminal -> Big Reveal
 */
 @keyframes ball-mechanical-delivery-sequence {
     0%   { transform: translate(-50%, -50%) scale(1); top: 50%; left: 50%; opacity: 1; filter: blur(0); }
     
-    /* 1. Sudden Acceleration to the Exit Junction */
-    12%  { transform: translate(110px, -110px) scale(0.9); top: 50%; left: 50%; }
+    /* Sudden Acceleration to Junction */
+    10%  { transform: translate(120px, -120px) scale(0.9); top: 50%; left: 50%; }
     
-    /* 2. Transition Point: Enters the Side Pipe Head */
-    20%  { transform: translate(160px, -110px) scale(0.85); top: 50%; left: 50%; }
+    /* Transition into Pipe Start (at Junction) */
+    15%  { transform: translate(170px, -120px) scale(0.85); top: 50%; left: 50%; }
     
-    /* 3. High-Velocity Bend 1 (Right Corner) */
-    40%  { transform: translate(250px, -110px) scale(0.8); top: 50%; left: 50%; }
-    50%  { transform: translate(450px, 0px) scale(0.75); top: 50%; left: 50%; }
+    /* High-Velocity Corner 1 (Rightward) */
+    35%  { transform: translate(280px, -120px) scale(0.8); top: 50%; left: 50%; }
+    45%  { transform: translate(450px, 0px) scale(0.75); top: 50%; left: 50%; }
     
-    /* 4. Sharp Return Bend 2 (Left Corner) */
-    70%  { transform: translate(150px, 180px) scale(0.7); top: 50%; left: 50%; }
+    /* Sharp Return Corner 2 (Leftward) */
+    65%  { transform: translate(200px, 150px) scale(0.7); top: 50%; left: 50%; }
     
-    /* 5. Terminal Plunge (Final Drop) */
-    90%  { transform: translate(350px, 350px) scale(0.65); top: 50%; left: 50%; }
+    /* Plunge to Final Terminal Corner 3 (Downwards) */
+    85%  { transform: translate(350px, 300px) scale(0.65); top: 50%; left: 50%; }
     
-    /* 6. Disappear into Climax Reveal */
-    100% { transform: translate(350px, 450px) scale(0.6); top: 50%; left: 50%; opacity: 0; filter: blur(20px); }
+    /* Arrival at Exit Terminal Node */
+    95%  { transform: translate(350px, 400px) scale(0.6); top: 50%; left: 50%; opacity: 1; filter: blur(0); }
+    
+    /* EXITING THE PIPE: POP TO FRONT */
+    100% { transform: translate(350px, 450px) scale(1.5); top: 50%; left: 50%; opacity: 0; filter: blur(20px); }
 }
 
 .ball-mechanical-delivery {
-    animation: ball-mechanical-delivery-sequence 4s forwards cubic-bezier(0.5, 0, 0.5, 1);
+    animation: ball-mechanical-delivery-sequence 4.5s forwards cubic-bezier(0.5, 0, 0.5, 1);
 }
 
 .ball-hidden {
@@ -131,15 +136,15 @@
     transform: scale(0);
 }
 
-/* High-Impact Result Slam */
+/* High-Impact Result Slam (Climax) */
 @keyframes result-slam-3d {
-    0% { transform: perspective(1800px) scale(10) rotateX(85deg) translateY(-600px); opacity: 0; filter: blur(100px); }
-    75% { transform: perspective(1800px) scale(0.82) rotateX(-18deg) translateY(40px); opacity: 1; filter: blur(0); }
-    100% { transform: perspective(1800px) scale(1) rotateX(0deg) translateY(0); opacity: 1; }
+    0% { transform: perspective(2000px) scale(12) rotateX(90deg) translateY(-800px); opacity: 0; filter: blur(120px); }
+    75% { transform: perspective(2000px) scale(0.8) rotateX(-20deg) translateY(50px); opacity: 1; filter: blur(0); }
+    100% { transform: perspective(2000px) scale(1) rotateX(0deg) translateY(0); opacity: 1; }
 }
 
 .animate-result-slam-3d {
-    animation: result-slam-3d 1.1s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+    animation: result-slam-3d 1.2s cubic-bezier(0.19, 1, 0.22, 1) forwards;
 }
 
 .gold-shimmer {

@@ -1,6 +1,5 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
-import { Dealer, User, Game, PrizeRates, LedgerEntry, Bet, NumberLimit, SubGameType, Admin } from '../types';
+import { Dealer, User, Game, PrizeRates, LedgerEntry, Bet, Admin, SubGameType, Role } from '../types';
 import { Icons } from '../constants';
 import { useAuth } from '../hooks/useAuth';
 
@@ -13,78 +12,148 @@ const formatTime12h = (time24: string) => {
     return `${String(hours12).padStart(2, '0')}:${String(minutes).padStart(2, '0')} ${ampm}`;
 };
 
-const getTodayDateString = () => new Date().toISOString().split('T')[0];
-
-// --- TYPE DEFINITIONS ---
-interface GameSummary {
-  gameName: string;
-  winningNumber: string;
-  totalStake: number;
-  totalPayouts: number;
-  totalDealerProfit: number;
-  totalCommissions: number;
-  netProfit: number;
-}
-
-interface FinancialSummary {
-  games: GameSummary[];
-  totals: {
-    totalStake: number;
-    totalPayouts: number;
-    totalDealerProfit: number;
-    totalCommissions: number;
-    netProfit: number;
-  };
-  totalBets: number;
-}
-
 // --- MODAL COMPONENT ---
-const Modal: React.FC<{ isOpen: boolean; onClose: () => void; title: string; children: React.ReactNode; size?: 'md' | 'lg' | 'xl'; themeColor?: string }> = ({ isOpen, onClose, title, children, size = 'md', themeColor = 'cyan' }) => {
+const Modal: React.FC<{ isOpen: boolean; onClose: () => void; title: string; children: React.ReactNode; size?: 'md' | 'lg' | 'xl'; themeColor?: string }> = ({ isOpen, onClose, title, children, size = 'md', themeColor = 'red' }) => {
     if (!isOpen) return null;
     const sizeClasses: Record<string, string> = { md: 'max-w-md', lg: 'max-w-3xl', xl: 'max-w-5xl' };
     return (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex justify-center items-center z-50 p-4">
-            <div className={`bg-slate-900/80 rounded-lg shadow-2xl w-full border border-${themeColor}-500/30 ${sizeClasses[size]} flex flex-col max-h-[90vh]`}>
-                <div className="flex justify-between items-center p-5 border-b border-slate-700 flex-shrink-0">
-                    <h3 className={`text-lg font-bold text-${themeColor}-400 uppercase tracking-widest`}>{title}</h3>
-                    <button onClick={onClose} className="text-slate-400 hover:text-white">{Icons.close}</button>
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex justify-center items-center z-[100] p-4 overflow-y-auto">
+            <div className={`bg-slate-900 rounded-[2.5rem] shadow-2xl w-full border border-${themeColor}-500/30 ${sizeClasses[size]} flex flex-col my-auto max-h-[95vh]`}>
+                <div className="flex justify-between items-center p-6 sm:p-8 border-b border-white/5 flex-shrink-0">
+                    <h3 className={`text-xl font-black text-${themeColor}-500 uppercase tracking-tighter russo`}>{title}</h3>
+                    <button onClick={onClose} className="text-slate-500 hover:text-white p-2 transition-colors">{Icons.close}</button>
                 </div>
-                <div className="p-6 overflow-y-auto">{children}</div>
+                <div className="p-6 sm:p-8 overflow-y-auto no-scrollbar">{children}</div>
             </div>
         </div>
     );
 };
 
-// --- LEDGER TABLE ---
-const LedgerTable: React.FC<{ entries: LedgerEntry[] }> = ({ entries }) => (
-    <div className="bg-slate-900/50 rounded-lg overflow-hidden border border-slate-700">
-        <div className="overflow-x-auto no-scrollbar">
-            <table className="w-full text-left min-w-[600px]">
-                <thead className="bg-slate-800/50 sticky top-0 backdrop-blur-sm">
-                    <tr>
-                        <th className="p-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Date</th>
-                        <th className="p-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Description</th>
-                        <th className="p-3 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">Debit</th>
-                        <th className="p-3 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">Credit</th>
-                        <th className="p-3 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">Balance</th>
-                    </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800">
-                    {Array.isArray(entries) && [...entries].reverse().map(entry => (
-                        <tr key={entry.id} className="hover:bg-cyan-500/10 text-sm transition-colors">
-                            <td className="p-3 text-slate-400 whitespace-nowrap">{entry.timestamp.toLocaleString()}</td>
-                            <td className="p-3 text-white">{entry.description}</td>
-                            <td className="p-3 text-right text-red-400 font-mono">{entry.debit > 0 ? entry.debit.toFixed(2) : '-'}</td>
-                            <td className="p-3 text-right text-green-400 font-mono">{entry.credit > 0 ? entry.credit.toFixed(2) : '-'}</td>
-                            <td className="p-3 text-right font-semibold text-white font-mono">{entry.balance.toFixed(2)}</td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-        </div>
-    </div>
-);
+// --- FORM COMPONENTS ---
+const DealerForm: React.FC<{ dealer?: Dealer; onSave: (d: Dealer, originalId?: string) => Promise<void>; onClose: () => void }> = ({ dealer, onSave, onClose }) => {
+    const [formData, setFormData] = useState<any>(dealer || {
+        id: '', name: '', password: '', area: '', contact: '', commissionRate: 10,
+        prizeRates: { oneDigitOpen: 90, oneDigitClose: 90, twoDigit: 900 },
+        wallet: 0, isRestricted: false, avatarUrl: ''
+    });
 
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value, type } = e.target;
+        if (name.startsWith('prizeRates.')) {
+            const key = name.split('.')[1];
+            setFormData({ ...formData, prizeRates: { ...formData.prizeRates, [key]: parseFloat(value) } });
+        } else {
+            setFormData({ ...formData, [name]: type === 'number' ? parseFloat(value) : value });
+        }
+    };
+
+    const inputClass = "w-full bg-slate-950/50 border border-white/5 rounded-2xl p-4 text-white text-sm focus:border-red-500/50 outline-none transition-all";
+    const labelClass = "block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1";
+
+    return (
+        <form onSubmit={(e) => { e.preventDefault(); onSave(formData, dealer?.id); onClose(); }} className="space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label className={labelClass}>Login ID</label>
+                    <input name="id" value={formData.id} onChange={handleChange} className={inputClass} disabled={!!dealer} required />
+                </div>
+                <div>
+                    <label className={labelClass}>Display Name</label>
+                    <input name="name" value={formData.name} onChange={handleChange} className={inputClass} required />
+                </div>
+                <div>
+                    <label className={labelClass}>Password</label>
+                    <input type="text" name="password" value={formData.password} onChange={handleChange} className={inputClass} required />
+                </div>
+                <div>
+                    <label className={labelClass}>Comm. Rate (%)</label>
+                    <input type="number" step="0.1" name="commissionRate" value={formData.commissionRate} onChange={handleChange} className={inputClass} required />
+                </div>
+            </div>
+            <div className="bg-slate-950/40 p-6 rounded-3xl border border-white/5 space-y-4">
+                <p className="text-[10px] font-black text-red-500 uppercase tracking-[0.3em]">Market Prize Coefficients</p>
+                <div className="grid grid-cols-3 gap-4">
+                    <div>
+                        <label className={labelClass}>2 Digit</label>
+                        <input type="number" step="0.1" name="prizeRates.twoDigit" value={formData.prizeRates.twoDigit} onChange={handleChange} className={inputClass} />
+                    </div>
+                    <div>
+                        <label className={labelClass}>1D Open</label>
+                        <input type="number" step="0.1" name="prizeRates.oneDigitOpen" value={formData.prizeRates.oneDigitOpen} onChange={handleChange} className={inputClass} />
+                    </div>
+                    <div>
+                        <label className={labelClass}>1D Close</label>
+                        <input type="number" step="0.1" name="prizeRates.oneDigitClose" value={formData.prizeRates.oneDigitClose} onChange={handleChange} className={inputClass} />
+                    </div>
+                </div>
+            </div>
+            <button type="submit" className="w-full bg-red-600 hover:bg-red-500 text-white font-black py-4 rounded-2xl transition-all uppercase tracking-widest text-xs shadow-xl shadow-red-900/20">
+                {dealer ? 'Sync Profile' : 'Authorize Dealer'}
+            </button>
+        </form>
+    );
+};
+
+const UserForm: React.FC<{ user?: User; onSave: (u: User, originalId?: string) => Promise<void>; onClose: () => void }> = ({ user, onSave, onClose }) => {
+    // Note: This is an simplified edit form for Admin. 
+    // Usually Admin only overrides prize/comm rates or resets password.
+    const [formData, setFormData] = useState<any>(user || {
+        id: '', name: '', password: '', commissionRate: 5,
+        prizeRates: { oneDigitOpen: 80, oneDigitClose: 80, twoDigit: 800 }
+    });
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value, type } = e.target;
+        if (name.startsWith('prizeRates.')) {
+            const key = name.split('.')[1];
+            setFormData({ ...formData, prizeRates: { ...formData.prizeRates, [key]: parseFloat(value) } });
+        } else {
+            setFormData({ ...formData, [name]: type === 'number' ? parseFloat(value) : value });
+        }
+    };
+
+    const inputClass = "w-full bg-slate-950/50 border border-white/5 rounded-2xl p-4 text-white text-sm focus:border-red-500/50 outline-none transition-all";
+    const labelClass = "block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1";
+
+    return (
+        <form onSubmit={(e) => { e.preventDefault(); onSave(formData, user?.id); onClose(); }} className="space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label className={labelClass}>Login ID</label>
+                    <input name="id" value={formData.id} className={inputClass} disabled />
+                </div>
+                <div>
+                    <label className={labelClass}>Name</label>
+                    <input name="name" value={formData.name} onChange={handleChange} className={inputClass} />
+                </div>
+                <div>
+                    <label className={labelClass}>Comm. Rate (%)</label>
+                    <input type="number" step="0.1" name="commissionRate" value={formData.commissionRate} onChange={handleChange} className={inputClass} />
+                </div>
+            </div>
+             <div className="bg-slate-950/40 p-6 rounded-3xl border border-white/5 space-y-4">
+                <p className="text-[10px] font-black text-red-500 uppercase tracking-[0.3em]">User Specific Prize Rates</p>
+                <div className="grid grid-cols-3 gap-4">
+                    <div>
+                        <label className={labelClass}>2 Digit</label>
+                        <input type="number" step="0.1" name="prizeRates.twoDigit" value={formData.prizeRates.twoDigit} onChange={handleChange} className={inputClass} />
+                    </div>
+                    <div>
+                        <label className={labelClass}>1D Open</label>
+                        <input type="number" step="0.1" name="prizeRates.oneDigitOpen" value={formData.prizeRates.oneDigitOpen} onChange={handleChange} className={inputClass} />
+                    </div>
+                    <div>
+                        <label className={labelClass}>1D Close</label>
+                        <input type="number" step="0.1" name="prizeRates.oneDigitClose" value={formData.prizeRates.oneDigitClose} onChange={handleChange} className={inputClass} />
+                    </div>
+                </div>
+            </div>
+            <button type="submit" className="w-full bg-red-600 hover:bg-red-500 text-white font-black py-4 rounded-2xl transition-all uppercase tracking-widest text-xs">Update Profile</button>
+        </form>
+    );
+};
+
+// --- MAIN ADMIN PANEL ---
 interface AdminPanelProps {
   admin: Admin; 
   dealers: Dealer[]; 
@@ -108,15 +177,15 @@ interface AdminPanelProps {
 const AdminPanel: React.FC<AdminPanelProps> = ({ 
     admin, dealers, onSaveDealer, users, setUsers, games, bets, 
     declareWinner, updateWinner, approvePayouts, toggleGameVisibility, topUpDealerWallet, 
-    withdrawFromDealerWallet, toggleAccountRestriction, onPlaceAdminBets, 
-    updateGameDrawTime, onRefreshData 
+    withdrawFromDealerWallet, toggleAccountRestriction, onRefreshData 
 }) => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [winningNumbers, setWinningNumbers] = useState<{[key: string]: string}>({});
   const [editingGame, setEditingGame] = useState<{ id: string, number: string } | null>(null);
-  const [viewingLedgerId, setViewingLedgerId] = useState<string | null>(null);
-  const [viewingLedgerType, setViewingLedgerType] = useState<'dealer' | 'admin' | 'user' | null>(null);
-  const { fetchWithAuth } = useAuth();
+  const [isDealerModalOpen, setIsDealerModalOpen] = useState(false);
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+  const [selectedDealer, setSelectedDealer] = useState<Dealer | undefined>(undefined);
+  const [selectedUser, setSelectedUser] = useState<User | undefined>(undefined);
 
   const handleDeclareWinner = (gameId: string, gameName: string) => {
     const num = winningNumbers[gameId];
@@ -144,20 +213,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     }
   };
 
-  const activeLedgerAccount = useMemo(() => {
-    if (!viewingLedgerId || !viewingLedgerType) return null;
-    if (viewingLedgerType === 'admin') return admin;
-    if (viewingLedgerType === 'dealer') return dealers.find(d => d.id === viewingLedgerId);
-    if (viewingLedgerType === 'user') return users.find(u => u.id === viewingLedgerId);
-    return null;
-  }, [viewingLedgerId, viewingLedgerType, admin, dealers, users]);
-
   const tabs = [
     { id: 'dashboard', label: 'Dashboard', icon: Icons.chartBar },
     { id: 'dealers', label: 'Dealers', icon: Icons.userGroup }, 
     { id: 'users', label: 'Users', icon: Icons.clipboardList },
     { id: 'games', label: 'Games', icon: Icons.gamepad },
-    { id: 'history', label: 'Ledgers', icon: Icons.bookOpen },
   ];
 
   return (
@@ -284,11 +344,100 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
         </div>
       )}
 
-      {/* Other tabs placeholders for layout context */}
-      {activeTab === 'dashboard' && <div className="py-20 text-center text-slate-500 font-black uppercase tracking-[0.5em] animate-pulse">Synchronizing Global Ledger...</div>}
+      {activeTab === 'dealers' && (
+        <div className="animate-fade-in space-y-6">
+            <div className="flex justify-between items-center">
+                <h3 className="text-xl font-black text-white russo uppercase tracking-tighter">Authorized Dealers</h3>
+                <button onClick={() => { setSelectedDealer(undefined); setIsDealerModalOpen(true); }} className="bg-red-600 text-white px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-red-900/20">Authorize New Dealer</button>
+            </div>
+            <div className="bg-slate-900/40 rounded-[2rem] border border-white/5 overflow-hidden">
+                <table className="w-full text-left">
+                    <thead className="bg-white/5">
+                        <tr>
+                            <th className="p-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">ID / Dealer Name</th>
+                            <th className="p-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Comm. Rate</th>
+                            <th className="p-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Pool Balance</th>
+                            <th className="p-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                        {dealers.map(dealer => (
+                            <tr key={dealer.id} className="hover:bg-white/[0.02]">
+                                <td className="p-4">
+                                    <p className="font-bold text-white">{dealer.name}</p>
+                                    <p className="text-[10px] text-slate-500 font-mono">{dealer.id}</p>
+                                </td>
+                                <td className="p-4">
+                                    <span className="text-emerald-400 font-black russo">{dealer.commissionRate}%</span>
+                                </td>
+                                <td className="p-4 text-right">
+                                    <p className="font-mono text-white text-sm font-bold">PKR {dealer.wallet.toLocaleString()}</p>
+                                </td>
+                                <td className="p-4 text-right">
+                                    <button onClick={() => { setSelectedDealer(dealer); setIsDealerModalOpen(true); }} className="text-[10px] font-black text-red-500 uppercase tracking-widest hover:text-white transition-colors">Edit Parameters</button>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+      )}
+
+      {activeTab === 'users' && (
+        <div className="animate-fade-in space-y-6">
+            <h3 className="text-xl font-black text-white russo uppercase tracking-tighter">Global User Registry</h3>
+            <div className="bg-slate-900/40 rounded-[2rem] border border-white/5 overflow-hidden">
+                <table className="w-full text-left">
+                    <thead className="bg-white/5">
+                        <tr>
+                            <th className="p-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">User / Dealer Parent</th>
+                            <th className="p-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Rates</th>
+                            <th className="p-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Wallet</th>
+                            <th className="p-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                        {users.map(user => (
+                            <tr key={user.id} className="hover:bg-white/[0.02]">
+                                <td className="p-4">
+                                    <p className="font-bold text-white">{user.name}</p>
+                                    <p className="text-[10px] text-slate-500 font-mono">ID: {user.id} | Parent: {user.dealerId}</p>
+                                </td>
+                                <td className="p-4">
+                                    <div className="flex gap-2 text-[9px] font-black uppercase tracking-tighter">
+                                        <span className="text-amber-500">2D: {user.prizeRates.twoDigit}</span>
+                                        <span className="text-emerald-500">Comm: {user.commissionRate}%</span>
+                                    </div>
+                                </td>
+                                <td className="p-4 text-right">
+                                    <p className="font-mono text-white text-sm font-bold">PKR {user.wallet.toLocaleString()}</p>
+                                </td>
+                                <td className="p-4 text-right">
+                                    <button onClick={() => { setSelectedUser(user); setIsUserModalOpen(true); }} className="text-[10px] font-black text-red-500 uppercase tracking-widest hover:text-white transition-colors">Adjust Rates</button>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+      )}
+
+      {activeTab === 'dashboard' && <div className="py-20 text-center text-slate-500 font-black uppercase tracking-[0.5em] animate-pulse">Synchronizing Global Nexus Ledger...</div>}
       
-      <Modal isOpen={!!viewingLedgerId} onClose={() => { setViewingLedgerId(null); setViewingLedgerType(null); }} title={`Account Ledger: ${activeLedgerAccount?.name || 'Account'}`} size="xl">
-          {activeLedgerAccount && <LedgerTable entries={activeLedgerAccount.ledger} />}
+      {/* Dealer Edit Modal */}
+      <Modal isOpen={isDealerModalOpen} onClose={() => setIsDealerModalOpen(false)} title={selectedDealer ? "Configure Dealer Parameters" : "Authorize New Dealer"}>
+          <DealerForm dealer={selectedDealer} onClose={() => setIsDealerModalOpen(false)} onSave={onSaveDealer} />
+      </Modal>
+
+      {/* User Edit Modal */}
+      <Modal isOpen={isUserModalOpen} onClose={() => setIsUserModalOpen(false)} title="Modify User Parameters">
+          <UserForm user={selectedUser} onClose={() => setIsUserModalOpen(false)} onSave={async (u, originalId) => {
+              // Usually via an API endpoint that allows Admin to update user
+              await useAuth().fetchWithAuth(`/api/admin/users/${originalId}`, { method: 'PUT', body: JSON.stringify(u) });
+              onRefreshData && onRefreshData();
+          }} />
       </Modal>
     </div>
   );

@@ -1,4 +1,3 @@
-
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
@@ -81,9 +80,6 @@ app.get('/api/auth/verify', authMiddleware, (req, res) => {
 
 // --- PUBLIC DATA ---
 app.get('/api/games', (req, res) => {
-    // Check if the request is from an admin (using a soft check or just filtering by default)
-    // For simplicity, we'll return all games if the requester is verified as admin via token,
-    // otherwise we filter.
     const authHeader = req.headers.authorization;
     let isAdmin = false;
     if (authHeader && authHeader.startsWith('Bearer ')) {
@@ -144,6 +140,14 @@ app.put('/api/admin/dealers/:id', authMiddleware, (req, res) => {
     try {
         const dealer = database.updateDealer(req.body, req.params.id);
         res.json(dealer);
+    } catch (e) { res.status(e.status || 500).json({ message: e.message }); }
+});
+
+app.put('/api/admin/users/:id', authMiddleware, (req, res) => {
+    if (req.user.role !== 'ADMIN') return res.status(403).end();
+    try {
+        const user = database.updateUserByAdmin(req.body, req.params.id);
+        res.json(user);
     } catch (e) { res.status(e.status || 500).json({ message: e.message }); }
 });
 

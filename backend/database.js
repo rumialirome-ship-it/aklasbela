@@ -480,6 +480,23 @@ const placeBulkBets = (uId, gId, groups, placedBy = 'USER') => {
     return result;
 };
 
+const updateGame = (id, data) => {
+    if (!db) throw new Error("DB Error");
+    const allowed = ['name', 'drawTime'];
+    const sets = [];
+    const params = [];
+    for (const key of allowed) {
+        if (data[key] !== undefined) {
+            sets.push(`${key} = ?`);
+            params.push(data[key]);
+        }
+    }
+    if (sets.length === 0) return findAccountById(id, 'games');
+    params.push(id);
+    db.prepare(`UPDATE games SET ${sets.join(', ')} WHERE id = ?`).run(...params);
+    return findAccountById(id, 'games');
+};
+
 const updateGameDrawTime = (id, time) => {
     db.prepare('UPDATE games SET drawTime = ? WHERE id = ?').run(time, id);
     return findAccountById(id, 'games');
@@ -513,5 +530,5 @@ function resetAllGames() {
 }
 
 module.exports = {
-    connect, isSchemaValid, findAccountById, findAccountForLogin, updatePassword, getAllFromTable, runInTransaction, addLedgerEntry, createDealer, updateDealer, findUsersByDealerId, findUserByDealer, findBetsByUserId, createUser, updateUser, updateUserByAdmin, deleteUserByDealer, toggleAccountRestrictionByAdmin, toggleUserRestrictionByDealer, declareWinnerForGame, updateWinningNumber, approvePayoutsForGame, getFinancialSummary, getNumberStakeSummary, placeBulkBets, updateGameDrawTime, resetAllGames, getAllNumberLimits, saveNumberLimit, deleteNumberLimit, findBetsByDealerId, findBetsByGameId, toggleGameVisibility
+    connect, isSchemaValid, findAccountById, findAccountForLogin, updatePassword, getAllFromTable, runInTransaction, addLedgerEntry, createDealer, updateDealer, findUsersByDealerId, findUserByDealer, findBetsByUserId, createUser, updateUser, updateUserByAdmin, deleteUserByDealer, toggleAccountRestrictionByAdmin, toggleUserRestrictionByDealer, declareWinnerForGame, updateWinningNumber, approvePayoutsForGame, getFinancialSummary, getNumberStakeSummary, placeBulkBets, updateGame, updateGameDrawTime, resetAllGames, getAllNumberLimits, saveNumberLimit, deleteNumberLimit, findBetsByDealerId, findBetsByGameId, toggleGameVisibility
 };

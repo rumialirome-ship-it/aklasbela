@@ -218,6 +218,14 @@ app.post('/api/admin/games/:id/approve-payouts', authMiddleware, (req, res) => {
     } catch (e) { res.status(400).json({ message: e.message }); }
 });
 
+app.put('/api/admin/games/:id', authMiddleware, (req, res) => {
+    if (req.user.role !== 'ADMIN') return res.status(403).end();
+    try {
+        const game = database.updateGame(req.params.id, req.body);
+        res.json(game);
+    } catch (e) { res.status(400).json({ message: e.message }); }
+});
+
 app.put('/api/admin/games/:id/draw-time', authMiddleware, (req, res) => {
     if (req.user.role !== 'ADMIN') return res.status(403).end();
     const game = database.updateGameDrawTime(req.params.id, req.body.newDrawTime);

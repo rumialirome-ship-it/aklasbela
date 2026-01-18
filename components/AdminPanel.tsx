@@ -107,8 +107,10 @@ const AdminPanel: React.FC<any> = ({
     const [isUserModalOpen, setIsUserModalOpen] = useState(false);
     const [isLimitModalOpen, setIsLimitModalOpen] = useState(false);
     const [isFundingModalOpen, setIsFundingModalOpen] = useState(false);
+    const [isGameConfigModalOpen, setIsGameConfigModalOpen] = useState(false);
     const [selectedDealer, setSelectedDealer] = useState<Dealer | undefined>(undefined);
     const [selectedUser, setSelectedUser] = useState<User | undefined>(undefined);
+    const [selectedGameForConfig, setSelectedGameForConfig] = useState<Game | undefined>(undefined);
     const [viewingLedger, setViewingLedger] = useState<any>(null);
     const { fetchWithAuth } = useAuth();
 
@@ -400,19 +402,29 @@ const AdminPanel: React.FC<any> = ({
                         return (
                             <div key={game.id} className={`bg-slate-900/40 rounded-[2rem] border border-white/5 p-6 flex flex-col group transition-all duration-500 ${!isVisible ? 'opacity-60 grayscale-[0.4]' : ''}`}>
                                 <div className="flex justify-between items-start mb-6">
-                                    <div>
-                                        <h4 className="text-xl font-black text-white russo tracking-tighter mb-1 flex items-center gap-2">
+                                    <div className="flex-1 min-w-0">
+                                        <h4 className="text-xl font-black text-white russo tracking-tighter mb-1 flex items-center gap-2 truncate">
                                             {game.name}
-                                            {!isVisible && <span className="text-[8px] font-black bg-slate-950 text-slate-500 px-2 py-0.5 rounded-full border border-white/5">HIDDEN</span>}
+                                            {!isVisible && <span className="shrink-0 text-[8px] font-black bg-slate-950 text-slate-500 px-2 py-0.5 rounded-full border border-white/5">HIDDEN</span>}
                                         </h4>
                                         <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Draw @ {game.drawTime}</p>
                                     </div>
-                                    <button 
-                                        onClick={() => toggleGameVisibility(game.id)}
-                                        className={`p-2 rounded-xl border transition-all ${isVisible ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20'}`}
-                                    >
-                                        {isVisible ? Icons.eye : Icons.eyeOff}
-                                    </button>
+                                    <div className="flex gap-1">
+                                        <button 
+                                            onClick={() => { setSelectedGameForConfig(game); setIsGameConfigModalOpen(true); }}
+                                            className="p-2 rounded-xl bg-slate-800/50 text-slate-400 hover:text-white border border-white/5 transition-all"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+                                            </svg>
+                                        </button>
+                                        <button 
+                                            onClick={() => toggleGameVisibility(game.id)}
+                                            className={`p-2 rounded-xl border transition-all ${isVisible ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20'}`}
+                                        >
+                                            {isVisible ? Icons.eye : Icons.eyeOff}
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div className="bg-slate-950/60 rounded-2xl p-4 border border-white/5 text-center min-h-[110px] flex flex-col justify-center mb-6">
@@ -457,10 +469,15 @@ const AdminPanel: React.FC<any> = ({
                                         <>
                                             <button 
                                                 disabled={isPayoutApproved}
-                                                onClick={() => updateWinner(game.id, prompt('New Number?') || '')} 
+                                                onClick={() => {
+                                                    const newVal = prompt('Edit Declared Number:', game.winningNumber);
+                                                    if (newVal !== null && newVal.match(/^\d{1,2}$/)) {
+                                                        updateWinner(game.id, newVal);
+                                                    }
+                                                }} 
                                                 className="py-3 rounded-xl bg-slate-800 text-slate-400 font-black text-[10px] uppercase tracking-widest disabled:opacity-30"
                                             >
-                                                EDIT
+                                                EDIT NUM
                                             </button>
                                             <button 
                                                 disabled={isPayoutApproved}
@@ -583,6 +600,17 @@ const AdminPanel: React.FC<any> = ({
                 }} />
             </Modal>
 
+            <Modal isOpen={isGameConfigModalOpen} onClose={() => setIsGameConfigModalOpen(false)} title="Market Configuration">
+                <GameConfigForm 
+                    game={selectedGameForConfig} 
+                    onSave={async (id, data) => {
+                        await fetchWithAuth(`/api/admin/games/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+                        refreshAnalyticalData();
+                        setIsGameConfigModalOpen(false);
+                    }} 
+                />
+            </Modal>
+
             <Modal isOpen={!!viewingLedger} onClose={() => setViewingLedger(null)} title={`Dealer Ledger Trace: ${viewingLedger?.name}`} size="xl">
                 <div className="bg-slate-950/50 rounded-3xl border border-white/5 overflow-hidden">
                     <table className="w-full text-left font-mono text-[10px]">
@@ -614,6 +642,33 @@ const AdminPanel: React.FC<any> = ({
 };
 
 // --- FORMS ---
+
+const GameConfigForm: React.FC<{ game?: Game; onSave: (id: string, data: any) => Promise<void> }> = ({ game, onSave }) => {
+    const [name, setName] = useState(game?.name || '');
+    const [drawTime, setDrawTime] = useState(game?.drawTime || '');
+
+    const inputClass = "w-full bg-slate-950/50 border border-white/5 rounded-2xl p-4 text-white text-sm outline-none focus:border-red-500/50";
+    const labelClass = "block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2";
+
+    return (
+        <div className="space-y-6">
+            <div>
+                <label className={labelClass}>Market Name</label>
+                <input type="text" value={name} onChange={e => setName(e.target.value)} className={inputClass} placeholder="e.g. Ali Baba" />
+            </div>
+            <div>
+                <label className={labelClass}>Draw Time (24h Format)</label>
+                <input type="time" value={drawTime} onChange={e => setDrawTime(e.target.value)} className={inputClass} />
+            </div>
+            <button 
+                onClick={() => game && onSave(game.id, { name, drawTime })}
+                className="w-full bg-red-600 hover:bg-red-500 text-white font-black py-4 rounded-2xl uppercase tracking-widest text-xs transition-all shadow-lg shadow-red-900/20"
+            >
+                Sync Market Config
+            </button>
+        </div>
+    );
+};
 
 const DealerFundingForm: React.FC<{ dealer?: Dealer; onTopUp: (amt: number) => Promise<void>; onWithdraw: (amt: number) => Promise<void> }> = ({ dealer, onTopUp, onWithdraw }) => {
     const [amount, setAmount] = useState<number | ''>('');

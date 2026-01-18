@@ -31,31 +31,35 @@ h1, h2, h3, .russo {
   flex-direction: column;
 }
 
-/* 3D Tumbling Ball Physics */
-@keyframes ball-tumble {
+/* High-Energy Mechanical Ball Storm */
+@keyframes ball-storm {
   0% { transform: translate(0, 0) rotate(0deg); }
-  20% { transform: translate(140px, -180px) rotate(72deg); }
-  40% { transform: translate(-120px, -240px) rotate(144deg); }
-  60% { transform: translate(100px, -60px) rotate(216deg); }
-  80% { transform: translate(-150px, -130px) rotate(288deg); }
-  100% { transform: translate(0, 0) rotate(360deg); }
+  15% { transform: translate(180px, -220px) rotate(90deg); }
+  30% { transform: translate(-160px, -280px) rotate(180deg); }
+  45% { transform: translate(200px, 100px) rotate(270deg); }
+  60% { transform: translate(-190px, -150px) rotate(360deg); }
+  75% { transform: translate(120px, -300px) rotate(450deg); }
+  90% { transform: translate(-80px, 50px) rotate(540deg); }
+  100% { transform: translate(0, 0) rotate(720deg); }
 }
 
-@keyframes drum-rotation {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+@keyframes rim-glow-rotate {
+  0% { border-color: rgba(56, 189, 248, 0.3); box-shadow: 0 0 20px rgba(56, 189, 248, 0.2); }
+  50% { border-color: rgba(56, 189, 248, 0.8); box-shadow: 0 0 40px rgba(56, 189, 248, 0.6); }
+  100% { border-color: rgba(56, 189, 248, 0.3); box-shadow: 0 0 20px rgba(56, 189, 248, 0.2); }
 }
 
-@keyframes winner-extraction {
-  0% { transform: translateY(0) scale(1); opacity: 1; }
-  50% { transform: translateY(150px) scale(1.5); opacity: 1; filter: blur(2px); }
-  100% { transform: translateY(400px) scale(2); opacity: 0; }
+@keyframes winner-extraction-path {
+  0% { transform: translateY(0) scale(1) rotate(0deg); opacity: 1; }
+  30% { transform: translateY(100px) scale(0.8) rotate(45deg); opacity: 1; }
+  60% { transform: translateY(250px) scale(1.2) rotate(0deg); opacity: 1; filter: blur(1px); }
+  100% { transform: translateY(500px) scale(2) rotate(-20deg); opacity: 0; }
 }
 
 @keyframes ball-slam-reveal {
-  0% { transform: scale(3) translateY(-200px); opacity: 0; filter: blur(20px); }
-  60% { transform: scale(0.9) translateY(20px); opacity: 1; filter: blur(0px); }
-  80% { transform: scale(1.1) translateY(-10px); }
+  0% { transform: scale(4) translateY(-300px); opacity: 0; filter: blur(30px); }
+  60% { transform: scale(0.85) translateY(30px); opacity: 1; filter: blur(0px); }
+  85% { transform: scale(1.1) translateY(-15px); }
   100% { transform: scale(1) translateY(0); }
 }
 
@@ -68,31 +72,34 @@ h1, h2, h3, .russo {
     font-family: 'Russo One', sans-serif;
     color: white;
     font-weight: 900;
-    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 40%),
+    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 40%),
                 radial-gradient(circle at 50% 50%, var(--ball-color, #fbbf24) 0%, #000 100%);
-    box-shadow: inset -2px -2px 6px rgba(0,0,0,0.8), 0 4px 10px rgba(0,0,0,0.5);
+    box-shadow: inset -3px -3px 8px rgba(0,0,0,0.8), 0 6px 12px rgba(0,0,0,0.6);
     user-select: none;
     pointer-events: none;
 }
 
-/* Glass & Glow */
-.glass-globe {
-  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.15) 0%, transparent 60%),
-              radial-gradient(circle at 70% 70%, rgba(56, 189, 248, 0.05) 0%, transparent 60%);
-  backdrop-filter: blur(1px);
-  border: 4px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 0 100px rgba(56, 189, 248, 0.1), inset 0 0 50px rgba(255, 255, 255, 0.05);
+/* Polished Acrylic & LED Rim */
+.glass-globe-premium {
+  background: radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.2) 0%, transparent 50%),
+              radial-gradient(circle at 65% 65%, rgba(56, 189, 248, 0.1) 0%, transparent 60%);
+  backdrop-filter: blur(2px);
+  border: 8px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 120px rgba(56, 189, 248, 0.15), inset 0 0 60px rgba(255, 255, 255, 0.1);
+  animation: rim-glow-rotate 4s infinite ease-in-out;
 }
 
-.globe-shine {
+.acrylic-edge {
   position: absolute;
-  top: 10%;
-  left: 15%;
-  width: 30%;
-  height: 20%;
-  background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 80%);
+  inset: -2px;
   border-radius: 50%;
-  transform: rotate(-15deg);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  pointer-events: none;
+}
+
+.extraction-port-highlight {
+  background: radial-gradient(circle at center, rgba(56, 189, 248, 0.4) 0%, transparent 70%);
+  filter: blur(10px);
 }
 
 /* App Title Styling */

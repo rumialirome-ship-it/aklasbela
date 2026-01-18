@@ -9,26 +9,27 @@ interface ResultRevealOverlayProps {
 const BALL_COLORS = ['#fbbf24', '#38bdf8', '#10b981', '#ef4444', '#8b5cf6', '#f472b6', '#ffffff', '#94a3b8'];
 
 const TENSION_PHRASES = [
-    "ENGAGING MECHANICAL TUMBLER...",
-    "ROTATING 100% TRANSPARENT GLOBE...",
-    "AGITATING ENTRIES FOR FAIRNESS...",
-    "CALIBRATING EXTRACTION PORT...",
-    "IDENTIFYING WINNING SPHERE...",
-    "SATELLITE SYNCING RESULT...",
-    "ISOLATING OFFICIAL BALL...",
+    "ACTIVATING HIGH-SPEED TURBINE...",
+    "MIXING LARGE FORMAT SPHERES...",
+    "MAXIMUM AGITATION ENGAGED...",
+    "VERIFYING MECHANICAL SELECTION...",
+    "EXTRACTION PORT PREPARING...",
+    "ISOLATING OFFICIAL RESULT BALL...",
+    "SATELLITE UPLINK CONFIRMED...",
     "READY TO DECLARE WINNER..."
 ];
 
 const TumblingBall: React.FC<{ index: number, intensity: number, isWinner?: boolean, isExiting?: boolean }> = ({ index, intensity, isWinner, isExiting }) => {
     const style = useMemo(() => {
-        const color = BALL_COLORS[index % BALL_COLORS.length];
-        const size = 18 + (index % 10);
-        const delay = (index * -0.7) % 5;
-        const duration = (2 + (index % 3)) / (1 + intensity);
+        const color = isWinner ? '#fbbf24' : BALL_COLORS[index % BALL_COLORS.length];
+        const size = isWinner ? 35 : 24 + (index % 12);
+        const delay = (index * -1.2) % 6;
+        // High intensity = faster animations
+        const duration = (1.5 + (index % 2.5)) / (1 + intensity * 1.2);
         
-        // Random starting positions within the globe
-        const left = 20 + (index * 7) % 60;
-        const top = 20 + (index * 9) % 50;
+        // Dynamic initial offset for the "storm" effect - balls hit every surface
+        const left = 10 + (index * 13) % 80;
+        const top = 10 + (index * 17) % 70;
         
         return {
             '--ball-color': color,
@@ -36,10 +37,11 @@ const TumblingBall: React.FC<{ index: number, intensity: number, isWinner?: bool
             height: `${size}px`,
             left: `${left}%`,
             top: `${top}%`,
-            animation: isExiting ? 'winner-extraction 1.5s forwards ease-in' : `ball-tumble ${duration}s ease-in-out ${delay}s infinite alternate`,
-            zIndex: isWinner ? 50 : Math.floor(Math.random() * 20),
+            animation: isExiting ? 'winner-extraction-path 2s forwards cubic-bezier(0.4, 0, 0.2, 1)' : `ball-storm ${duration}s ease-in-out ${delay}s infinite alternate`,
+            zIndex: isWinner ? 100 : Math.floor(Math.random() * 50),
             fontSize: `${size / 2.2}px`,
-            opacity: isExiting ? 1 : 0.85
+            opacity: isExiting ? 1 : 0.9,
+            border: isWinner ? '3px solid white' : 'none',
         } as React.CSSProperties;
     }, [index, intensity, isExiting, isWinner]);
 
@@ -47,7 +49,7 @@ const TumblingBall: React.FC<{ index: number, intensity: number, isWinner?: bool
 
     return (
         <div className="lottery-ball-mechanical" style={style}>
-            {isWinner ? '?' : num}
+            <span className="drop-shadow-lg">{isWinner ? '?' : num}</span>
         </div>
     );
 };
@@ -58,8 +60,8 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
   const [phraseIndex, setPhraseIndex] = useState(0);
   const [showFlash, setShowFlash] = useState(false);
 
-  const TOTAL_MIX_TIME = 45000; // 45 seconds of agitation
-  const EXTRACTION_TIME = 4000; // 4 seconds of picking the ball
+  const TOTAL_MIX_TIME = 45000; // 45 seconds of heavy mechanical agitation
+  const EXTRACTION_TIME = 5000; // 5 seconds of cinematic ball travel
 
   useEffect(() => {
     let progressInterval: ReturnType<typeof setInterval>;
@@ -79,7 +81,7 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
 
       phraseInterval = setInterval(() => {
         setPhraseIndex(prev => (prev + 1) % TENSION_PHRASES.length);
-      }, 5500);
+      }, 5600);
 
       return () => {
         clearInterval(progressInterval);
@@ -93,134 +95,142 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
             setTimeout(() => {
                 setPhase('REVEALED');
                 setShowFlash(false);
-            }, 150);
+            }, 180);
         }, EXTRACTION_TIME);
         return () => clearTimeout(timer);
     }
   }, [phase]);
 
   const progress = Math.min(elapsed / TOTAL_MIX_TIME, 1);
-  // Generate 60 numbered balls for the tumbler
-  const balls = useMemo(() => Array.from({ length: 60 }).map((_, i) => i), []);
+  // Generate 80 numbered balls for a dense, high-energy visual experience
+  const balls = useMemo(() => Array.from({ length: 80 }).map((_, i) => i), []);
 
   return (
     <div className="fixed inset-0 z-[2500] bg-slate-950 flex flex-col items-center justify-center overflow-hidden font-sans">
       
-      {/* Dynamic Cinematic Background */}
+      {/* Dynamic Dramatic Lighting */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[200vw] h-full bg-[radial-gradient(ellipse_at_top,rgba(59,130,246,0.15)_0%,transparent_70%)]"></div>
-        <div className={`absolute inset-0 transition-opacity duration-1000 ${phase === 'REVEALED' ? 'opacity-40' : 'opacity-10'} bg-amber-500 animate-pulse`}></div>
-        {/* Machine Scanlines */}
-        <div className="absolute inset-0 opacity-[0.05] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_3px,3px_100%] pointer-events-none"></div>
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[200vw] h-full bg-[radial-gradient(ellipse_at_top,rgba(56,189,248,0.25)_0%,transparent_60%)]"></div>
+        <div className={`absolute inset-0 transition-opacity duration-1000 ${phase === 'REVEALED' ? 'opacity-60' : 'opacity-20'} bg-amber-500 animate-pulse`}></div>
+        {/* CRT Scanline / Mechanical Overlay */}
+        <div className="absolute inset-0 opacity-[0.08] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.4)_50%),linear-gradient(90deg,rgba(255,0,0,0.08),rgba(0,255,0,0.04),rgba(0,0,255,0.08))] bg-[length:100%_4px,4px_100%] pointer-events-none"></div>
       </div>
 
       {showFlash && <div className="fixed inset-0 bg-white z-[3000]"></div>}
 
-      <div className="relative z-10 w-full max-w-5xl px-4 flex flex-col items-center">
+      <div className="relative z-10 w-full max-w-6xl px-4 flex flex-col items-center">
         
-        {/* Header Status Bar */}
-        <div className="mb-12 text-center w-full max-w-md">
-            <h3 className="text-sky-400 text-[10px] md:text-xs font-black tracking-[0.8em] uppercase mb-4 animate-pulse russo">
-                {phase === 'REVEALED' ? 'VALIDATED SELECTION' : TENSION_PHRASES[phraseIndex]}
+        {/* Status Terminal */}
+        <div className="mb-14 text-center w-full max-w-lg">
+            <h3 className="text-sky-400 text-xs md:text-sm font-black tracking-[0.9em] uppercase mb-5 animate-pulse russo">
+                {phase === 'REVEALED' ? 'SYSTEMS STABLE - RESULT LOCKED' : TENSION_PHRASES[phraseIndex]}
             </h3>
-            <div className="h-1.5 w-full bg-slate-900/80 rounded-full overflow-hidden border border-white/5 relative p-0.5">
+            <div className="h-2 w-full bg-slate-900 rounded-full overflow-hidden border border-white/10 relative p-0.5">
                 <div 
-                    className="h-full bg-gradient-to-r from-blue-600 via-sky-400 to-cyan-300 transition-all duration-100 ease-linear shadow-[0_0_15px_rgba(56,189,248,0.5)] rounded-full" 
+                    className="h-full bg-gradient-to-r from-blue-700 via-sky-400 to-cyan-200 transition-all duration-100 ease-linear shadow-[0_0_20px_rgba(56,189,248,0.8)] rounded-full" 
                     style={{ width: phase === 'REVEALED' ? '100%' : `${progress * 100}%` }}
                 ></div>
             </div>
-            <div className="flex justify-between mt-2 text-[9px] text-slate-500 font-black tracking-widest russo uppercase">
-                <span>Mechanical Sync</span>
+            <div className="flex justify-between mt-3 text-[10px] text-slate-400 font-black tracking-[0.2em] russo uppercase">
+                <span className="flex items-center gap-2"><span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping"></span> High-Agitation Phase</span>
                 <span className="text-sky-500">{Math.floor(progress * 100)}%</span>
             </div>
         </div>
 
-        {/* THE MECHANICAL TUMBLER MACHINE */}
-        <div className="relative mb-12 flex flex-col items-center">
+        {/* THE GIANT MECHANICAL TUMBLER */}
+        <div className="relative mb-16 flex flex-col items-center">
             
-            {/* Pedestal Structure */}
-            <div className="absolute -bottom-16 left-1/2 -translate-x-1/2 w-64 h-48 bg-gradient-to-t from-slate-900 to-slate-800 border-x-[12px] border-slate-700 rounded-t-[80px] shadow-2xl">
-                <div className="absolute top-6 left-1/2 -translate-x-1/2 w-24 h-4 bg-sky-500/20 rounded-full blur-md"></div>
-                {/* Extraction Pipe Opening */}
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-10 bg-slate-950 border-x-4 border-slate-700 rounded-b-xl"></div>
+            {/* Massive Steel Pedestal */}
+            <div className="absolute -bottom-20 left-1/2 -translate-x-1/2 w-80 h-64 bg-gradient-to-t from-slate-950 via-slate-800 to-slate-900 border-x-[16px] border-slate-700 rounded-t-[100px] shadow-[0_40px_100px_rgba(0,0,0,0.9)]">
+                {/* Internal Glow from bottom LED */}
+                <div className="absolute top-8 left-1/2 -translate-x-1/2 w-32 h-6 bg-sky-400/30 rounded-full blur-xl animate-pulse"></div>
+                {/* Precision Exit Port Housing */}
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-12 bg-slate-950 border-x-4 border-slate-600 rounded-b-2xl shadow-inner">
+                    <div className="absolute inset-0 extraction-port-highlight opacity-50"></div>
+                </div>
             </div>
             
-            {/* The Main Glass Globe */}
+            {/* The Main High-Visibility Globe */}
             <div className={`
-                w-72 h-72 md:w-[480px] md:h-[480px] rounded-full relative overflow-hidden glass-globe transition-all duration-1000
-                ${phase === 'MIXING' ? 'scale-100 rotate-0' : 'scale-90 opacity-40 rotate-[20deg] blur-sm'}
+                w-80 h-80 md:w-[560px] md:h-[560px] rounded-full relative overflow-hidden glass-globe-premium transition-all duration-1000
+                ${phase === 'MIXING' ? 'scale-100 rotate-0' : 'scale-90 opacity-40 rotate-[25deg] blur-sm'}
             `}>
+                <div className="acrylic-edge"></div>
                 <div className="globe-shine"></div>
                 
-                {/* Internal Rotating Cage Vanes (Simulated with rotating border) */}
-                <div className="absolute inset-8 border-[2px] border-dashed border-white/10 rounded-full" 
-                     style={{ animation: `drum-rotation ${4 / (1 + progress)}s linear infinite` }}></div>
+                {/* Rotating Inner Vanes/Turbine (Visual Only) */}
+                <div className="absolute inset-10 border-[6px] border-dashed border-white/5 rounded-full" 
+                     style={{ animation: `drum-rotation ${2.5 / (1 + progress)}s linear infinite` }}></div>
+                <div className="absolute inset-[30%] border-[2px] border-white/5 rounded-full" 
+                     style={{ animation: `drum-rotation ${5 / (1 + progress)}s linear reverse infinite` }}></div>
 
-                {/* Tumbling Balls */}
+                {/* The 'Storm' of Balls */}
                 {phase === 'MIXING' && balls.map(i => (
                     <TumblingBall key={i} index={i} intensity={progress} />
                 ))}
 
-                {/* The "Picked" Ball (Only during extraction) */}
+                {/* The Specific Winning Ball being Channeled */}
                 {phase === 'EXTRACTION' && (
-                    <TumblingBall index={parseInt(winningNumber) || 7} intensity={1} isWinner={true} isExiting={true} />
+                    <TumblingBall index={parseInt(winningNumber) || 8} intensity={1} isWinner={true} isExiting={true} />
                 )}
 
-                {/* Center Hub */}
-                <div className="absolute inset-0 flex items-center justify-center opacity-30 pointer-events-none">
-                    <div className="w-12 h-12 bg-slate-700 rounded-full border-4 border-white/20 shadow-2xl"></div>
+                {/* Heavy Duty Hub Component */}
+                <div className="absolute inset-0 flex items-center justify-center opacity-40 pointer-events-none">
+                    <div className="w-20 h-20 bg-slate-800 rounded-full border-8 border-slate-700 shadow-2xl flex items-center justify-center">
+                        <div className="w-6 h-6 bg-sky-500 rounded-full animate-pulse shadow-[0_0_15px_#0ea5e9]"></div>
+                    </div>
                 </div>
             </div>
 
-            {/* Clear Extraction Tube */}
+            {/* Clear Acrylic Display/Extraction Tube */}
             <div className={`
-                absolute top-[92%] left-1/2 -translate-x-1/2 w-16 h-40 bg-gradient-to-b from-white/10 to-transparent border-x-2 border-white/20 transition-all duration-700
-                ${phase === 'MIXING' ? 'opacity-0 -translate-y-10' : 'opacity-100 translate-y-0'}
+                absolute top-[90%] left-1/2 -translate-x-1/2 w-20 h-56 bg-gradient-to-b from-white/20 via-white/5 to-transparent border-x-4 border-white/10 transition-all duration-1000
+                ${phase === 'MIXING' ? 'opacity-0 -translate-y-12' : 'opacity-100 translate-y-0'}
             `}>
-                <div className="absolute bottom-0 w-full h-1.5 bg-sky-500 shadow-[0_0_20px_#0ea5e9] animate-pulse"></div>
+                <div className="absolute bottom-0 w-full h-3 bg-sky-400 shadow-[0_0_30px_#0ea5e9] animate-pulse"></div>
             </div>
         </div>
 
-        {/* WINNING REVEAL ZONE */}
-        <div className="h-64 flex flex-col items-center justify-center">
+        {/* WINNING REVEAL DECLARATION AREA */}
+        <div className="h-72 flex flex-col items-center justify-center">
             {phase === 'EXTRACTION' && (
-                <div className="flex flex-col items-center">
-                    <div className="w-20 h-20 rounded-full bg-gradient-to-br from-amber-300 to-amber-600 shadow-[0_0_50px_rgba(251,191,36,0.6)] flex items-center justify-center border-4 border-white animate-bounce">
-                        <span className="text-white font-black text-2xl russo">?</span>
+                <div className="flex flex-col items-center animate-fade-in">
+                    <div className="w-24 h-24 rounded-full bg-gradient-to-br from-amber-200 to-amber-500 shadow-[0_0_60px_rgba(251,191,36,0.7)] flex items-center justify-center border-[6px] border-white animate-bounce">
+                        <span className="text-white font-black text-4xl russo">?</span>
                     </div>
-                    <p className="mt-4 text-amber-500 font-black text-[10px] tracking-[0.4em] uppercase animate-pulse">Retrieving Pick...</p>
+                    <p className="mt-8 text-amber-500 font-black text-xs tracking-[0.6em] uppercase animate-pulse russo">ISOLATING WINNING SPHERE</p>
                 </div>
             )}
 
             {phase === 'REVEALED' && (
-                <div className="flex flex-col items-center" style={{ animation: 'ball-slam-reveal 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards' }}>
-                    <div className="relative group mb-8">
-                        {/* OFFICIAL WINNING BALL */}
-                        <div className="w-44 h-44 md:w-64 md:h-64 rounded-full bg-gradient-to-br from-white via-amber-400 to-amber-700 shadow-[0_0_120px_rgba(251,191,36,0.5)] border-[12px] border-white flex flex-col items-center justify-center relative overflow-hidden">
-                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.8)_0%,transparent_60%)]"></div>
-                            <span className="text-slate-950 text-8xl md:text-[11rem] font-black russo tracking-tighter drop-shadow-2xl z-10">
+                <div className="flex flex-col items-center" style={{ animation: 'ball-slam-reveal 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards' }}>
+                    <div className="relative group mb-10">
+                        {/* LARGE DECLARED WINNING BALL */}
+                        <div className="w-52 h-52 md:w-80 md:h-80 rounded-full bg-gradient-to-br from-white via-amber-400 to-amber-800 shadow-[0_0_150px_rgba(251,191,36,0.6)] border-[16px] border-white flex flex-col items-center justify-center relative overflow-hidden">
+                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.9)_0%,transparent_60%)]"></div>
+                            <span className="text-slate-950 text-9xl md:text-[14rem] font-black russo tracking-tighter drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)] z-10">
                                 {winningNumber}
                             </span>
-                            {/* Metallic Shine Sweep */}
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent w-1/2 h-full -skew-x-45" 
-                                 style={{ animation: 'shine-sweep 3s infinite linear' }}></div>
+                            {/* Extreme Metallic Shine Sweep */}
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent w-1/2 h-full -skew-x-45" 
+                                 style={{ animation: 'shine-sweep 2.5s infinite linear' }}></div>
                         </div>
                         
-                        {/* Holy Aura */}
-                        <div className="absolute -inset-20 bg-amber-500/20 blur-[80px] -z-10 animate-pulse rounded-full"></div>
-                        <div className="absolute top-full mt-6 left-1/2 -translate-x-1/2 w-48 h-10 bg-black/60 blur-2xl rounded-full"></div>
+                        {/* Divine Aura Lighting */}
+                        <div className="absolute -inset-24 bg-amber-400/30 blur-[100px] -z-10 animate-pulse rounded-full"></div>
+                        <div className="absolute top-full mt-10 left-1/2 -translate-x-1/2 w-64 h-12 bg-black/70 blur-3xl rounded-full"></div>
                     </div>
 
                     <div className="text-center">
-                        <h1 className="text-4xl md:text-7xl font-black text-white uppercase russo mb-1 tracking-widest drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">{gameName}</h1>
-                        <p className="text-amber-400 font-bold uppercase tracking-[0.4em] text-xs md:text-sm mb-10">Certified Draw Selection</p>
+                        <h1 className="text-5xl md:text-8xl font-black text-white uppercase russo mb-2 tracking-widest drop-shadow-[0_0_20px_rgba(56,189,248,0.4)]">{gameName}</h1>
+                        <p className="text-amber-400 font-black uppercase tracking-[0.8em] text-[10px] md:text-sm mb-12">OFFICIAL DRAW DECLARATION</p>
                         
                         <button 
                             onClick={onClose}
-                            className="group relative bg-white text-slate-950 font-black px-16 py-4 rounded-full overflow-hidden hover:scale-110 active:scale-95 transition-all shadow-[0_0_50px_rgba(255,255,255,0.2)] russo text-sm tracking-widest"
+                            className="group relative bg-white text-slate-950 font-black px-20 py-5 rounded-full overflow-hidden hover:scale-110 active:scale-95 transition-all shadow-[0_0_60px_rgba(255,255,255,0.25)] russo text-lg tracking-[0.2em]"
                         >
-                            <span className="relative z-10">DISMISS DRAW</span>
-                            <div className="absolute inset-0 bg-amber-500 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+                            <span className="relative z-10">DISMISS RESULT</span>
+                            <div className="absolute inset-0 bg-amber-500 translate-y-full group-hover:translate-y-0 transition-transform duration-500"></div>
                         </button>
                     </div>
                 </div>
@@ -229,16 +239,16 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
 
       </div>
 
-      {/* Atmospheric Particles */}
+      {/* High-Agitation Particle Effects */}
       {phase === 'MIXING' && (
-        <div className="absolute inset-0 pointer-events-none opacity-40">
-            {Array.from({ length: 30 }).map((_, i) => (
+        <div className="absolute inset-0 pointer-events-none opacity-50">
+            {Array.from({ length: 40 }).map((_, i) => (
                 <div key={i} className="absolute bg-white rounded-full animate-ping" style={{
-                    width: '1px', height: '1px',
+                    width: '2px', height: '2px',
                     left: `${Math.random() * 100}%`,
                     top: `${Math.random() * 100}%`,
-                    animationDuration: `${Math.random() * 4 + 2}s`,
-                    animationDelay: `${Math.random() * 2}s`
+                    animationDuration: `${Math.random() * 3 + 1}s`,
+                    animationDelay: `${Math.random() * 1}s`
                 }}></div>
             ))}
         </div>

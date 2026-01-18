@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Role, User, Dealer, Admin, Game, Bet, LedgerEntry } from './types';
 import { Icons } from './constants';
@@ -95,7 +96,12 @@ const AppContent: React.FC = () => {
 
     const fetchPublicData = useCallback(async () => {
         try {
-            const gamesResponse = await fetch('/api/games');
+            // Send auth header so server knows if we are admin (to show hidden games)
+            const token = localStorage.getItem('authToken');
+            const headers: any = {};
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+
+            const gamesResponse = await fetch('/api/games', { headers });
             const data = await gamesResponse.json();
             if (gamesResponse.ok) {
                 setGames(data);
@@ -245,7 +251,7 @@ const AppContent: React.FC = () => {
                                 toggleAccountRestriction={async (id, type) => { await fetchWithAuth(`/api/admin/accounts/${type}/${id}/toggle-restriction`, { method: 'PUT' }); fetchPrivateData(); }}
                                 onPlaceAdminBets={async (d) => { await fetchWithAuth('/api/admin/bulk-bet', { method: 'POST', body: JSON.stringify(d) }); fetchPrivateData(); }}
                                 updateGameDrawTime={async (id, time) => { await fetchWithAuth(`/api/admin/games/${id}/draw-time`, { method: 'PUT', body: JSON.stringify({ newDrawTime: time }) }); fetchPrivateData(); }}
-                                onRefreshData={fetchPrivateData} 
+                                onRefreshData={async () => { await Promise.all([fetchPublicData(), fetchPrivateData()]); }} 
                             />
                         )}
                     </main>

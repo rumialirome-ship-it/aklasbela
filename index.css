@@ -121,62 +121,43 @@ h1, h2, h3, .russo {
 }
 
 /* 3D Ball Physics Simulations */
-@keyframes ball-float {
-  0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1); }
-  25% { transform: translate(60px, -40px) rotate(90deg) scale(0.9); }
-  50% { transform: translate(-30px, -80px) rotate(180deg) scale(1.1); }
-  75% { transform: translate(-70px, -20px) rotate(270deg) scale(0.95); }
+@keyframes ball-swirl {
+  0% { transform: translate(0, 0) scale(1) rotate(0deg); }
+  25% { transform: translate(150px, -100px) scale(0.9) rotate(90deg); }
+  50% { transform: translate(-100px, -150px) scale(1.1) rotate(180deg); }
+  75% { transform: translate(-150px, 80px) scale(0.95) rotate(270deg); }
+  100% { transform: translate(0, 0) scale(1) rotate(360deg); }
 }
 
-@keyframes ball-bounce-intense {
-  0%, 100% { transform: translate(0, 0) rotate(0deg); }
-  20% { transform: translate(120px, -150px) rotate(72deg); }
-  40% { transform: translate(-100px, -200px) rotate(144deg); }
-  60% { transform: translate(80px, -50px) rotate(216deg); }
-  80% { transform: translate(-140px, -120px) rotate(288deg); }
+@keyframes ball-drop-cinematic {
+  0% { transform: translateY(-400px) scale(0.3) rotate(-45deg); opacity: 0; filter: blur(10px); }
+  50% { transform: translateY(50px) scale(1.2) rotate(10deg); opacity: 1; filter: blur(0px); }
+  75% { transform: translateY(-20px) scale(0.9); }
+  100% { transform: translateY(0) scale(1) rotate(0deg); }
 }
 
-@keyframes drum-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+@keyframes glass-shimmer {
+  0% { transform: translateX(-100%) skewX(-30deg); }
+  100% { transform: translateX(200%) skewX(-30deg); }
 }
 
-@keyframes ball-drop {
-  0% { transform: translateY(-300px) scale(0.5); opacity: 0; }
-  60% { transform: translateY(20px) scale(1.1); opacity: 1; }
-  80% { transform: translateY(-10px) scale(0.95); }
-  100% { transform: translateY(0) scale(1); }
+.glass-pot-glow {
+  box-shadow: 0 0 60px rgba(56, 189, 248, 0.1), inset 0 0 40px rgba(255, 255, 255, 0.1);
 }
 
-.lottery-ball {
+.lottery-ball-3d {
     position: absolute;
     border-radius: 50%;
-    background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 20%),
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Russo One', sans-serif;
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.9);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 30%),
                 radial-gradient(circle at 50% 50%, var(--ball-color, #fff) 0%, #000 100%);
-    box-shadow: inset -5px -5px 10px rgba(0,0,0,0.5), 0 5px 15px rgba(0,0,0,0.3);
-}
-
-/* Glassmorphism */
-.glass-panel {
-  background: var(--panel-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
-}
-
-.glass-card {
-  background: rgba(30, 41, 59, 0.4);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.glass-card:hover {
-  background: rgba(30, 41, 59, 0.6);
-  border-color: rgba(251, 191, 36, 0.3);
-  transform: translateY(-4px);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4), 0 0 20px rgba(251, 191, 36, 0.1);
+    box-shadow: inset -4px -4px 8px rgba(0,0,0,0.6), 0 10px 20px rgba(0,0,0,0.4);
 }
 
 /* UI Elements */
@@ -195,11 +176,6 @@ h1, h2, h3, .russo {
 
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-/* Custom Inputs */
-input[type="date"]::-webkit-calendar-picker-indicator {
-  filter: invert(0.8) sepia(1) saturate(5) hue-rotate(350deg);
-}
 
 .mobile-scroll-x {
   scrollbar-width: thin;

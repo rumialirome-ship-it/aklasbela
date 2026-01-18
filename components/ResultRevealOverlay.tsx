@@ -7,26 +7,26 @@ interface ResultRevealOverlayProps {
 }
 
 const TENSION_PHRASES = [
-    "ACTIVATING CAGE REVOLUTION...",
-    "MIXING ENTRIES IN REAL-TIME...",
-    "SATELLITE DATA SYNCING...",
+    "INITIALIZING CAGE ROTATION...",
+    "RANDOMLY MIXING 100 ENTRIES...",
+    "VERIFYING BLOCKCHAIN SEED...",
+    "SYSTEM STABILIZING...",
+    "CALCULATING PHYSICS PATH...",
+    "IDENTIFYING WINNING SPHERE...",
     "LOCKING EXTRACTION CHAMBER...",
-    "CALCULATING PROBABILITY FIELD...",
-    "IDENTIFYING THE WINNER...",
-    "FINAL STABILIZATION...",
-    "RELEASING JACKPOT BALL..."
+    "RELEASING OFFICIAL RESULT..."
 ];
 
-const BALL_COLORS = ['#fbbf24', '#f59e0b', '#10b981', '#3b82f6', '#ef4444', '#8b5cf6', '#ec4899', '#ffffff'];
+const BALL_COLORS = ['#fbbf24', '#38bdf8', '#10b981', '#ef4444', '#8b5cf6', '#f472b6', '#ffffff', '#94a3b8'];
 
 const LotteryDrumBall: React.FC<{ index: number, isMixing: boolean, intensity: number }> = ({ index, isMixing, intensity }) => {
     const style = useMemo(() => {
         const color = BALL_COLORS[index % BALL_COLORS.length];
-        const size = Math.random() * 15 + 15;
-        const delay = Math.random() * -5;
-        const duration = (Math.random() * 2 + 1.5) / (1 + intensity);
-        const left = 20 + Math.random() * 60;
-        const top = 30 + Math.random() * 40;
+        const size = Math.random() * 12 + 18; // More uniform but varied
+        const delay = Math.random() * -10;
+        const duration = (Math.random() * 3 + 2) / (1 + intensity * 1.5);
+        const left = 15 + Math.random() * 70;
+        const top = 20 + Math.random() * 60;
         
         return {
             '--ball-color': color,
@@ -34,14 +34,16 @@ const LotteryDrumBall: React.FC<{ index: number, isMixing: boolean, intensity: n
             height: `${size}px`,
             left: `${left}%`,
             top: `${top}%`,
-            animation: isMixing ? `ball-bounce-intense ${duration}s ease-in-out ${delay}s infinite alternate` : 'none',
-            opacity: 0.8 + (Math.random() * 0.2),
-            zIndex: Math.floor(Math.random() * 10),
-            filter: `blur(${Math.random() * 1.5}px)`
+            animation: isMixing ? `ball-swirl ${duration}s ease-in-out ${delay}s infinite` : 'none',
+            opacity: 0.9,
+            zIndex: Math.floor(Math.random() * 20),
+            fontSize: `${size / 2.5}px`
         } as React.CSSProperties;
     }, [index, isMixing, intensity]);
 
-    return <div className="lottery-ball" style={style} />;
+    const numDisplay = useMemo(() => Math.floor(Math.random() * 100).toString().padStart(2, '0'), []);
+
+    return <div className="lottery-ball-3d" style={style}>{numDisplay}</div>;
 };
 
 const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, winningNumber, onClose }) => {
@@ -50,8 +52,8 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
   const [showFlash, setShowFlash] = useState(false);
   const [phraseIndex, setPhraseIndex] = useState(0);
 
-  const TOTAL_MIX_TIME = 45000; // Exact 45 seconds for mixing
-  const EXTRACTION_TIME = 4000; // 4 seconds to drop the ball
+  const TOTAL_MIX_TIME = 45000; // 45 seconds exactly
+  const EXTRACTION_TIME = 5000; // 5 seconds cinematic extraction
 
   useEffect(() => {
     let progressInterval: ReturnType<typeof setInterval>;
@@ -71,7 +73,7 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
 
       phraseInterval = setInterval(() => {
         setPhraseIndex(prev => (prev + 1) % TENSION_PHRASES.length);
-      }, 5500);
+      }, 5600); // Cycles through phrases
 
       return () => {
         clearInterval(progressInterval);
@@ -85,115 +87,129 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
             setTimeout(() => {
                 setPhase('REVEALED');
                 setShowFlash(false);
-            }, 150);
+            }, 200);
         }, EXTRACTION_TIME);
         return () => clearTimeout(timer);
     }
   }, [phase]);
 
   const progress = Math.min(elapsed / TOTAL_MIX_TIME, 1);
-  const balls = useMemo(() => Array.from({ length: 35 }).map((_, i) => i), []);
+  const balls = useMemo(() => Array.from({ length: 60 }).map((_, i) => i), []);
 
   return (
-    <div className="fixed inset-0 z-[2000] bg-slate-950 flex flex-col items-center justify-center overflow-hidden font-sans">
+    <div className="fixed inset-0 z-[2500] bg-slate-950 flex flex-col items-center justify-center overflow-hidden font-sans">
       
-      {/* Cinematic Background Lighting */}
+      {/* Background Lighting Layers */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[200vw] h-[100vh] bg-[radial-gradient(ellipse_at_top,rgba(59,130,246,0.15)_0%,transparent_70%)]"></div>
-        <div className={`absolute inset-0 transition-opacity duration-1000 ${progress > 0.8 ? 'opacity-20' : 'opacity-0'} bg-amber-500/10 animate-pulse`}></div>
+        <div className={`absolute top-0 left-1/2 -translate-x-1/2 w-[200vw] h-[100vh] bg-[radial-gradient(ellipse_at_top,rgba(56,189,248,0.2)_0%,transparent_70%)] transition-opacity duration-1000 ${phase === 'REVEALED' ? 'opacity-30' : 'opacity-100'}`}></div>
+        <div className={`absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-slate-900 to-transparent`}></div>
+        {/* Dynamic Scanline */}
+        <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_2px,3px_100%] pointer-events-none"></div>
       </div>
 
-      {showFlash && <div className="fixed inset-0 bg-white z-[2100]"></div>}
+      {showFlash && <div className="fixed inset-0 bg-white z-[3000]"></div>}
 
-      <div className="relative z-10 w-full max-w-4xl px-4 flex flex-col items-center">
+      <div className="relative z-10 w-full max-w-6xl px-4 flex flex-col items-center">
         
-        {/* Header Status */}
-        <div className="mb-12 text-center">
-            <h2 className="text-amber-500 text-xs md:text-sm font-black tracking-[0.6em] uppercase mb-4 animate-pulse russo">
-                {phase === 'REVEALED' ? '✨ OFFICIAL SELECTION ✨' : TENSION_PHRASES[phraseIndex]}
-            </h2>
-            <div className="h-1.5 w-64 md:w-96 bg-slate-900 rounded-full mx-auto overflow-hidden border border-white/5 relative">
+        {/* Top Branding & Status */}
+        <div className="mb-8 text-center">
+            <h3 className="text-sky-400 text-xs font-black tracking-[0.8em] uppercase mb-3 animate-pulse russo">
+                {phase === 'REVEALED' ? 'OFFICIAL RESULT VALIDATED' : TENSION_PHRASES[phraseIndex]}
+            </h3>
+            <div className="h-2 w-72 md:w-[500px] bg-slate-900/80 rounded-full mx-auto overflow-hidden border border-white/5 relative p-0.5">
                 <div 
-                    className="h-full bg-gradient-to-r from-blue-600 via-cyan-400 to-emerald-400 transition-all duration-100 ease-linear shadow-[0_0_15px_rgba(34,211,238,0.5)]" 
+                    className="h-full bg-gradient-to-r from-blue-600 via-sky-400 to-cyan-300 transition-all duration-100 ease-linear shadow-[0_0_20px_rgba(56,189,248,0.6)] rounded-full" 
                     style={{ width: phase === 'REVEALED' ? '100%' : `${progress * 100}%` }}
                 ></div>
             </div>
-            <p className="text-[10px] text-slate-500 mt-2 uppercase font-black tracking-widest russo">
-                {phase === 'REVEALED' ? 'TRANSACTION COMPLETE' : `NETWORK MIXING: ${(progress * 100).toFixed(0)}%`}
-            </p>
+            <div className="flex justify-between w-72 md:w-[500px] mx-auto mt-2 text-[10px] text-slate-500 font-black tracking-widest russo">
+                <span>SECURE SYNC</span>
+                <span className="text-sky-500">{Math.floor(progress * 100)}%</span>
+            </div>
         </div>
 
-        {/* 3D LOTTERY CAGE (THE POT) */}
-        <div className="relative mb-12">
+        {/* THE GIANT GLASS POT */}
+        <div className="relative mb-12 flex flex-col items-center">
             
-            {/* The Stand */}
-            <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-48 h-32 border-x-4 border-slate-700/50 rounded-t-3xl"></div>
+            {/* Pedestal Base */}
+            <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 w-80 h-40 bg-gradient-to-t from-slate-800 to-slate-950 border-x-8 border-slate-700 rounded-t-[100px] shadow-2xl">
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 w-24 h-4 bg-sky-500/20 rounded-full blur-md"></div>
+            </div>
             
-            {/* The Glass Pot */}
+            {/* The Huge Glass Sphere */}
             <div className={`
-                w-64 h-64 md:w-96 md:h-96 rounded-full border-4 border-white/10 relative overflow-hidden backdrop-blur-[2px] transition-all duration-1000
-                ${phase === 'MIXING' ? 'scale-100' : 'scale-90 opacity-50'}
-                bg-gradient-to-br from-white/10 to-transparent
+                w-80 h-80 md:w-[500px] md:h-[500px] rounded-full border-[10px] border-white/10 relative overflow-hidden glass-pot-glow transition-all duration-1000
+                ${phase === 'MIXING' ? 'scale-100 rotate-0' : 'scale-90 opacity-40 rotate-[15deg] blur-sm'}
+                bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.15)_0%,rgba(56,189,248,0.05)_100%)]
             `}>
-                {/* Drum Shine */}
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.1)_0%,transparent_60%)] pointer-events-none"></div>
-                
-                {/* Balls inside the pot */}
+                {/* Glass Highlights */}
+                <div className="absolute inset-0 pointer-events-none">
+                    <div className="absolute top-[10%] left-[15%] w-1/4 h-1/4 bg-white/10 rounded-full blur-2xl"></div>
+                    <div className="absolute bottom-[10%] right-[15%] w-1/3 h-1/3 bg-sky-500/5 rounded-full blur-3xl"></div>
+                    {/* Shimmer Sweep */}
+                    <div className="absolute inset-0 overflow-hidden rounded-full">
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent w-1/2 h-full skew-x-[-30deg]" style={{ animation: 'glass-shimmer 3s infinite' }}></div>
+                    </div>
+                </div>
+
+                {/* Mixing Balls */}
                 {phase === 'MIXING' && balls.map(i => (
                     <LotteryDrumBall key={i} index={i} isMixing={true} intensity={progress} />
                 ))}
 
-                {/* Mixing Spinner Lines */}
-                <div 
-                    className="absolute inset-4 border-2 border-dashed border-white/5 rounded-full"
-                    style={{ animation: `drum-spin ${2 / (1 + progress)}s linear infinite` }}
-                ></div>
+                {/* Central Mechanism */}
+                <div className="absolute inset-0 flex items-center justify-center opacity-20 pointer-events-none">
+                    <div className="w-1/2 h-1/2 border-[20px] border-dotted border-white/20 rounded-full" style={{ animation: `drum-spin ${3 / (1 + progress)}s linear infinite` }}></div>
+                </div>
             </div>
 
-            {/* Extraction Tube (Only visible when extracting or revealed) */}
+            {/* Extraction Pipe */}
             <div className={`
-                absolute top-full left-1/2 -translate-x-1/2 w-12 h-24 border-x-4 border-slate-700/30 transition-all duration-1000
-                ${phase === 'MIXING' ? 'opacity-0' : 'opacity-100'}
+                absolute top-[90%] left-1/2 -translate-x-1/2 w-20 h-48 bg-gradient-to-b from-transparent via-white/5 to-white/10 border-x-4 border-white/10 transition-all duration-1000
+                ${phase === 'MIXING' ? 'opacity-0 -translate-y-20' : 'opacity-100 translate-y-0'}
             `}>
-                <div className="absolute bottom-0 w-full h-1 bg-amber-500/50 blur-md"></div>
+                <div className="absolute bottom-0 w-full h-2 bg-sky-500 shadow-[0_0_20px_#0ea5e9] animate-pulse"></div>
             </div>
         </div>
 
-        {/* WINNING BALL REVEAL */}
-        <div className="h-48 flex flex-col items-center justify-center">
+        {/* WINNING REVEAL DISPLAY AREA */}
+        <div className="h-64 flex flex-col items-center justify-center">
             {phase === 'EXTRACTING' && (
-                <div className="flex flex-col items-center animate-bounce">
-                    <div className="w-16 h-16 md:w-24 md:h-24 rounded-full bg-gradient-to-br from-amber-300 to-amber-600 shadow-[0_0_30px_rgba(251,191,36,0.6)] flex items-center justify-center border-4 border-white/20">
-                        <span className="text-white font-black text-2xl animate-pulse">?</span>
+                <div className="flex flex-col items-center">
+                    <div className="w-24 h-24 md:w-32 md:h-32 rounded-full bg-gradient-to-br from-amber-300 to-amber-600 shadow-[0_0_50px_rgba(251,191,36,0.6)] flex items-center justify-center border-8 border-white animate-bounce">
+                        <span className="text-white font-black text-3xl russo">?</span>
                     </div>
-                    <p className="text-amber-500 font-black text-[10px] mt-4 tracking-[0.4em] uppercase">Extracting...</p>
+                    <h4 className="mt-6 text-amber-500 font-black text-sm tracking-[0.5em] uppercase animate-pulse russo">EXTRACTING WINNER</h4>
                 </div>
             )}
 
             {phase === 'REVEALED' && (
-                <div className="flex flex-col items-center" style={{ animation: 'ball-drop 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards' }}>
-                    <div className="relative group">
-                        {/* Winning Ball */}
-                        <div className="w-32 h-32 md:w-48 md:h-48 rounded-full bg-gradient-to-br from-white via-amber-400 to-amber-600 shadow-[0_0_80px_rgba(251,191,36,0.4)] border-[8px] border-white flex flex-col items-center justify-center relative overflow-hidden">
-                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.8)_0%,transparent_50%)]"></div>
-                            <span className="text-slate-900 text-6xl md:text-8xl font-black russo tracking-tighter drop-shadow-xl z-10">
+                <div className="flex flex-col items-center" style={{ animation: 'ball-drop-cinematic 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards' }}>
+                    <div className="relative group mb-8">
+                        {/* THE WINNING BALL */}
+                        <div className="w-40 h-40 md:w-64 md:h-64 rounded-full bg-gradient-to-br from-white via-amber-400 to-amber-700 shadow-[0_0_120px_rgba(251,191,36,0.5)] border-[12px] border-white flex flex-col items-center justify-center relative overflow-hidden">
+                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.8)_0%,transparent_60%)]"></div>
+                            <span className="text-slate-900 text-7xl md:text-9xl font-black russo tracking-tighter drop-shadow-2xl z-10">
                                 {winningNumber}
                             </span>
+                            {/* Inner Shine Sweep */}
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent w-1/2 h-full skew-x-[-45deg]" style={{ animation: 'glass-shimmer 2s infinite' }}></div>
                         </div>
                         
-                        {/* God Ray Light */}
-                        <div className="absolute -inset-20 bg-amber-500/20 blur-[60px] -z-10 animate-pulse"></div>
+                        {/* Aura Glow */}
+                        <div className="absolute -inset-16 bg-amber-500/20 blur-[80px] -z-10 animate-pulse rounded-full"></div>
+                        <div className="absolute top-full mt-4 left-1/2 -translate-x-1/2 w-48 h-8 bg-black/40 blur-xl rounded-full"></div>
                     </div>
 
-                    <div className="mt-8 text-center animate-reveal-slam-intense">
-                        <h1 className="text-2xl md:text-5xl font-black text-white uppercase russo mb-2 tracking-widest">{gameName}</h1>
-                        <p className="text-amber-400 font-bold uppercase tracking-[0.3em] text-[10px] md:text-xs mb-8">Official Draw Result</p>
+                    <div className="text-center">
+                        <h1 className="text-4xl md:text-7xl font-black text-white uppercase russo mb-1 tracking-widest drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">{gameName}</h1>
+                        <p className="text-amber-400 font-bold uppercase tracking-[0.5em] text-xs md:text-sm mb-10">THE GOLD STANDARD RESULTS</p>
                         
                         <button 
                             onClick={onClose}
-                            className="group relative bg-white text-slate-950 font-black px-12 py-3 rounded-full overflow-hidden hover:scale-110 active:scale-95 transition-all shadow-[0_0_30px_rgba(255,255,255,0.3)] russo text-sm tracking-widest"
+                            className="group relative bg-white text-slate-950 font-black px-16 py-4 rounded-full overflow-hidden hover:scale-110 active:scale-95 transition-all shadow-[0_0_50px_rgba(255,255,255,0.2)] russo text-base tracking-widest"
                         >
-                            <span className="relative z-10">CONTINUE</span>
+                            <span className="relative z-10">BACK TO MARKET</span>
                             <div className="absolute inset-0 bg-amber-500 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
                         </button>
                     </div>
@@ -203,16 +219,16 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
 
       </div>
 
-      {/* Atmospheric Particles */}
+      {/* Cinematic Particulates */}
       {phase === 'MIXING' && (
-        <div className="absolute inset-0 pointer-events-none opacity-20">
-            {Array.from({ length: 20 }).map((_, i) => (
-                <div key={i} className="absolute bg-white rounded-full animate-ping" style={{
-                    width: '2px', height: '2px',
+        <div className="absolute inset-0 pointer-events-none">
+            {Array.from({ length: 40 }).map((_, i) => (
+                <div key={i} className="absolute bg-white rounded-full opacity-20" style={{
+                    width: '1px', height: '1px',
                     left: `${Math.random() * 100}%`,
                     top: `${Math.random() * 100}%`,
-                    animationDuration: `${Math.random() * 3 + 1}s`,
-                    animationDelay: `${Math.random() * 2}s`
+                    animation: `ball-swirl ${Math.random() * 10 + 5}s linear infinite`,
+                    animationDelay: `${Math.random() * -10}s`
                 }}></div>
             ))}
         </div>

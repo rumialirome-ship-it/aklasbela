@@ -3,9 +3,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ... existing root/base styles ... */
-
-/* --- PHOTO-REAL DRAW PHYSICS --- */
+/* ... Base Styles ... */
 
 .lottery-ball {
     position: absolute;
@@ -19,13 +17,12 @@
         inset -2px -2px 4px rgba(0,0,0,0.5),
         inset 1px 1px 3px rgba(255,255,255,0.3);
     background: radial-gradient(circle at 35% 35%, #fff 0%, var(--ball-color, #fff) 60%, #000 100%);
-    /* Use translate to center relative to its calculated top/left */
     transform: translate(-50%, -50%);
-    transition: left 0.5s ease-out, top 0.5s ease-out;
+    transition: left 0.4s ease-out, top 0.4s ease-out;
 }
 
 @media (min-width: 640px) {
-    .lottery-ball { width: 30px; height: 30px; }
+    .lottery-ball { width: 28px; height: 28px; }
 }
 
 .ball-text {
@@ -36,21 +33,21 @@
 }
 
 @media (min-width: 640px) {
-    .ball-text { font-size: 11px; }
+    .ball-text { font-size: 10px; }
 }
 
-/* Static State Pile */
+/* Static Pile */
 .ball-static-pile {
-    animation: ball-idle-vibrate 0.2s infinite alternate;
+    animation: ball-idle-shimmy 0.3s infinite alternate;
 }
 
-@keyframes ball-idle-vibrate {
-    from { transform: translate(-50%, -50%) rotate(-1deg); }
-    to { transform: translate(-49%, -49%) rotate(1deg); }
+@keyframes ball-idle-shimmy {
+    from { transform: translate(-50%, -50%) rotate(-2deg); }
+    to { transform: translate(-49%, -49%) rotate(2deg); }
 }
 
-/* Shuffling: Keep balls centered while moving */
-@keyframes ball-shuffling-contain {
+/* Shuffling */
+@keyframes ball-shuffle-contain {
     0%   { transform: translate(calc(-50% + var(--x1)), calc(-50% + var(--y1))) rotate(0deg); }
     33%  { transform: translate(calc(-50% + var(--x2)), calc(-50% + var(--y2))) rotate(120deg); }
     66%  { transform: translate(calc(-50% + var(--x3)), calc(-50% + var(--y3))) rotate(240deg); }
@@ -58,38 +55,38 @@
 }
 
 .ball-shuffling {
-    animation: ball-shuffling-contain var(--duration) infinite linear;
+    animation: ball-shuffle-contain var(--duration) infinite linear;
     animation-delay: var(--delay);
 }
 
-/* Winning Ball Downward Flow through Zigzag */
-@keyframes ball-flow-downwards {
+/* WINNER BALL - FLOWING DOWN THROUGH ZIGZAG PIPE */
+@keyframes ball-down-zigzag {
     0%   { transform: translate(-50%, 0) scale(1); top: 50%; left: 50%; opacity: 1; }
-    10%  { transform: translate(-50%, -250px) scale(0.95); top: 50%; left: 50%; } /* Exits top */
-    40%  { transform: translate(220px, -150px) scale(0.9); top: 50%; left: 50%; }  /* First corner */
-    70%  { transform: translate(-220px, -50px) scale(0.85); top: 50%; left: 50%; } /* Second corner */
-    85%  { transform: translate(0, 50px) scale(0.8); top: 50%; left: 50%; }         /* Third corner */
-    100% { transform: translate(0, 150px) scale(0.7); top: 50%; left: 50%; opacity: 0; } /* Final drop */
+    
+    /* Exits through top */
+    10%  { transform: translate(-50%, -200px) scale(0.95); top: 50%; left: 50%; }
+    15%  { transform: translate(-50%, -250px) scale(0.95); top: 50%; left: 50%; }
+    
+    /* First corner (Right) */
+    35%  { transform: translate(230px, -150px) scale(0.9); top: 50%; left: 50%; }
+    
+    /* Second corner (Left) */
+    60%  { transform: translate(-230px, 100px) scale(0.85); top: 50%; left: 50%; }
+    
+    /* Third corner (Center/End) */
+    85%  { transform: translate(0px, 250px) scale(0.8); top: 50%; left: 50%; }
+    
+    /* Arrives at bottom terminal */
+    100% { transform: translate(0px, 350px) scale(0.7); top: 50%; left: 50%; opacity: 0; }
 }
 
-.ball-flow-down {
-    animation: ball-flow-downwards 3s forwards cubic-bezier(0.45, 0.05, 0.55, 0.95);
+.ball-flow-down-zigzag {
+    animation: ball-down-zigzag 3.5s forwards cubic-bezier(0.45, 0, 0.55, 1);
 }
 
-.ball-at-bottom {
+.ball-at-reveal-point {
     opacity: 0;
     transform: scale(0);
-}
-
-/* Climax Slam */
-@keyframes reveal-impact-slam {
-    0% { transform: scale(4) rotate(-20deg); opacity: 0; filter: blur(30px); }
-    80% { transform: scale(0.95) rotate(3deg); opacity: 1; filter: blur(0px); }
-    100% { transform: scale(1) rotate(0deg); opacity: 1; }
-}
-
-.animate-result-slam {
-    animation: reveal-impact-slam 0.8s cubic-bezier(0.19, 1, 0.22, 1) forwards;
 }
 
 .gold-shimmer {

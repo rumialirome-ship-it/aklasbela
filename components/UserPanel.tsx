@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { User, Game, SubGameType, LedgerEntry, Bet, PrizeRates } from '../types';
-import { Icons } from '../constants';
+import { Icons, getDynamicLogo } from '../constants';
 import { useCountdown } from '../hooks/useCountdown';
 import { useAuth } from '../hooks/useAuth';
 
@@ -50,6 +50,7 @@ const GameCard: React.FC<{ game: Game; onPlay: (game: Game) => void; isRestricte
     const hasFinalWinner = !!game.winningNumber && !game.winningNumber.endsWith('_');
     const isMarketClosedForDisplay = !game.isMarketOpen;
     const isPlayable = !!game.isMarketOpen && !isRestricted && status === 'OPEN';
+    const logo = getDynamicLogo(game.name);
 
     return (
         <div className={`group relative flex flex-col bg-slate-900/40 rounded-3xl border border-white/5 transition-all duration-500 overflow-hidden ${!isPlayable ? 'opacity-70 grayscale-[0.3]' : 'hover:border-amber-500/30 hover:bg-slate-900/60 hover:-translate-y-1'}`}>
@@ -59,7 +60,7 @@ const GameCard: React.FC<{ game: Game; onPlay: (game: Game) => void; isRestricte
                 <div className="flex justify-between items-start mb-4 sm:mb-6">
                     <div className="relative shrink-0">
                         <div className="absolute -inset-2 bg-amber-500/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                        <img src={game.logo} alt={game.name} className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-2xl border-2 border-white/5 object-cover shadow-2xl" />
+                        <img src={logo} alt={game.name} className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-2xl border-2 border-white/5 object-cover shadow-2xl" />
                     </div>
                     <div className="text-right ml-2">
                         <h3 className="text-lg sm:text-xl font-black text-white russo tracking-tighter leading-none mb-1 truncate max-w-[120px] sm:max-w-none">{game.name}</h3>
@@ -289,6 +290,7 @@ const BettingModal: React.FC<{
             const digits = rawList.join('').split('').filter((v, i, a) => a.indexOf(v) === i);
             const combos: string[] = [];
             for (let i = 0; i < digits.length; i++) {
+                // Fix: Corrected typo in condition from j < j < digits.length to j < digits.length
                 for (let j = 0; j < digits.length; j++) {
                     if (i !== j) combos.push(digits[i] + digits[j]);
                 }

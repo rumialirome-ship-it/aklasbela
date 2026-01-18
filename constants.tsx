@@ -1,38 +1,66 @@
+
 import React from 'react';
 
-// Premium SVG Generators for Game Logos
-const createLogo = (text: string, startColor: string, endColor: string, glowColor: string, fontSize = 35) => {
-    const base64 = btoa(`
+// Premium Color Palettes for Dynamic Logo Generation
+const PALETTES = [
+    { start: '#F59E0B', end: '#78350F', glow: '#FBBF24' }, // Amber/Gold
+    { start: '#10B981', end: '#064E3B', glow: '#34D399' }, // Emerald
+    { start: '#3B82F6', end: '#1E3A8A', glow: '#60A5FA' }, // Sky Blue
+    { start: '#EF4444', end: '#7F1D1D', glow: '#F87171' }, // Red/Ruby
+    { start: '#8B5CF6', end: '#4C1D95', glow: '#A78BFA' }, // Purple
+    { start: '#EC4899', end: '#701A75', glow: '#F472B6' }, // Pink
+    { start: '#06B6D4', end: '#164E63', glow: '#22D3EE' }, // Cyan
+    { start: '#F97316', end: '#7C2D12', glow: '#FB923C' }, // Orange
+];
+
+const getInitials = (name: string) => {
+    if (!name) return '??';
+    const words = name.trim().split(/\s+/);
+    if (words.length >= 2) {
+        return (words[0][0] + words[words.length - 1][0]).toUpperCase();
+    }
+    return name.substring(0, 3).toUpperCase();
+};
+
+const getDeterministicPalette = (name: string) => {
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+        hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const index = Math.abs(hash) % PALETTES.length;
+    return PALETTES[index];
+};
+
+/**
+ * Generates a dynamic Base64 SVG logo based on a game name.
+ */
+export const getDynamicLogo = (name: string) => {
+    const text = getInitials(name);
+    const { start, end, glow } = getDeterministicPalette(name);
+    const fontSize = text.length > 2 ? 30 : 40;
+
+    const svg = `
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
             <defs>
-                <radialGradient id="grad" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
-                    <stop offset="0%" style="stop-color:${startColor};stop-opacity:1" />
-                    <stop offset="100%" style="stop-color:${endColor};stop-opacity:1" />
+                <radialGradient id="grad-${text}" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+                    <stop offset="0%" style="stop-color:${start};stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:${end};stop-opacity:1" />
                 </radialGradient>
-                <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                <filter id="glow-${text}" x="-20%" y="-20%" width="140%" height="140%">
                     <feGaussianBlur stdDeviation="3" result="blur" />
                     <feComposite in="SourceGraphic" in2="blur" operator="over" />
                 </filter>
             </defs>
-            <circle cx="50" cy="50" r="46" fill="url(#grad)" stroke="${glowColor}" stroke-width="3" filter="url(#glow)" />
+            <circle cx="50" cy="50" r="46" fill="url(#grad-${text})" stroke="${glow}" stroke-width="3" filter="url(#glow-${text})" />
             <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1" />
             <text x="50" y="58" font-family="Russo One, sans-serif" font-size="${fontSize}" fill="white" text-anchor="middle" font-weight="900" style="text-shadow: 0px 2px 4px rgba(0,0,0,0.5)">${text}</text>
         </svg>
-    `);
-    return `data:image/svg+xml;base64,${base64}`;
+    `;
+    return `data:image/svg+xml;base64,${btoa(svg)}`;
 };
 
-export const GAME_LOGOS: {[key: string]: string} = {
-    'Ali Baba': createLogo('AB', '#F59E0B', '#78350F', '#FBBF24', 40),
-    'GSM': createLogo('GSM', '#10B981', '#064E3B', '#34D399', 30),
-    'OYO TV': createLogo('OYO', '#8B5CF6', '#4C1D95', '#A78BFA', 30),
-    'LS1': createLogo('LS1', '#3B82F6', '#1E3A8A', '#60A5FA', 35),
-    'OLA TV': createLogo('OLA', '#EF4444', '#7F1D1D', '#F87171', 30),
-    'AK': createLogo('AK', '#EC4899', '#701A75', '#F472B6', 40),
-    'LS2': createLogo('LS2', '#06B6D4', '#164E63', '#22D3EE', 35),
-    'AKC': createLogo('AKC', '#64748B', '#0F172A', '#94A3B8', 30),
-    'LS3': createLogo('LS3', '#F97316', '#7C2D12', '#FB923C', 35),
-};
+// Kept for backward compatibility if needed, but components should use getDynamicLogo
+export const GAME_LOGOS: {[key: string]: string} = {};
 
 export const Icons = {
     wallet: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" /><path fillRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clipRule="evenodd" /></svg>,
@@ -40,7 +68,7 @@ export const Icons = {
     close: <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>,
     userGroup: <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.653-.284-1.255-.778-1.682M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.653.284-1.255.778-1.682m0 0A12.001 12.001 0 0112 13c2.25 0 4.354.632 6.222 1.682M12 13a3 3 0 100-6 3 3 0 000 6z" /></svg>,
     gamepad: <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 15l-2 5L9 9l-5 5L2 11l7-7 4 4 5-5 2 2-5 5z" /></svg>,
-    clipboardList: <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>,
+    clipboardList: <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 07-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>,
     plus: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" /></svg>,
     minus: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" /></svg>,
     user: <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>,

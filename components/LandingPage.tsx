@@ -1,7 +1,8 @@
+
 import React, { useState } from 'react';
 import { Game } from '../types';
 import { useCountdown } from '../hooks/useCountdown';
-import { Icons, GAME_LOGOS } from '../constants';
+import { Icons, getDynamicLogo } from '../constants';
 import { useAuth } from '../hooks/useAuth';
 
 const formatTime12h = (time24: string) => {
@@ -15,7 +16,7 @@ const GameDisplayCard: React.FC<{ game: Game; onClick: () => void }> = ({ game, 
     const { status, text: countdownText } = useCountdown(game.drawTime);
     const hasFinalWinner = !!game.winningNumber && !game.winningNumber.endsWith('_');
     const isMarketClosedForDisplay = !game.isMarketOpen;
-    const logo = GAME_LOGOS[game.name] || '';
+    const logo = getDynamicLogo(game.name);
 
     return (
         <button

@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { Dealer, User, Game, PrizeRates, LedgerEntry, Bet, Admin, SubGameType, Role, NumberLimit } from '../types';
-import { Icons } from '../constants';
+import { Icons, getDynamicLogo } from '../constants';
 import { useAuth } from '../hooks/useAuth';
 
 // --- HELPERS ---
@@ -146,6 +146,13 @@ const AdminPanel: React.FC<any> = ({
         if (!num) return;
         declareWinner(gameId, num);
         setWinningNumbers(prev => ({...prev, [gameId]: ''}));
+    };
+
+    const handleToggleVisibility = async (gameId: string) => {
+        if (toggleGameVisibility) {
+            await toggleGameVisibility(gameId);
+            refreshAnalyticalData(); // Re-fetch all data to sync local games state
+        }
     };
 
     const handleSaveLimit = async (limit: Partial<NumberLimit>) => {
@@ -398,16 +405,20 @@ const AdminPanel: React.FC<any> = ({
                         const hasWinner = !!game.winningNumber && !game.winningNumber.endsWith('_');
                         const isPayoutApproved = !!game.payoutsApproved;
                         const isVisible = game.isVisible !== false;
+                        const logo = getDynamicLogo(game.name);
 
                         return (
                             <div key={game.id} className={`bg-slate-900/40 rounded-[2rem] border border-white/5 p-6 flex flex-col group transition-all duration-500 ${!isVisible ? 'opacity-60 grayscale-[0.4]' : ''}`}>
                                 <div className="flex justify-between items-start mb-6">
-                                    <div className="flex-1 min-w-0">
-                                        <h4 className="text-xl font-black text-white russo tracking-tighter mb-1 flex items-center gap-2 truncate">
-                                            {game.name}
-                                            {!isVisible && <span className="shrink-0 text-[8px] font-black bg-slate-950 text-slate-500 px-2 py-0.5 rounded-full border border-white/5">HIDDEN</span>}
-                                        </h4>
-                                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Draw @ {game.drawTime}</p>
+                                    <div className="flex items-center gap-3 min-w-0">
+                                        <img src={logo} alt={game.name} className="w-10 h-10 rounded-lg shrink-0 border border-white/5" />
+                                        <div className="min-w-0">
+                                            <h4 className="text-xl font-black text-white russo tracking-tighter mb-1 flex items-center gap-2 truncate">
+                                                {game.name}
+                                                {!isVisible && <span className="shrink-0 text-[8px] font-black bg-slate-950 text-slate-500 px-2 py-0.5 rounded-full border border-white/5">HIDDEN</span>}
+                                            </h4>
+                                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Draw @ {game.drawTime}</p>
+                                        </div>
                                     </div>
                                     <div className="flex gap-1">
                                         <button 
@@ -419,7 +430,7 @@ const AdminPanel: React.FC<any> = ({
                                             </svg>
                                         </button>
                                         <button 
-                                            onClick={() => toggleGameVisibility(game.id)}
+                                            onClick={() => handleToggleVisibility(game.id)}
                                             className={`p-2 rounded-xl border transition-all ${isVisible ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20'}`}
                                         >
                                             {isVisible ? Icons.eye : Icons.eyeOff}
@@ -652,6 +663,9 @@ const GameConfigForm: React.FC<{ game?: Game; onSave: (id: string, data: any) =>
 
     return (
         <div className="space-y-6">
+            <div className="flex justify-center mb-4">
+                <img src={getDynamicLogo(name)} alt="Preview" className="w-24 h-24 rounded-full border-4 border-slate-800 shadow-2xl" />
+            </div>
             <div>
                 <label className={labelClass}>Market Name</label>
                 <input type="text" value={name} onChange={e => setName(e.target.value)} className={inputClass} placeholder="e.g. Ali Baba" />

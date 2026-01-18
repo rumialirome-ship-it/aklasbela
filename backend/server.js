@@ -170,6 +170,14 @@ app.post('/api/admin/games/:id/declare-winner', authMiddleware, (req, res) => {
     } catch (e) { res.status(400).json({ message: e.message }); }
 });
 
+app.put('/api/admin/games/:id/update-winner', authMiddleware, (req, res) => {
+    if (req.user.role !== 'ADMIN') return res.status(403).end();
+    try {
+        const game = database.updateWinningNumber(req.params.id, req.body.newWinningNumber);
+        res.json(game);
+    } catch (e) { res.status(400).json({ message: e.message }); }
+});
+
 app.post('/api/admin/games/:id/approve-payouts', authMiddleware, (req, res) => {
     if (req.user.role !== 'ADMIN') return res.status(403).end();
     try {

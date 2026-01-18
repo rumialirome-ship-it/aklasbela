@@ -4,9 +4,8 @@
 @tailwind utilities;
 
 :root {
-  --primary: #fbbf24; /* Amber 400 */
-  --bg-deep: #020617; /* Slate 950 */
-  --panel-bg: rgba(15, 23, 42, 0.6);
+  --primary: #fbbf24;
+  --bg-deep: #020617;
 }
 
 html {
@@ -32,61 +31,63 @@ h1, h2, h3, .russo {
   flex-direction: column;
 }
 
-/* --- REFINED LOTTERY PHYSICS (MATCHING VIDEO) --- */
+/* --- REFINED LOTTERY PHYSICS --- */
 
 .glass-bowl {
-    background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.15) 0%, transparent 60%),
-                radial-gradient(circle at 70% 70%, rgba(56, 189, 248, 0.08) 0%, transparent 70%);
-    backdrop-filter: blur(12px);
-    border: 18px solid rgba(255, 255, 255, 0.12);
-    box-shadow: 0 0 120px rgba(0,0,0,0.6), inset 0 0 80px rgba(0,0,0,0.4);
-}
-
-.bg-radial-inner {
-    background: radial-gradient(circle at center, transparent 40%, rgba(0,0,0,0.2) 100%);
+    background: 
+        radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.12) 0%, transparent 50%),
+        radial-gradient(circle at center, rgba(15, 23, 42, 0.4) 0%, rgba(2, 6, 23, 0.8) 100%);
+    backdrop-filter: blur(15px);
+    border: 12px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 
+        0 0 100px rgba(0,0,0,0.8), 
+        inset 0 0 60px rgba(0,0,0,0.6),
+        0 0 20px rgba(255,255,255,0.05);
 }
 
 .lottery-ball {
     position: absolute;
-    width: 26px;
-    height: 26px;
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: inset -3px -3px 6px rgba(0,0,0,0.7), 2px 4px 8px rgba(0,0,0,0.5);
-    background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 30%),
-                radial-gradient(circle at 50% 50%, var(--ball-color, #fff) 0%, #000 100%);
-    border: 1px solid rgba(255,255,255,0.1);
-    transition: transform 0.1s linear;
+    box-shadow: 
+        inset -3px -3px 6px rgba(0,0,0,0.6),
+        inset 2px 2px 5px rgba(255,255,255,0.4),
+        2px 4px 10px rgba(0,0,0,0.5);
+    background: radial-gradient(circle at 35% 35%, #fff 0%, var(--ball-color, #fff) 40%, #000 100%);
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), left 0.5s ease-in-out, top 0.5s ease-in-out;
 }
 
 @media (min-width: 640px) {
-    .lottery-ball { width: 32px; height: 32px; }
+    .lottery-ball { width: 34px; height: 34px; }
 }
 
 @media (min-width: 1024px) {
-    .lottery-ball { width: 36px; height: 36px; }
+    .lottery-ball { width: 38px; height: 38px; }
 }
 
 .ball-text {
-    font-size: 9px;
+    font-size: 10px;
     font-family: 'Russo One', sans-serif;
     font-weight: 900;
     color: white;
     text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+    transform: translateY(1px);
 }
 
 @media (min-width: 640px) {
-    .ball-text { font-size: 11px; }
+    .ball-text { font-size: 12px; }
 }
 
-/* Shuffling Animation - Wider range for larger chamber */
+/* Shuffling Animation */
 @keyframes ball-shuffle {
     0% { transform: translate(var(--ix), var(--iy)) rotate(0deg); }
-    25% { transform: translate(calc(var(--ix) + 60px), calc(var(--iy) - 60px)) rotate(90deg); }
-    50% { transform: translate(calc(var(--ix) - 60px), calc(var(--iy) + 40px)) rotate(180deg); }
-    75% { transform: translate(calc(var(--ix) + 40px), calc(var(--iy) + 60px)) rotate(270deg); }
+    25% { transform: translate(calc(var(--ix) * 0.8), calc(var(--iy) * 1.2)) rotate(90deg); }
+    50% { transform: translate(calc(var(--ix) * 1.2), calc(var(--iy) * 0.7)) rotate(180deg); }
+    75% { transform: translate(calc(var(--ix) * 0.9), calc(var(--iy) * 0.9)) rotate(270deg); }
     100% { transform: translate(var(--ix), var(--iy)) rotate(360deg); }
 }
 
@@ -95,47 +96,61 @@ h1, h2, h3, .russo {
     animation-delay: var(--delay);
 }
 
-.ball-resting {
-    transform: translate(var(--ix), 180px);
-    transition: transform 2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+.ball-locked {
+    /* Balls stay at their generated bottom position */
 }
 
-/* Pipe Travel Animation (The Winning Ball Path) */
+/* Pipe Travel Animation */
 @keyframes ball-pipe-zigzag {
-    0%   { transform: translate(0, 200px) scale(1.1); }
-    15%  { transform: translate(0, 240px) scale(0.95); }
-    40%  { transform: translate(140px, 280px) scale(0.9); }
-    70%  { transform: translate(-140px, 340px) scale(0.85); }
-    100% { transform: translate(0, 380px) scale(0.8); }
+    0%   { transform: translate(0, 0) scale(1); }
+    10%  { transform: translate(0, 40px) scale(0.95); }
+    40%  { transform: translate(140px, 80px) scale(0.92); }
+    70%  { transform: translate(-140px, 140px) scale(0.9); }
+    100% { transform: translate(0, 180px) scale(0.8); opacity: 0.5; }
 }
 
 .ball-pipe-descent {
     left: 50%;
     top: 50%;
-    margin-left: -16px;
-    margin-top: -16px;
-    animation: ball-pipe-zigzag 2.5s forwards cubic-bezier(0.4, 0, 0.2, 1);
+    margin-left: -17px;
+    margin-top: -17px;
+    animation: ball-pipe-zigzag 2.5s forwards cubic-bezier(0.45, 0.05, 0.55, 0.95);
+}
+
+@media (min-width: 640px) {
+    .ball-pipe-descent { margin-left: -20px; margin-top: -20px; }
 }
 
 .ball-at-exit {
     left: 50%;
     top: 50%;
-    margin-left: -16px;
-    margin-top: -16px;
-    transform: translate(0, 380px) scale(0);
+    transform: translate(0, 180px) scale(0);
     opacity: 0;
     transition: all 0.5s ease-out;
 }
 
 /* Final Reveal Impact */
 @keyframes result-slam {
-    0% { transform: scale(0.1); opacity: 0; filter: blur(30px); }
-    60% { transform: scale(1.15); opacity: 1; filter: blur(0px); }
+    0% { transform: scale(0.4); opacity: 0; filter: blur(20px); }
+    70% { transform: scale(1.1); opacity: 1; filter: blur(0px); }
     100% { transform: scale(1); opacity: 1; }
 }
 
 .animate-result-slam {
     animation: result-slam 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.gold-shimmer {
+    background: linear-gradient(to right, #ffffff 0%, #fbbf24 50%, #ffffff 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    animation: shimmer 3s linear infinite;
+}
+
+@keyframes shimmer {
+    0% { background-position: -200% center; }
+    100% { background-position: 200% center; }
 }
 
 .premium-gold-text {

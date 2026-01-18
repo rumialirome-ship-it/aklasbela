@@ -3,9 +3,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ... Base UI Styles ... */
-
-/* --- 3D MECHANICAL DRAW ENGINE --- */
+/* --- REALISTIC MECHANICAL DRAW ENGINE --- */
 
 .lottery-ball-3d {
     position: absolute;
@@ -18,7 +16,7 @@
     box-shadow: 
         inset -4px -4px 8px rgba(0,0,0,0.6),
         inset 2px 2px 5px rgba(255,255,255,0.4),
-        0 8px 16px rgba(0,0,0,0.5);
+        0 8px 20px rgba(0,0,0,0.5);
     background: radial-gradient(circle at 35% 35%, #fff 0%, var(--ball-color, #fff) 55%, #000 100%);
     transform: translate(-50%, -50%);
     transition: left 0.4s cubic-bezier(0.25, 1, 0.5, 1), top 0.4s cubic-bezier(0.25, 1, 0.5, 1);
@@ -26,11 +24,11 @@
 }
 
 @media (min-width: 640px) {
-    .lottery-ball-3d { width: 32px; height: 32px; }
+    .lottery-ball-3d { width: 34px; height: 34px; }
 }
 
 .ball-text-3d {
-    font-size: 9px;
+    font-size: 10px;
     font-family: 'Inter', sans-serif;
     font-weight: 950;
     color: #000;
@@ -39,26 +37,26 @@
 }
 
 @media (min-width: 640px) {
-    .ball-text-3d { font-size: 13px; }
+    .ball-text-3d { font-size: 14px; }
 }
 
 .winner-ball-3d {
-    z-index: 200 !important;
-    width: 30px;
-    height: 30px;
+    z-index: 1000 !important;
+    width: 32px;
+    height: 32px;
     box-shadow: 
-        inset -5px -5px 10px rgba(0,0,0,0.7),
-        inset 3px 3px 6px rgba(255,255,255,0.5),
-        0 0 40px rgba(236,72,153,0.8);
+        inset -6px -6px 12px rgba(0,0,0,0.7),
+        inset 4px 4px 8px rgba(255,255,255,0.6),
+        0 0 50px rgba(236,72,153,0.8);
 }
 
 @media (min-width: 640px) {
-    .winner-ball-3d { width: 40px; height: 40px; }
+    .winner-ball-3d { width: 44px; height: 44px; }
 }
 
-/* Port Surfaces */
+/* Internal Port Bowl rendering */
 .bg-radial-3d {
-    background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0.85) 100%);
+    background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0.9) 100%);
 }
 
 /* Animations */
@@ -75,56 +73,56 @@
 }
 
 .ball-static-pile {
-    animation: idle-micro-bounce 0.25s infinite alternate ease-in-out;
+    animation: idle-micro-bounce 0.3s infinite alternate ease-in-out;
 }
 
 @keyframes idle-micro-bounce {
     from { transform: translate(-50%, -50%) scale(1); }
-    to { transform: translate(-50%, -49%) scale(1.02); }
+    to { transform: translate(-50%, -49.5%) scale(1.02); }
 }
 
-/* NEW WINNER DELIVERY: FROM PORT -> SIDE PIPE -> DOWN ZIGZAG */
-@keyframes ball-exit-and-zigzag {
-    0%   { transform: translate(-50%, -50%) scale(1); top: 50%; left: 50%; opacity: 1; }
+/* REALISTIC BALL DELIVERY: PORT CENTER -> HEAD -> SIDE ZIGZAG -> TERMINAL */
+@keyframes ball-realistic-delivery-sequence {
+    0%   { transform: translate(-50%, -50%) scale(1); top: 50%; left: 50%; opacity: 1; filter: blur(0); }
     
-    /* Move to exit gate (top-right of port) */
-    15%  { transform: translate(120px, -120px) scale(0.95); top: 50%; left: 50%; }
+    /* 1. Launch to the Exit Gate at the "Head" */
+    15%  { transform: translate(110px, -110px) scale(0.95); top: 50%; left: 50%; }
+    25%  { transform: translate(140px, -140px) scale(0.85); top: 50%; left: 50%; } /* At the Gate Node */
     
-    /* Enter Side Pipe (Transition point) */
-    25%  { transform: translate(250px, -150px) scale(0.9); top: 50%; left: 50%; opacity: 1; }
+    /* 2. Transition into the zigzag pipe beside the port */
+    35%  { transform: translate(250px, -140px) scale(0.8); top: 50%; left: 50%; }
     
-    /* Zigzag Corner 1 */
-    40%  { transform: translate(350px, -50px) scale(0.85); top: 50%; left: 50%; }
+    /* 3. Descend through the first bend */
+    50%  { transform: translate(450px, -50px) scale(0.75); top: 50%; left: 50%; }
     
-    /* Zigzag Corner 2 (Sharp Turn) */
-    60%  { transform: translate(450px, 50px) scale(0.8); top: 50%; left: 50%; }
+    /* 4. Traverse the second sharp bend */
+    70%  { transform: translate(150px, 100px) scale(0.7); top: 50%; left: 50%; }
     
-    /* Zigzag Corner 3 */
-    80%  { transform: translate(280px, 200px) scale(0.75); top: 50%; left: 50%; }
+    /* 5. Rapid descent to final terminal position */
+    90%  { transform: translate(300px, 250px) scale(0.65); top: 50%; left: 50%; }
     
-    /* Arrive at Terminal */
-    100% { transform: translate(380px, 350px) scale(0.65); top: 50%; left: 50%; opacity: 0; filter: blur(10px); }
+    /* 6. Disappear into the declaration reveal */
+    100% { transform: translate(300px, 350px) scale(0.6); top: 50%; left: 50%; opacity: 0; filter: blur(15px); }
 }
 
-/* Adjustments for Mobile vs Desktop paths would normally be media queries, but we'll use a standard path that feels consistent */
-.ball-exit-to-side-pipe {
-    animation: ball-exit-and-zigzag 3.8s forwards cubic-bezier(0.4, 0, 0.2, 1);
+.ball-realistic-delivery {
+    animation: ball-realistic-delivery-sequence 3.5s forwards cubic-bezier(0.45, 0, 0.55, 1);
 }
 
-.ball-at-reveal-point {
+.ball-hidden {
     opacity: 0;
     transform: scale(0);
 }
 
-/* Result Slam 3D */
+/* Result Slam 3D (Peak Impact) */
 @keyframes result-slam-3d {
-    0% { transform: perspective(1200px) scale(6) rotateX(60deg) translateY(-200px); opacity: 0; filter: blur(60px); }
-    70% { transform: perspective(1200px) scale(0.9) rotateX(-10deg) translateY(20px); opacity: 1; filter: blur(0); }
-    100% { transform: perspective(1200px) scale(1) rotateX(0deg) translateY(0); opacity: 1; }
+    0% { transform: perspective(1500px) scale(8) rotateX(80deg) translateY(-400px); opacity: 0; filter: blur(80px); }
+    70% { transform: perspective(1500px) scale(0.85) rotateX(-15deg) translateY(30px); opacity: 1; filter: blur(0); }
+    100% { transform: perspective(1500px) scale(1) rotateX(0deg) translateY(0); opacity: 1; }
 }
 
 .animate-result-slam-3d {
-    animation: result-slam-3d 0.9s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+    animation: result-slam-3d 1s cubic-bezier(0.19, 1, 0.22, 1) forwards;
 }
 
 .gold-shimmer {

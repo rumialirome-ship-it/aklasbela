@@ -3,135 +3,89 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --primary: #fbbf24;
-  --bg-deep: #020617;
-}
+/* ... existing root and base styles ... */
 
-body {
-  font-family: 'Inter', sans-serif;
-  background-color: var(--bg-deep);
-  color: #f1f5f9;
-}
-
-h1, h2, h3, .russo {
-  font-family: 'Russo One', sans-serif;
-}
-
-/* --- PROFESSIONAL LOTTERY PHYSICS --- */
-
-.glass-bowl {
-    background: 
-        radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.15) 0%, transparent 45%),
-        radial-gradient(circle at center, rgba(15, 23, 42, 0.6) 0%, rgba(2, 6, 23, 0.95) 100%);
-    backdrop-filter: blur(25px);
-    border: 15px solid rgba(255, 255, 255, 0.05);
-    box-shadow: 
-        0 40px 100px rgba(0,0,0,1), 
-        inset 0 0 80px rgba(0,0,0,0.8);
-}
+/* --- PHOTO-REAL MACHINE STYLING --- */
 
 .lottery-ball {
     position: absolute;
-    width: 32px;
-    height: 32px;
+    width: 22px;
+    height: 22px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     box-shadow: 
-        inset -5px -5px 10px rgba(0,0,0,0.7),
-        inset 3px 3px 8px rgba(255,255,255,0.4),
-        0 10px 20px rgba(0,0,0,0.4);
-    background: radial-gradient(circle at 35% 35%, #fff 0%, var(--ball-color, #fff) 50%, #000 100%);
+        inset -2px -2px 5px rgba(0,0,0,0.4),
+        inset 1px 1px 3px rgba(255,255,255,0.3);
+    background: radial-gradient(circle at 35% 35%, #fff 0%, var(--ball-color, #fff) 60%, #000 100%);
     transform: translate(-50%, -50%);
-    transition: left 0.8s ease-out, top 0.8s ease-out;
+    transition: transform 0.3s ease;
 }
 
 @media (min-width: 640px) {
-    .lottery-ball { width: 44px; height: 44px; }
+    .lottery-ball { width: 30px; height: 30px; }
 }
 
 .ball-text {
-    font-size: 11px;
-    font-family: 'Russo One', sans-serif;
+    font-size: 8px;
+    font-family: 'Inter', sans-serif;
     font-weight: 900;
-    color: white;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.9);
+    color: #111;
 }
 
 @media (min-width: 640px) {
-    .ball-text { font-size: 14px; }
+    .ball-text { font-size: 11px; }
 }
 
-/* Realistic Multi-Path Shuffle */
-@keyframes realistic-shuffle {
-    0%   { transform: translate(var(--x1), var(--y1)) rotate(0deg); }
-    25%  { transform: translate(var(--x2), var(--y2)) rotate(180deg); }
-    50%  { transform: translate(var(--x3), var(--y3)) rotate(360deg); }
-    75%  { transform: translate(var(--x4), var(--y4)) rotate(540deg); }
-    100% { transform: translate(var(--x1), var(--y1)) rotate(720deg); }
-}
-
-.ball-shuffling {
-    animation: realistic-shuffle var(--duration) infinite linear;
-    animation-delay: var(--delay);
-}
-
-.ball-locked {
-    /* Idling vibration */
-    animation: ball-idle 0.1s infinite alternate;
+/* Static Settled State */
+.ball-settled {
+    /* Slight vibration to simulate engine idling */
+    animation: ball-idle 0.15s infinite alternate;
 }
 
 @keyframes ball-idle {
-    from { transform: translate(0, 0); }
-    to { transform: translate(1px, 1px); }
+    from { transform: translate(-50%, -50%) rotate(-1deg); }
+    to { transform: translate(-49%, -49%) rotate(1deg); }
 }
 
-/* Pipe Mechanics */
-@keyframes ball-pipe-flow {
-    0%   { transform: translate(0, 0) scale(1); opacity: 1; }
-    20%  { transform: translate(0, 30px) scale(0.9); }
-    50%  { transform: translate(80px, 70px) scale(0.85); }
-    80%  { transform: translate(-80px, 110px) scale(0.8); }
-    100% { transform: translate(0, 140px) scale(0.7); opacity: 0; }
+/* Mechanical Shuffle */
+@keyframes mechanical-shuffle {
+    0%   { transform: translate(var(--x1), var(--y1)) rotate(0deg); }
+    33%  { transform: translate(var(--x2), var(--y2)) rotate(120deg); }
+    66%  { transform: translate(var(--x3), var(--y3)) rotate(240deg); }
+    100% { transform: translate(var(--x1), var(--y1)) rotate(360deg); }
 }
 
-.ball-pipe-descent {
-    left: 50% !important;
-    top: 50% !important;
-    animation: ball-pipe-flow 2.5s forwards cubic-bezier(0.45, 0.05, 0.55, 0.95);
+.ball-shuffling {
+    animation: mechanical-shuffle var(--duration) infinite linear;
+    animation-delay: var(--delay);
 }
 
-.ball-at-exit {
+/* Zigzag Delivery Animation (Matching Pipe in SVG) */
+@keyframes ball-zigzag-delivery {
+    0%   { transform: translate(-50%, 0) scale(1); top: 50%; left: 50%; }
+    10%  { transform: translate(-50%, 30px) scale(0.95); top: 100%; left: 50%; }
+    40%  { transform: translate(-240px, 100px) scale(0.9); top: 100%; left: 50%; }
+    70%  { transform: translate(240px, 200px) scale(0.85); top: 100%; left: 50%; }
+    100% { transform: translate(-50%, 250px) scale(0.8); top: 100%; left: 50%; opacity: 0; }
+}
+
+.ball-pipe-zigzag {
+    animation: ball-zigzag-delivery 3s forwards cubic-bezier(0.45, 0.05, 0.55, 0.95);
+}
+
+.ball-at-reveal-box {
     opacity: 0;
     transform: scale(0);
 }
 
-@keyframes result-slam {
-    0% { transform: scale(3) rotate(-10deg); opacity: 0; filter: blur(50px); }
-    80% { transform: scale(0.95) rotate(2deg); opacity: 1; filter: blur(0px); }
-    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+.gold-shimmer {
+    background: linear-gradient(to right, #fff 0%, #fbbf24 50%, #fff 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    animation: shimmer 3s linear infinite;
 }
 
-.animate-result-slam {
-    animation: result-slam 1s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-}
-
-@keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-@keyframes reverse-spin-slow { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
-
-.animate-spin-slow { animation: spin-slow 15s linear infinite; }
-.animate-reverse-spin-slow { animation: reverse-spin-slow 25s linear infinite; }
-
-.animate-fade-in-up {
-    animation: fadeInUp 1s ease-out forwards;
-}
-
-@keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(40px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+@keyframes shimmer { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }

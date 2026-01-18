@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { Dealer, User, Game, PrizeRates, LedgerEntry, Bet, NumberLimit, SubGameType, Admin } from '../types';
 import { Icons } from '../constants';
@@ -95,6 +96,7 @@ interface AdminPanelProps {
   declareWinner: (gameId: string, winningNumber: string) => void;
   updateWinner: (gameId: string, newWinningNumber: string) => void;
   approvePayouts: (gameId: string) => void;
+  toggleGameVisibility: (gameId: string) => void;
   topUpDealerWallet: (dealerId: string, amount: number) => void;
   withdrawFromDealerWallet: (dealerId: string, amount: number) => void;
   toggleAccountRestriction: (accountId: string, accountType: 'user' | 'dealer') => void;
@@ -105,7 +107,7 @@ interface AdminPanelProps {
 
 const AdminPanel: React.FC<AdminPanelProps> = ({ 
     admin, dealers, onSaveDealer, users, setUsers, games, bets, 
-    declareWinner, updateWinner, approvePayouts, topUpDealerWallet, 
+    declareWinner, updateWinner, approvePayouts, toggleGameVisibility, topUpDealerWallet, 
     withdrawFromDealerWallet, toggleAccountRestriction, onPlaceAdminBets, 
     updateGameDrawTime, onRefreshData 
 }) => {
@@ -184,15 +186,28 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                     const isPayoutApproved = !!game.payoutsApproved;
                     const isSingleDigitGame = game.name === 'AK' || game.name === 'AKC';
                     const isEditing = editingGame?.id === game.id;
+                    const isVisible = game.isVisible !== false;
                     
                     return (
-                        <div key={game.id} className="bg-slate-900/40 rounded-[2rem] border border-white/5 p-6 flex flex-col group hover:border-red-500/20 transition-all duration-500">
+                        <div key={game.id} className={`bg-slate-900/40 rounded-[2rem] border border-white/5 p-6 flex flex-col group hover:border-red-500/20 transition-all duration-500 ${!isVisible ? 'opacity-60 grayscale-[0.5]' : ''}`}>
                             <div className="flex justify-between items-start mb-6">
                                 <div>
-                                    <h4 className="text-xl font-black text-white russo tracking-tighter mb-1">{game.name}</h4>
+                                    <h4 className="text-xl font-black text-white russo tracking-tighter mb-1 flex items-center gap-2">
+                                        {game.name}
+                                        {!isVisible && <span className="text-[9px] font-black bg-slate-800 text-slate-500 px-2 py-0.5 rounded-full uppercase tracking-widest border border-white/5">Hidden</span>}
+                                    </h4>
                                     <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Draw @ {game.drawTime}</p>
                                 </div>
-                                <div className={`w-3 h-3 rounded-full ${hasWinner ? (isPayoutApproved ? 'bg-emerald-500 shadow-[0_0_15px_#10b981]' : 'bg-amber-500 animate-pulse') : 'bg-slate-700'}`}></div>
+                                <div className="flex flex-col items-end gap-2">
+                                    <div className={`w-3 h-3 rounded-full ${hasWinner ? (isPayoutApproved ? 'bg-emerald-500 shadow-[0_0_15px_#10b981]' : 'bg-amber-500 animate-pulse') : 'bg-slate-700'}`}></div>
+                                    <button 
+                                        onClick={() => toggleGameVisibility(game.id)}
+                                        className={`p-1.5 rounded-lg border transition-all ${isVisible ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500/20'}`}
+                                        title={isVisible ? "Hide Game" : "Show Game"}
+                                    >
+                                        {isVisible ? Icons.eye : Icons.eyeOff}
+                                    </button>
+                                </div>
                             </div>
 
                             <div className="flex-grow space-y-5">

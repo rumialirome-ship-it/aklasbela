@@ -1,3 +1,4 @@
+
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
@@ -80,7 +81,25 @@ app.get('/api/auth/verify', authMiddleware, (req, res) => {
 
 // --- PUBLIC DATA ---
 app.get('/api/games', (req, res) => {
-    res.json(database.getAllFromTable('games'));
+    // Check if the request is from an admin (using a soft check or just filtering by default)
+    // For simplicity, we'll return all games if the requester is verified as admin via token,
+    // otherwise we filter.
+    const authHeader = req.headers.authorization;
+    let isAdmin = false;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        try {
+            const token = authHeader.split(' ')[1];
+            const decoded = jwt.verify(token, JWT_SECRET);
+            if (decoded.role === 'ADMIN') isAdmin = true;
+        } catch (e) {}
+    }
+
+    const allGames = database.getAllFromTable('games');
+    if (isAdmin) {
+        res.json(allGames);
+    } else {
+        res.json(allGames.filter(g => g.isVisible));
+    }
 });
 
 // --- PRIVATE DATA FEEDS ---
@@ -176,6 +195,14 @@ app.put('/api/admin/games/:id/update-winner', authMiddleware, (req, res) => {
         const game = database.updateWinningNumber(req.params.id, req.body.newWinningNumber);
         res.json(game);
     } catch (e) { res.status(400).json({ message: e.message }); }
+});
+
+app.put('/api/admin/games/:id/toggle-visibility', authMiddleware, (req, res) => {
+    if (req.user.role !== 'ADMIN') return res.status(403).end();
+    try {
+        const game = database.toggleGameVisibility(req.params.id);
+        res.json(game);
+    } catch (e) { res.status(e.status || 500).json({ message: e.message }); }
 });
 
 app.post('/api/admin/games/:id/approve-payouts', authMiddleware, (req, res) => {

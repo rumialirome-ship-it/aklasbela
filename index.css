@@ -9,8 +9,8 @@
 
 .lottery-ball-3d {
     position: absolute;
-    width: 26px;
-    height: 26px;
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -26,11 +26,11 @@
 }
 
 @media (min-width: 640px) {
-    .lottery-ball-3d { width: 34px; height: 34px; }
+    .lottery-ball-3d { width: 32px; height: 32px; }
 }
 
 .ball-text-3d {
-    font-size: 10px;
+    font-size: 9px;
     font-family: 'Inter', sans-serif;
     font-weight: 950;
     color: #000;
@@ -39,24 +39,24 @@
 }
 
 @media (min-width: 640px) {
-    .ball-text-3d { font-size: 14px; }
+    .ball-text-3d { font-size: 13px; }
 }
 
 .winner-ball-3d {
-    z-index: 100 !important;
-    width: 32px;
-    height: 32px;
+    z-index: 200 !important;
+    width: 30px;
+    height: 30px;
     box-shadow: 
         inset -5px -5px 10px rgba(0,0,0,0.7),
         inset 3px 3px 6px rgba(255,255,255,0.5),
-        0 0 30px rgba(236,72,153,0.8);
+        0 0 40px rgba(236,72,153,0.8);
 }
 
 @media (min-width: 640px) {
-    .winner-ball-3d { width: 42px; height: 42px; }
+    .winner-ball-3d { width: 40px; height: 40px; }
 }
 
-/* Internal Surface Rendering */
+/* Port Surfaces */
 .bg-radial-3d {
     background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0.85) 100%);
 }
@@ -83,29 +83,32 @@
     to { transform: translate(-50%, -49%) scale(1.02); }
 }
 
-/* 3D WINNER DELIVERY PATH - MATCHING VOLUMETRIC TUBE */
-@keyframes ball-down-3d-tube {
-    0%   { transform: translate(-50%, 0) scale(1); top: 50%; left: 50%; opacity: 1; filter: blur(0); }
+/* NEW WINNER DELIVERY: FROM PORT -> SIDE PIPE -> DOWN ZIGZAG */
+@keyframes ball-exit-and-zigzag {
+    0%   { transform: translate(-50%, -50%) scale(1); top: 50%; left: 50%; opacity: 1; }
     
-    /* Stage 1: Ascend to Top Vent */
-    12%  { transform: translate(-50%, -180px) scale(0.95); top: 50%; left: 50%; }
-    16%  { transform: translate(-50%, -240px) scale(0.9); top: 50%; left: 50%; }
+    /* Move to exit gate (top-right of port) */
+    15%  { transform: translate(120px, -120px) scale(0.95); top: 50%; left: 50%; }
     
-    /* Stage 2: Right Bend High-Speed */
-    40%  { transform: translate(210px, -150px) scale(0.85); top: 50%; left: 50%; }
+    /* Enter Side Pipe (Transition point) */
+    25%  { transform: translate(250px, -150px) scale(0.9); top: 50%; left: 50%; opacity: 1; }
     
-    /* Stage 3: Long Left Zigzag */
-    70%  { transform: translate(-210px, 100px) scale(0.8); top: 50%; left: 50%; }
+    /* Zigzag Corner 1 */
+    40%  { transform: translate(350px, -50px) scale(0.85); top: 50%; left: 50%; }
     
-    /* Stage 4: Central Terminal Drop */
-    90%  { transform: translate(0, 280px) scale(0.75); top: 50%; left: 50%; }
+    /* Zigzag Corner 2 (Sharp Turn) */
+    60%  { transform: translate(450px, 50px) scale(0.8); top: 50%; left: 50%; }
     
-    /* Final: Arrival at Terminal */
-    100% { transform: translate(0, 380px) scale(0.6); top: 50%; left: 50%; opacity: 0; filter: blur(10px); }
+    /* Zigzag Corner 3 */
+    80%  { transform: translate(280px, 200px) scale(0.75); top: 50%; left: 50%; }
+    
+    /* Arrive at Terminal */
+    100% { transform: translate(380px, 350px) scale(0.65); top: 50%; left: 50%; opacity: 0; filter: blur(10px); }
 }
 
-.ball-flow-down-zigzag {
-    animation: ball-down-3d-tube 3.6s forwards cubic-bezier(0.4, 0, 0.2, 1);
+/* Adjustments for Mobile vs Desktop paths would normally be media queries, but we'll use a standard path that feels consistent */
+.ball-exit-to-side-pipe {
+    animation: ball-exit-and-zigzag 3.8s forwards cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .ball-at-reveal-point {
@@ -115,13 +118,13 @@
 
 /* Result Slam 3D */
 @keyframes result-slam-3d {
-    0% { transform: perspective(1000px) scale(5) rotateX(45deg); opacity: 0; filter: blur(50px); }
-    70% { transform: perspective(1000px) scale(0.9) rotateX(-5deg); opacity: 1; filter: blur(0); }
-    100% { transform: perspective(1000px) scale(1) rotateX(0deg); opacity: 1; }
+    0% { transform: perspective(1200px) scale(6) rotateX(60deg) translateY(-200px); opacity: 0; filter: blur(60px); }
+    70% { transform: perspective(1200px) scale(0.9) rotateX(-10deg) translateY(20px); opacity: 1; filter: blur(0); }
+    100% { transform: perspective(1200px) scale(1) rotateX(0deg) translateY(0); opacity: 1; }
 }
 
 .animate-result-slam-3d {
-    animation: result-slam-3d 0.8s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+    animation: result-slam-3d 0.9s cubic-bezier(0.19, 1, 0.22, 1) forwards;
 }
 
 .gold-shimmer {

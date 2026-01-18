@@ -31,51 +31,47 @@ h1, h2, h3, .russo {
   flex-direction: column;
 }
 
-/* --- HIGH-ENERGY MECHANICAL STORM PHYSICS --- */
-@keyframes ball-storm-ultra {
-  0% { transform: translate(0, 0) rotate(0deg) scale(1); }
-  10% { transform: translate(160px, -240px) rotate(90deg) scale(0.9); }
-  20% { transform: translate(-140px, -180px) rotate(180deg) scale(1.1); }
-  30% { transform: translate(220px, 40px) rotate(270deg) scale(0.8); }
-  40% { transform: translate(-200px, -280px) rotate(360deg) scale(1.2); }
-  50% { transform: translate(80px, -320px) rotate(450deg) scale(1); }
-  60% { transform: translate(-240px, 120px) rotate(540deg) scale(0.9); }
-  70% { transform: translate(190px, -150px) rotate(630deg) scale(1.1); }
-  80% { transform: translate(-100px, -300px) rotate(720deg) scale(0.85); }
-  90% { transform: translate(240px, -60px) rotate(810deg) scale(1.05); }
-  100% { transform: translate(0, 0) rotate(900deg) scale(1); }
+/* --- HIGH-ENERGY MECHANICAL STORM (TUMBLER PHYSICS) --- */
+@keyframes ball-storm-chaotic {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  12.5% { transform: translate(220px, -180px) rotate(90deg); }
+  25% { transform: translate(-200px, -240px) rotate(180deg); }
+  37.5% { transform: translate(150px, 120px) rotate(270deg); }
+  50% { transform: translate(-180px, -280px) rotate(360deg); }
+  62.5% { transform: translate(240px, -50px) rotate(450deg); }
+  75% { transform: translate(-100px, -300px) rotate(540deg); }
+  87.5% { transform: translate(190px, 150px) rotate(630deg); }
+  100% { transform: translate(0, 0) rotate(720deg); }
 }
 
-@keyframes rim-led-pulse {
-  0% { border-color: rgba(56, 189, 248, 0.4); box-shadow: 0 0 30px rgba(56, 189, 248, 0.3), inset 0 0 20px rgba(56, 189, 248, 0.2); }
-  50% { border-color: rgba(56, 189, 248, 1); box-shadow: 0 0 60px rgba(56, 189, 248, 0.7), inset 0 0 40px rgba(56, 189, 248, 0.4); }
-  100% { border-color: rgba(56, 189, 248, 0.4); box-shadow: 0 0 30px rgba(56, 189, 248, 0.3), inset 0 0 20px rgba(56, 189, 248, 0.2); }
+@keyframes rim-led-glow {
+  0%, 100% { box-shadow: 0 0 40px rgba(56, 189, 248, 0.2), inset 0 0 30px rgba(56, 189, 248, 0.1); border-color: rgba(255,255,255,0.1); }
+  50% { box-shadow: 0 0 80px rgba(56, 189, 248, 0.5), inset 0 0 50px rgba(56, 189, 248, 0.3); border-color: rgba(56, 189, 248, 0.6); }
 }
 
-@keyframes paddle-spin {
+@keyframes paddle-rotation {
   from { transform: translate(-50%, -50%) rotate(0deg); }
   to { transform: translate(-50%, -50%) rotate(360deg); }
 }
 
-@keyframes exit-port-glow {
-  0%, 100% { background: rgba(56, 189, 248, 0.2); }
-  50% { background: rgba(56, 189, 248, 0.6); }
+/* --- THE SCOOPING & EXTRACTION --- */
+@keyframes ball-scoop-to-port {
+  0% { transform: translate(0, -100px) scale(1); opacity: 1; }
+  40% { transform: translate(0, 240px) scale(0.9); }
+  70% { transform: translate(0, 320px) scale(1.1); filter: blur(1px); }
+  100% { transform: translate(0, 500px) scale(2); opacity: 0; filter: blur(5px); }
 }
 
-/* --- CINEMATIC EXTRACTION & SLAM --- */
-@keyframes extraction-sequence {
-  0% { transform: translate(0, 0) scale(1); opacity: 1; filter: blur(0px); }
-  20% { transform: translate(40px, 80px) scale(0.8); }
-  40% { transform: translate(0, 200px) scale(0.6); opacity: 1; }
-  60% { transform: translate(0, 350px) scale(1.4); opacity: 0.8; filter: blur(4px); }
-  100% { transform: translate(0, 600px) scale(2); opacity: 0; filter: blur(10px); }
-}
-
-@keyframes declaration-slam {
-  0% { transform: scale(5) translateY(-400px); opacity: 0; filter: blur(40px); }
-  55% { transform: scale(0.8) translateY(40px); opacity: 1; filter: blur(0px); }
-  75% { transform: scale(1.15) translateY(-20px); }
+@keyframes result-slam-reveal {
+  0% { transform: scale(6) translateY(-500px); opacity: 0; filter: blur(50px); }
+  50% { transform: scale(0.8) translateY(50px); opacity: 1; filter: blur(0px); }
+  75% { transform: scale(1.2) translateY(-20px); }
   100% { transform: scale(1) translateY(0); }
+}
+
+@keyframes shine-sweep {
+  0% { left: -100%; }
+  100% { left: 200%; }
 }
 
 .lottery-ball-pro {
@@ -89,27 +85,23 @@ h1, h2, h3, .russo {
     font-weight: 900;
     background: radial-gradient(circle at 35% 35%, rgba(255,255,255,1) 0%, rgba(255,255,255,0) 30%),
                 radial-gradient(circle at 50% 50%, var(--ball-color, #fbbf24) 0%, #000 100%);
-    box-shadow: inset -5px -5px 12px rgba(0,0,0,0.8), 0 8px 16px rgba(0,0,0,0.7);
+    box-shadow: inset -5px -5px 12px rgba(0,0,0,0.8), 0 10px 20px rgba(0,0,0,0.6);
     user-select: none;
     pointer-events: none;
     border: 1px solid rgba(255,255,255,0.1);
 }
 
-.visual-port-drum {
-  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.2) 0%, transparent 60%),
-              radial-gradient(circle at 70% 70%, rgba(56, 189, 248, 0.1) 0%, transparent 60%);
-  backdrop-filter: blur(3px);
-  border: 12px solid rgba(255, 255, 255, 0.2);
-  animation: rim-led-pulse 3s infinite ease-in-out;
-  box-shadow: 0 0 150px rgba(56, 189, 248, 0.2), inset 0 0 100px rgba(255, 255, 255, 0.1);
+.visual-port-massive {
+  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.15) 0%, transparent 60%),
+              radial-gradient(circle at 70% 70%, rgba(56, 189, 248, 0.05) 0%, transparent 60%);
+  backdrop-filter: blur(4px);
+  border: 14px solid rgba(255, 255, 255, 0.15);
+  animation: rim-led-glow 4s infinite ease-in-out;
 }
 
-.acrylic-edge-highlight {
-  position: absolute;
-  inset: -6px;
-  border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.5);
-  pointer-events: none;
+.exit-port-housing {
+  background: linear-gradient(to bottom, #0f172a, #020617);
+  box-shadow: inset 0 10px 20px rgba(0,0,0,0.8), 0 -5px 20px rgba(56, 189, 248, 0.2);
 }
 
 /* App Polish */
@@ -118,7 +110,7 @@ h1, h2, h3, .russo {
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  filter: drop-shadow(0 0 20px rgba(251, 191, 36, 0.5));
+  filter: drop-shadow(0 0 25px rgba(251, 191, 36, 0.5));
 }
 
 .no-scrollbar::-webkit-scrollbar { display: none; }

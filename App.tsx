@@ -26,7 +26,6 @@ const Header: React.FC = () => {
                     <div className="relative group">
                         <div className="absolute -inset-1 bg-amber-500/30 rounded-full blur opacity-0 group-hover:opacity-100 transition duration-500"></div>
                         {role === Role.Admin ? (
-                            /* Special GURU Logo for Admin */
                             <div className="relative w-12 h-12 rounded-xl bg-red-600 border-2 border-amber-500 shadow-[0_0_15px_rgba(239,68,68,0.5)] flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
                                 <span className="russo text-xs text-white font-black tracking-tighter">GURU</span>
                             </div>
@@ -96,7 +95,6 @@ const AppContent: React.FC = () => {
 
     const fetchPublicData = useCallback(async () => {
         try {
-            // Send auth header so server knows if we are admin (to show hidden games)
             const token = localStorage.getItem('authToken');
             const headers: any = {};
             if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -178,6 +176,12 @@ const AppContent: React.FC = () => {
         lastGamesRef.current = games;
     }, [games]);
 
+    const handleWatchDraw = (game: Game) => {
+        if (game.winningNumber && !game.winningNumber.endsWith('_')) {
+            setActiveReveal({ name: game.name, number: game.winningNumber });
+        }
+    };
+
     const placeBet = async (d: any) => { await fetchWithAuth('/api/user/bets', { method: 'POST', body: JSON.stringify(d) }); fetchPrivateData(); };
     const placeBetAsDealer = async (d: any) => { await fetchWithAuth('/api/dealer/bets/bulk', { method: 'POST', body: JSON.stringify(d) }); fetchPrivateData(); };
     
@@ -226,7 +230,7 @@ const AppContent: React.FC = () => {
                 <>
                     <Header />
                     <main className={`flex-grow pb-20 relative z-10 ${apiError ? 'pt-10' : ''}`}>
-                        {role === Role.User && <UserPanel user={account as User} games={games} bets={bets} placeBet={placeBet} />}
+                        {role === Role.User && <UserPanel user={account as User} games={games} bets={bets} placeBet={placeBet} onWatchDraw={handleWatchDraw} />}
                         {role === Role.Dealer && (
                             <DealerPanel 
                                 dealer={account as Dealer} users={users} 

@@ -15,8 +15,6 @@ const formatTime12h = (time24: string) => {
     return `${String(hours12).padStart(2, '0')}:${String(minutes).padStart(2, '0')} ${ampm}`;
 };
 
-// --- PRESIZED HELPER COMPONENTS ---
-
 const StatCard: React.FC<{ title: string; value: string | number; icon: React.ReactNode; color: string }> = ({ title, value, icon, color }) => (
     <div className="relative overflow-hidden bg-slate-900/60 border border-white/5 rounded-2xl p-4 sm:p-5 group transition-all duration-500 hover:border-white/10 hover:bg-slate-900/80 shadow-2xl">
         <div className={`absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity ${color}`}>
@@ -43,9 +41,7 @@ const ActivityTab: React.FC<{ active: boolean; onClick: () => void; label: strin
     </button>
 );
 
-// --- REIMAGINED GAME CARD ---
-
-const GameCard: React.FC<{ game: Game; onPlay: (game: Game) => void; isRestricted: boolean; }> = ({ game, onPlay, isRestricted }) => {
+const GameCard: React.FC<{ game: Game; onPlay: (game: Game) => void; onWatch: (game: Game) => void; isRestricted: boolean; }> = ({ game, onPlay, onWatch, isRestricted }) => {
     const { status, text: countdownText } = useCountdown(game.drawTime);
     const hasFinalWinner = !!game.winningNumber && !game.winningNumber.endsWith('_');
     const isMarketClosedForDisplay = !game.isMarketOpen;
@@ -53,7 +49,7 @@ const GameCard: React.FC<{ game: Game; onPlay: (game: Game) => void; isRestricte
     const logo = getDynamicLogo(game.name);
 
     return (
-        <div className={`group relative flex flex-col bg-slate-900/40 rounded-3xl border border-white/5 transition-all duration-500 overflow-hidden ${!isPlayable ? 'opacity-70 grayscale-[0.3]' : 'hover:border-amber-500/30 hover:bg-slate-900/60 hover:-translate-y-1'}`}>
+        <div className={`group relative flex flex-col bg-slate-900/40 rounded-3xl border border-white/5 transition-all duration-500 overflow-hidden ${!isPlayable && !hasFinalWinner ? 'opacity-70 grayscale-[0.3]' : 'hover:border-amber-500/30 hover:bg-slate-900/60 hover:-translate-y-1'}`}>
             <div className="absolute top-0 left-0 w-full h-24 sm:h-32 bg-gradient-to-b from-white/5 to-transparent pointer-events-none"></div>
             
             <div className="p-5 sm:p-6 relative z-10 h-full flex flex-col">
@@ -94,15 +90,17 @@ const GameCard: React.FC<{ game: Game; onPlay: (game: Game) => void; isRestricte
                     </div>
 
                     <button 
-                        onClick={() => onPlay(game)} 
-                        disabled={!isPlayable}
+                        onClick={() => hasFinalWinner ? onWatch(game) : onPlay(game)} 
+                        disabled={!isPlayable && !hasFinalWinner}
                         className={`w-full py-3.5 sm:py-4 rounded-2xl font-black text-[10px] sm:text-[11px] uppercase tracking-[0.2em] transition-all duration-300 transform active:scale-95 ${
-                            isPlayable 
+                            hasFinalWinner 
+                            ? 'bg-slate-800 text-amber-400 border border-amber-500/30 hover:bg-slate-700'
+                            : isPlayable 
                             ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/10 hover:bg-amber-400' 
                             : 'bg-slate-800 text-slate-600 cursor-not-allowed border border-white/5'
                         }`}
                     >
-                        {isPlayable ? 'Initiate Trade' : 'Market Closed'}
+                        {hasFinalWinner ? 'Watch Draw' : isPlayable ? 'Initiate Trade' : 'Market Closed'}
                     </button>
                 </div>
             </div>
@@ -110,8 +108,6 @@ const GameCard: React.FC<{ game: Game; onPlay: (game: Game) => void; isRestricte
         </div>
     );
 };
-
-// --- ACTIVITY CENTER ---
 
 const ActivityCenter: React.FC<{ bets: Bet[]; games: Game[]; user: User }> = ({ bets, games, user }) => {
     const [activeTab, setActiveTab] = useState<'history' | 'ledger'>('history');
@@ -263,8 +259,6 @@ const ActivityCenter: React.FC<{ bets: Bet[]; games: Game[]; user: User }> = ({ 
     );
 };
 
-// --- BETTING INTERFACE MODAL ---
-
 const BettingModal: React.FC<{
     game: Game | null;
     games: Game[];
@@ -286,11 +280,9 @@ const BettingModal: React.FC<{
     const calculatedNumbers = useMemo(() => {
         const rawList = numbers.split(/[-.,\s]+/).filter(n => n.length > 0);
         if (subGameType === SubGameType.Combo) {
-            // Generate all unique 2-digit combinations from digits provided
             const digits = rawList.join('').split('').filter((v, i, a) => a.indexOf(v) === i);
             const combos: string[] = [];
             for (let i = 0; i < digits.length; i++) {
-                // Fix: Corrected typo in condition from j < j < digits.length to j < digits.length
                 for (let j = 0; j < digits.length; j++) {
                     if (i !== j) combos.push(digits[i] + digits[j]);
                 }
@@ -319,7 +311,6 @@ const BettingModal: React.FC<{
             setNumbers('');
             setAmount('');
         } catch (err) {
-            // Error is handled in parent via apiError
         } finally {
             setIsProcessing(false);
         }
@@ -433,9 +424,7 @@ const BettingModal: React.FC<{
     );
 };
 
-// --- MAIN USER PANEL ---
-
-const UserPanel: React.FC<any> = ({ user, games, bets, placeBet }) => {
+const UserPanel: React.FC<any> = ({ user, games, bets, placeBet, onWatchDraw }) => {
     const [selectedGame, setSelectedGame] = useState<Game | null>(null);
     const [apiError, setApiError] = useState<string | null>(null);
 
@@ -484,7 +473,7 @@ const UserPanel: React.FC<any> = ({ user, games, bets, placeBet }) => {
                     <h2 className="text-[10px] sm:text-xs font-black text-slate-500 uppercase tracking-[0.4em]">Exchange Markets</h2>
                 </div>
                 <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 md:gap-8">
-                    {games.map(g => <GameCard key={g.id} game={g} onPlay={setSelectedGame} isRestricted={user.isRestricted} />)}
+                    {games.map(g => <GameCard key={g.id} game={g} onPlay={setSelectedGame} onWatch={() => onWatchDraw(g)} isRestricted={user.isRestricted} />)}
                 </div>
             </div>
 

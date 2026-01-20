@@ -47,6 +47,30 @@ if (!dbConnected) {
     systemError = "Database schema not found. Run setup.";
 }
 
+// --- AUTOMATED MARKET RESET (4:00 PM PKT / 11:00 AM UTC) ---
+let lastResetDate = null;
+function checkMarketReset() {
+    const now = new Date();
+    // PKT is UTC+5. 16:00 PKT = 11:00 UTC.
+    const resetHourUTC = 11;
+    const todayStr = now.toISOString().split('T')[0];
+    
+    // Check if we are past the reset hour and haven't reset today
+    if (now.getUTCHours() >= resetHourUTC && lastResetDate !== todayStr) {
+        console.log(`[SYSTEM] Scheduled Market Reset initiated at ${now.toISOString()} PKT`);
+        try {
+            database.resetAllGames();
+            lastResetDate = todayStr;
+        } catch (e) {
+            console.error('[SYSTEM] Reset failed:', e);
+        }
+    }
+}
+// Check every 30 seconds
+setInterval(checkMarketReset, 30000);
+// Run immediate check on startup
+checkMarketReset();
+
 // Maintenance Middleware
 app.use((req, res, next) => {
     if (systemError && req.path.startsWith('/api/')) {
@@ -199,142 +223,4 @@ app.put('/api/admin/games/:id/update-winner', authMiddleware, (req, res) => {
     try {
         const game = database.updateWinningNumber(req.params.id, req.body.newWinningNumber);
         res.json(game);
-    } catch (e) { res.status(400).json({ message: e.message }); }
-});
-
-app.put('/api/admin/games/:id/toggle-visibility', authMiddleware, (req, res) => {
-    if (req.user.role !== 'ADMIN') return res.status(403).end();
-    try {
-        const game = database.toggleGameVisibility(req.params.id);
-        res.json(game);
-    } catch (e) { res.status(400).json({ message: e.message }); }
-});
-
-app.post('/api/admin/games/:id/approve-payouts', authMiddleware, (req, res) => {
-    if (req.user.role !== 'ADMIN') return res.status(403).end();
-    try {
-        const game = database.approvePayoutsForGame(req.params.id);
-        res.json(game);
-    } catch (e) { res.status(400).json({ message: e.message }); }
-});
-
-app.put('/api/admin/games/:id', authMiddleware, (req, res) => {
-    if (req.user.role !== 'ADMIN') return res.status(403).end();
-    try {
-        const game = database.updateGame(req.params.id, req.body);
-        res.json(game);
-    } catch (e) { res.status(400).json({ message: e.message }); }
-});
-
-app.put('/api/admin/games/:id/draw-time', authMiddleware, (req, res) => {
-    if (req.user.role !== 'ADMIN') return res.status(403).end();
-    const game = database.updateGameDrawTime(req.params.id, req.body.newDrawTime);
-    res.json(game);
-});
-
-// --- LIMIT MANAGEMENT ---
-app.post('/api/admin/limits', authMiddleware, (req, res) => {
-    if (req.user.role !== 'ADMIN') return res.status(403).end();
-    try {
-        const limit = database.saveNumberLimit(req.body);
-        res.status(201).json(limit);
-    } catch (e) { res.status(400).json({ message: e.message }); }
-});
-
-app.delete('/api/admin/limits/:id', authMiddleware, (req, res) => {
-    if (req.user.role !== 'ADMIN') return res.status(403).end();
-    try {
-        database.deleteNumberLimit(req.params.id);
-        res.json({ success: true });
-    } catch (e) { res.status(400).json({ message: e.message }); }
-});
-
-// --- DEALER MANAGEMENT ---
-app.post('/api/dealer/users', authMiddleware, (req, res) => {
-    if (req.user.role !== 'DEALER') return res.status(403).end();
-    try {
-        const user = database.createUser(req.body.userData, req.user.id, req.body.initialDeposit);
-        res.status(201).json(user);
-    } catch (e) { res.status(e.status || 500).json({ message: e.message }); }
-});
-
-app.put('/api/dealer/users/:id', authMiddleware, (req, res) => {
-    if (req.user.role !== 'DEALER') return res.status(403).end();
-    try {
-        const user = database.updateUser(req.body, req.params.id, req.user.id);
-        res.json(user);
-    } catch (e) { res.status(e.status || 500).json({ message: e.message }); }
-});
-
-app.delete('/api/dealer/users/:id', authMiddleware, (req, res) => {
-    if (req.user.role !== 'DEALER') return res.status(403).end();
-    try {
-        database.deleteUserByDealer(req.params.id, req.user.id);
-        res.json({ success: true });
-    } catch (e) { res.status(e.status || 500).json({ message: e.message }); }
-});
-
-app.post('/api/dealer/topup/user', authMiddleware, (req, res) => {
-    if (req.user.role !== 'DEALER') return res.status(403).end();
-    const { userId, amount } = req.body;
-    try {
-        database.runInTransaction(() => {
-            database.addLedgerEntry(userId, 'USER', 'Dealer Funding', 0, amount);
-            database.addLedgerEntry(req.user.id, 'DEALER', `User Top-up: ${userId}`, amount, 0);
-        });
-        res.json({ success: true });
-    } catch (e) { res.status(400).json({ message: e.message }); }
-});
-
-app.post('/api/dealer/withdraw/user', authMiddleware, (req, res) => {
-    if (req.user.role !== 'DEALER') return res.status(403).end();
-    const { userId, amount } = req.body;
-    try {
-        database.runInTransaction(() => {
-            database.addLedgerEntry(userId, 'USER', 'Withdrawal to Dealer', amount, 0);
-            database.addLedgerEntry(req.user.id, 'DEALER', `User Cash-out: ${userId}`, 0, amount);
-        });
-        res.json({ success: true });
-    } catch (e) { res.status(400).json({ message: e.message }); }
-});
-
-// --- BETTING ---
-app.post('/api/user/bets', authMiddleware, (req, res) => {
-    try {
-        const bets = database.placeBulkBets(req.user.id, req.body.gameId, req.body.betGroups);
-        res.status(201).json(bets);
-    } catch (e) { res.status(e.status || 500).json({ message: e.message }); }
-});
-
-app.post('/api/dealer/bets/bulk', authMiddleware, (req, res) => {
-    if (req.user.role !== 'DEALER') return res.status(403).end();
-    try {
-        const bets = database.placeBulkBets(req.body.userId, req.body.gameId, req.body.betGroups, 'DEALER');
-        res.status(201).json(bets);
-    } catch (e) { res.status(e.status || 500).json({ message: e.message }); }
-});
-
-// --- UTILITIES ---
-app.get('/api/health', (req, res) => {
-    res.json({ status: systemError ? 'maintenance' : 'ok', error: systemError });
-});
-
-app.post('/api/user/ai-lucky-pick', authMiddleware, async (req, res) => {
-    const { gameType, count = 5 } = req.body;
-    if (!API_KEY) return res.status(503).json({ luckyNumbers: "11, 22, 33, 44, 55" });
-    try {
-        const ai = new GoogleGenAI({ apiKey: API_KEY });
-        const response = await ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
-            contents: `Generate ${count} unique lucky numbers for a "${gameType}" lottery. Output only numbers separated by commas.`,
-        });
-        res.json({ luckyNumbers: response.text.replace(/\s+/g, '') });
-    } catch (error) {
-        res.json({ luckyNumbers: "07, 18, 29, 42, 56" });
-    }
-});
-
-const PORT = process.env.PORT || 3005;
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Server ready on port ${PORT}`);
-});
+    } catch (e

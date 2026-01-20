@@ -111,16 +111,16 @@ const Ball: React.FC<{
     const num = index.toString().padStart(2, '0');
     
     const physics = useMemo(() => {
-        const ballSize = window.innerWidth < 640 ? 12 : 16;
-        const maxR = bowlRadius - ballSize - 10;
+        const ballSize = window.innerWidth < 640 ? 14 : 18;
+        const maxR = bowlRadius - ballSize - 12;
         
-        // Initial Cluster at the bottom of the circular port
-        const angle = (index / 99) * Math.PI * 0.8 + (Math.PI * 0.1);
-        const clusterR = maxR * (0.6 + Math.random() * 0.4);
-        const gx = clusterR * Math.cos(angle + Math.PI / 2); // Spread across bottom arc
+        // Initial Cluster at the bottom of the circular port - clearly resting
+        const angle = (index / 99) * Math.PI * 0.7 + (Math.PI * 0.15);
+        const clusterR = maxR * (0.7 + Math.random() * 0.3);
+        const gx = clusterR * Math.cos(angle + Math.PI / 2); 
         const gy = clusterR * Math.sin(angle + Math.PI / 2);
 
-        // Chaotic Pathing
+        // Chaotic Pathing for shuffle
         const path = Array.from({ length: 8 }).map(() => {
             const r = Math.sqrt(Math.random()) * maxR;
             const t = Math.random() * 2 * Math.PI;
@@ -131,8 +131,8 @@ const Ball: React.FC<{
             gx, gy,
             path,
             delay: Math.random() * -10,
-            duration: 0.4 + Math.random() * 0.3,
-            slowDuration: 1.5 + Math.random() * 1.0
+            duration: 0.35 + Math.random() * 0.25,
+            slowDuration: 1.2 + Math.random() * 0.8
         };
     }, [bowlRadius, index]);
 
@@ -149,9 +149,9 @@ const Ball: React.FC<{
         );
     }
 
-    // Remaining balls during exit phase keep reanimating slightly
-    const currentPhase = (phase === 'EXITING') ? 'SHUFFLE' : phase;
-    const animDuration = (phase === 'EXITING') ? physics.slowDuration : physics.duration;
+    // Remaining balls during and after exit phase keep reanimating slightly for authenticity
+    const currentPhase = (phase === 'EXITING' || phase === 'REVEAL') ? 'SHUFFLE' : phase;
+    const animDuration = (phase === 'EXITING' || phase === 'REVEAL') ? physics.slowDuration : physics.duration;
 
     return (
         <div 
@@ -188,10 +188,10 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
 
     const startTime = Date.now();
     
-    // All balls clearly resting at start
+    // Initial Resting Period for transparency
     const startTimer = setTimeout(() => {
         setPhase('SHUFFLE');
-    }, 2000);
+    }, 2500);
 
     const sequenceInterval = setInterval(() => {
         const elapsed = Date.now() - startTime;
@@ -202,10 +202,10 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
             
             if (p >= 100) {
                 setPhase('EXITING');
-                // Mechanical interaction audio
+                // Synchronized mechanical audio triggers
                 setTimeout(() => audioRef.current?.playClink(), 800);   
-                setTimeout(() => audioRef.current?.playClink(), 2500);  
-                setTimeout(() => audioRef.current?.playClink(), 4200);  
+                setTimeout(() => audioRef.current?.playClink(), 2400);  
+                setTimeout(() => audioRef.current?.playClink(), 4100);  
             }
         }
 
@@ -223,37 +223,39 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
     };
   }, [phase]);
 
-  const bowlRadius = window.innerWidth < 640 ? 140 : 180;
+  // Port made bigger as per user request
+  const bowlRadius = window.innerWidth < 640 ? 160 : 220;
 
   return (
     <div className="fixed inset-0 z-[5000] bg-black flex flex-col items-center justify-center overflow-hidden font-sans select-none">
       
-      {/* 45S TOTAL DRAW HUD */}
+      {/* HUD - Hiding winning number until final reveal */}
       {phase !== 'REVEAL' && (
           <div className="absolute top-10 text-center z-[60] animate-fade-in px-6">
               <h2 className="text-white text-3xl sm:text-4xl font-black russo tracking-[0.2em] uppercase mb-4 drop-shadow-[0_2px_10px_rgba(0,0,0,1)]">
-                  {gameName} <span className="text-amber-500">Live</span>
+                  {gameName} <span className="text-amber-500">Lottery</span>
               </h2>
               <div className="w-64 sm:w-80 h-1.5 bg-white/10 mx-auto rounded-full overflow-hidden p-[1px]">
                   <div className="h-full bg-amber-500 transition-all duration-300 linear shadow-[0_0_15px_#f59e0b]" style={{ width: `${progress}%` }} />
               </div>
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-2">Authentic Draw In Progress</p>
           </div>
       )}
 
       {/* MECHANICAL CHAMBER & PIPE ENGINE */}
-      <div className="relative flex flex-col items-center justify-center w-full h-full pointer-events-none">
+      <div className="relative flex flex-col items-center justify-center w-full h-full pointer-events-none scale-90 sm:scale-100">
         
-        {/* CIRCULAR PORT (TRANSPARENT GLASS CHAMBER) */}
-        <div className="relative w-[300px] h-[300px] sm:w-[420px] sm:h-[420px] z-20">
-            {/* The Heavy Bezel */}
-            <div className="absolute -inset-6 rounded-full border-[12px] border-slate-900 shadow-[0_50px_100px_rgba(0,0,0,1),inset_0_4px_8px_rgba(255,255,255,0.05)]"></div>
+        {/* BIGGER CIRCULAR PORT (TRANSPARENT GLASS CHAMBER) */}
+        <div className="relative w-[340px] h-[340px] sm:w-[480px] sm:h-[480px] z-20">
+            {/* The Heavy Professional Bezel */}
+            <div className="absolute -inset-8 rounded-full border-[14px] border-slate-900 shadow-[0_60px_120px_rgba(0,0,0,1),inset_0_4px_10px_rgba(255,255,255,0.05)]"></div>
             
             {/* Transparent Glass Chamber */}
-            <div className="absolute inset-0 rounded-full bg-[#020617] shadow-[inset_0_40px_80px_rgba(0,0,0,0.9),inset_0_-30px_60px_rgba(255,255,255,0.01)] overflow-hidden border border-white/5">
+            <div className="absolute inset-0 rounded-full bg-[#010411] shadow-[inset_0_50px_100px_rgba(0,0,0,0.95),inset_0_-40px_80px_rgba(255,255,255,0.01)] overflow-hidden border border-white/5">
                 <div className="absolute inset-0 bg-radial-3d opacity-95"></div>
-                <div className="absolute top-[10%] left-[25%] w-[40%] h-[30%] bg-gradient-to-br from-white/10 to-transparent rounded-full blur-3xl rotate-[-20deg]"></div>
+                <div className="absolute top-[8%] left-[22%] w-[45%] h-[35%] bg-gradient-to-br from-white/10 to-transparent rounded-full blur-3xl rotate-[-18deg]"></div>
                 
-                {/* Balls Inside Port - All visible and resting at start */}
+                {/* Balls Inside Port */}
                 <div className="relative w-full h-full">
                     {balls.map(i => (
                         <Ball 
@@ -265,9 +267,9 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
                             bowlRadius={bowlRadius} 
                         />
                     ))}
-                    {/* The Winning Ball handles its own release animation */}
+                    {/* The Winning Ball released only at the end of shuffle */}
                     <Ball 
-                        index={parseInt(winningNumber) || 77} 
+                        index={parseInt(winningNumber) || 88} 
                         phase={phase} 
                         isWinner={true} 
                         winningNumber={winningNumber} 
@@ -276,97 +278,97 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
                 </div>
             </div>
 
-            {/* EXIT PORTAL (Bottom Junction) */}
-            <div className="absolute bottom-[2%] left-[12%] w-20 h-20 z-50">
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 bg-slate-900 border-[4px] border-slate-700 rounded-2xl rotate-45 shadow-2xl flex items-center justify-center">
-                    <div className="w-8 h-8 bg-black rounded-full border border-white/10 shadow-inner"></div>
+            {/* MECHANICAL EXIT JUNCTION */}
+            <div className="absolute bottom-[1%] left-[10%] w-24 h-24 z-50">
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 bg-slate-900 border-[5px] border-slate-700 rounded-2xl rotate-45 shadow-2xl flex items-center justify-center">
+                    <div className="w-10 h-10 bg-black rounded-full border border-white/10 shadow-inner"></div>
                 </div>
             </div>
         </div>
 
-        {/* TRANSPARENT DELIVERY PIPE */}
-        <div className="relative w-[240px] sm:w-[400px] h-[550px] sm:h-[750px] z-10 translate-y-[-40px] sm:translate-y-[-60px] sm:translate-x-[-100px]">
-            <svg className="w-full h-full drop-shadow-[0_40px_80px_rgba(0,0,0,0.9)]" viewBox="0 0 400 600" fill="none" preserveAspectRatio="xMidYMid meet">
+        {/* TRANSPARENT DELIVERY PIPE PATH */}
+        <div className="relative w-[280px] sm:w-[440px] h-[600px] sm:h-[800px] z-10 translate-y-[-50px] sm:translate-y-[-70px] sm:translate-x-[-120px]">
+            <svg className="w-full h-full drop-shadow-[0_50px_100px_rgba(0,0,0,0.9)]" viewBox="0 0 400 600" fill="none" preserveAspectRatio="xMidYMid meet">
                 <defs>
-                    <linearGradient id="pipeMetalGloss" x1="0" y1="0" x2="1" y2="0">
+                    <linearGradient id="pipeGloss" x1="0" y1="0" x2="1" y2="0">
                         <stop offset="0%" stopColor="rgba(255,255,255,0.01)" />
-                        <stop offset="50%" stopColor="rgba(255,255,255,0.12)" />
+                        <stop offset="50%" stopColor="rgba(255,255,255,0.1)" />
                         <stop offset="100%" stopColor="rgba(255,255,255,0.01)" />
                     </linearGradient>
-                    <filter id="pipeBloom">
-                        <feGaussianBlur stdDeviation="10" result="blur" />
+                    <filter id="pipeGlow">
+                        <feGaussianBlur stdDeviation="12" result="blur" />
                         <feComposite in="SourceGraphic" in2="blur" operator="over" />
                     </filter>
                 </defs>
                 
-                {/* The Tube Structure */}
+                {/* Structural Tube */}
                 <path 
                     d="M 50 100 L 150 250 L 350 400 L 200 550" 
-                    stroke="rgba(255,255,255,0.05)" 
-                    strokeWidth="70" 
+                    stroke="rgba(255,255,255,0.04)" 
+                    strokeWidth="78" 
                     strokeLinecap="round" 
                     strokeLinejoin="round" 
                 />
                 
-                {/* Internal Visible Channel */}
+                {/* Internal Visual Channel */}
                 <path 
                     d="M 50 100 L 150 250 L 350 400 L 200 550" 
-                    stroke="url(#pipeMetalGloss)" 
-                    strokeWidth="54" 
+                    stroke="url(#pipeGloss)" 
+                    strokeWidth="58" 
                     strokeLinecap="round" 
                     strokeLinejoin="round" 
                 />
 
-                {/* Glass Highlight */}
+                {/* Light Refraction Highlight */}
                 <path 
                     d="M 50 100 L 150 250 L 350 400 L 200 550" 
-                    stroke="rgba(255,255,255,0.15)" 
-                    strokeWidth="1" 
+                    stroke="rgba(255,255,255,0.12)" 
+                    strokeWidth="1.5" 
                     strokeLinecap="round" 
                     strokeLinejoin="round" 
-                    filter="url(#pipeBloom)"
+                    filter="url(#pipeGlow)"
                 />
 
-                {/* Final Landing Cup */}
+                {/* Dedicated Display Resting Area (Bottom Cup) */}
                 <g transform="translate(200, 550)">
-                    <circle r="55" fill="#0f172a" stroke="rgba(255,255,255,0.1)" strokeWidth="8" />
-                    <circle r="35" fill="rgba(245,158,11,0.03)" stroke="rgba(245,158,11,0.3)" strokeWidth="1" className="animate-pulse" />
+                    <circle r="60" fill="#080c1d" stroke="rgba(255,255,255,0.08)" strokeWidth="10" />
+                    <circle r="38" fill="rgba(245,158,11,0.02)" stroke="rgba(245,158,11,0.25)" strokeWidth="1" className="animate-pulse" />
                 </g>
             </svg>
         </div>
 
       </div>
 
-      {/* FINAL DISPLAY AREA (HIDDEN UNTIL SEQUENCE END) */}
+      {/* FINAL RESULT DISPLAY AREA (REVEALED ONLY AT END) */}
       {phase === 'REVEAL' && (
           <div className="absolute inset-0 z-[6000] bg-slate-950/99 backdrop-blur-3xl flex flex-col items-center justify-center animate-fade-in px-8">
-              <div className="relative animate-result-slam-3d mb-20">
-                  <div className="absolute -inset-64 bg-amber-500/10 blur-[200px] rounded-full animate-pulse"></div>
-                  <div className="relative bg-white text-slate-950 rounded-[5rem] px-36 sm:px-72 py-24 sm:py-40 border-[24px] border-amber-500 shadow-[0_0_200px_rgba(245,158,11,0.5)] overflow-hidden">
+              <div className="relative animate-result-slam-3d mb-16">
+                  <div className="absolute -inset-72 bg-amber-500/10 blur-[240px] rounded-full animate-pulse"></div>
+                  <div className="relative bg-white text-slate-950 rounded-[6rem] px-40 sm:px-80 py-24 sm:py-44 border-[28px] border-amber-500 shadow-[0_0_220px_rgba(245,158,11,0.6)] overflow-hidden">
                       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-slate-200/5 to-transparent"></div>
-                      <span className="relative text-[20rem] sm:text-[36rem] font-black russo tracking-tighter leading-none block drop-shadow-2xl">{winningNumber}</span>
+                      <span className="relative text-[22rem] sm:text-[38rem] font-black russo tracking-tighter leading-none block drop-shadow-2xl">{winningNumber}</span>
                   </div>
               </div>
               
               <div className="text-center">
-                  <h3 className="text-white text-6xl sm:text-8xl font-black russo tracking-tight uppercase mb-16 premium-gold-text italic">
-                      DECLARED
+                  <h3 className="text-white text-6xl sm:text-9xl font-black russo tracking-tight uppercase mb-16 premium-gold-text italic">
+                      DRAW RESULT
                   </h3>
                   <button 
                       onClick={onClose}
-                      className="bg-amber-600 hover:bg-amber-500 text-white font-black px-32 py-10 rounded-[3rem] transition-all active:scale-95 shadow-[0_40px_80px_rgba(245,158,11,0.3)] text-4xl uppercase tracking-[0.3em] border-b-[16px] border-amber-800"
+                      className="bg-amber-600 hover:bg-amber-500 text-white font-black px-36 py-10 rounded-[3.5rem] transition-all active:scale-95 shadow-[0_50px_90px_rgba(245,158,11,0.4)] text-4xl uppercase tracking-[0.3em] border-b-[18px] border-amber-800"
                   >
-                      CONTINUE
+                      EXIT DRAW
                   </button>
               </div>
           </div>
       )}
 
-      {/* MECHANICAL STATUS HUD */}
-      <div className="absolute right-12 bottom-12 flex items-center gap-8 opacity-20 group">
+      {/* SYSTEM STATUS FEED */}
+      <div className="absolute right-12 bottom-12 flex items-center gap-8 opacity-25">
           <div className="text-right">
-              <p className="text-[11px] font-black text-white uppercase tracking-[0.6em] mb-1">Authenticity Node</p>
-              <p className="text-[15px] font-bold text-amber-500 font-mono tracking-tighter uppercase">Physical_Simulation_Active_{winningNumber}</p>
+              <p className="text-[11px] font-black text-white uppercase tracking-[0.6em] mb-1">Decentralized Feed</p>
+              <p className="text-[15px] font-bold text-amber-500 font-mono tracking-tighter uppercase">Physical_Sync_Locked</p>
           </div>
           <div className="w-20 h-20 bg-slate-900 rounded-full border-[8px] border-slate-800 shadow-2xl flex items-center justify-center">
               <div className="w-8 h-8 border-[6px] border-amber-500 border-t-transparent rounded-full animate-spin"></div>

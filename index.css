@@ -24,7 +24,7 @@
 }
 
 @media (min-width: 640px) {
-    .lottery-ball-3d { width: 32px; height: 32px; }
+    .lottery-ball-3d { width: 36px; height: 36px; }
 }
 
 .ball-text-3d {
@@ -36,43 +36,41 @@
 }
 
 @media (min-width: 640px) {
-    .ball-text-3d { font-size: 14px; }
+    .ball-text-3d { font-size: 16px; }
 }
 
 .winner-ball-3d {
     z-index: 4000 !important;
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     box-shadow: 
         inset -6px -6px 12px rgba(0,0,0,0.9),
         inset 4px 4px 8px rgba(255,255,255,0.5),
-        0 0 60px rgba(245,158,11,0.5);
+        0 0 70px rgba(245,158,11,0.6);
 }
 
 @media (min-width: 640px) {
-    .winner-ball-3d { width: 44px; height: 44px; }
+    .winner-ball-3d { width: 48px; height: 48px; }
 }
 
 .ball-glow {
     position: absolute;
-    inset: -12px;
-    background: radial-gradient(circle, rgba(245,158,11,0.3) 0%, transparent 70%);
+    inset: -14px;
+    background: radial-gradient(circle, rgba(245,158,11,0.35) 0%, transparent 70%);
     border-radius: 50%;
-    filter: blur(8px);
-    animation: ball-pulse 0.8s infinite alternate;
+    filter: blur(10px);
+    animation: ball-pulse 0.7s infinite alternate;
 }
 
 @keyframes ball-pulse {
-    from { opacity: 0.4; transform: scale(0.9); }
-    to { opacity: 0.8; transform: scale(1.1); }
+    from { opacity: 0.3; transform: scale(0.85); }
+    to { opacity: 0.7; transform: scale(1.15); }
 }
 
-/* Internal Port Surfacing */
 .bg-radial-3d {
-    background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.02) 0%, rgba(0,0,0,0.95) 100%);
+    background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.015) 0%, rgba(0,0,0,0.96) 100%);
 }
 
-/* Mechanical Shuffle Physics */
 @keyframes mechanical-shuffle-contain {
     0%   { transform: translate(calc(-50% + var(--x1)), calc(-50% + var(--y1))) rotate(0deg); }
     25%  { transform: translate(calc(-50% + var(--x2)), calc(-50% + var(--y2))) rotate(90deg); }
@@ -93,33 +91,33 @@
 }
 
 /* 
-   PHYSICAL PIPE PATHING:
-   Rotates smoothly while following the zigzag structure
+   REFINED PIPE PATHING:
+   Rotates smoothly while following the zigzag delivery structure
 */
 @keyframes ball-mechanical-pipe-descent-sequence {
     0%   { transform: translate(-50%, -50%) scale(1) rotate(0deg); top: 50%; left: 50%; opacity: 1; filter: blur(0); }
     
-    /* Move to Portal */
-    12%  { transform: translate(-150px, 150px) scale(0.95) rotate(45deg); top: 50%; left: 50%; }
+    /* Pull into Mechanical Exit */
+    15%  { transform: translate(-170px, 170px) scale(0.98) rotate(60deg); top: 50%; left: 50%; }
     
-    /* Enter Tube Head */
-    20%  { transform: translate(-200px, 200px) scale(0.85) rotate(90deg); top: 50%; left: 50%; }
+    /* Enter Transparent Tube */
+    25%  { transform: translate(-230px, 230px) scale(0.9) rotate(140deg); top: 50%; left: 50%; }
     
-    /* Bend 1 */
-    40%  { transform: translate(-120px, 350px) scale(0.75) rotate(180deg); top: 50%; left: 50%; }
+    /* First Large Bend */
+    45%  { transform: translate(-130px, 380px) scale(0.8) rotate(280deg); top: 50%; left: 50%; }
     
-    /* Bend 2 (The Mid Zig) */
-    65%  { transform: translate(180px, 500px) scale(0.68) rotate(360deg); top: 50%; left: 50%; }
+    /* Second Zig Bend */
+    70%  { transform: translate(200px, 530px) scale(0.72) rotate(460deg); top: 50%; left: 50%; }
     
-    /* Terminal Socket Arrival */
-    90%  { transform: translate(20px, 650px) scale(0.65) rotate(480deg); top: 50%; left: 50%; opacity: 1; filter: blur(0); }
+    /* Final Terminal Lock */
+    92%  { transform: translate(25px, 680px) scale(0.7) rotate(640deg); top: 50%; left: 50%; opacity: 1; filter: blur(0); }
     
-    /* EXPLOSIVE REVEAL TRANSITION */
-    100% { transform: translate(20px, 720px) scale(2.5) rotate(540deg); top: 50%; left: 50%; opacity: 0; filter: blur(20px); }
+    /* DISAPPEARANCE FOR IMPACT REVEAL */
+    100% { transform: translate(25px, 760px) scale(2.8) rotate(720deg); top: 50%; left: 50%; opacity: 0; filter: blur(25px); }
 }
 
 .ball-mechanical-pipe-descent {
-    animation: ball-mechanical-pipe-descent-sequence 5s forwards cubic-bezier(0.4, 0, 0.2, 1);
+    animation: ball-mechanical-pipe-descent-sequence 5s forwards cubic-bezier(0.42, 0, 0.58, 1);
 }
 
 .ball-hidden {
@@ -129,14 +127,14 @@
 
 /* Cinema-Grade Slam Reveal */
 @keyframes result-slam-3d {
-    0% { transform: perspective(2000px) scale(12) rotateX(85deg) translateY(-800px); opacity: 0; filter: blur(100px); }
-    65% { transform: perspective(2000px) scale(0.8) rotateX(-15deg) translateY(40px); opacity: 1; filter: blur(0); }
-    85% { transform: perspective(2000px) scale(1.05) rotateX(5deg) translateY(-10px); }
-    100% { transform: perspective(2000px) scale(1) rotateX(0deg) translateY(0); opacity: 1; }
+    0% { transform: perspective(2200px) scale(15) rotateX(90deg) translateY(-1000px); opacity: 0; filter: blur(120px); }
+    60% { transform: perspective(2200px) scale(0.8) rotateX(-20deg) translateY(50px); opacity: 1; filter: blur(0); }
+    80% { transform: perspective(2200px) scale(1.08) rotateX(8deg) translateY(-15px); }
+    100% { transform: perspective(2200px) scale(1) rotateX(0deg) translateY(0); opacity: 1; }
 }
 
 .animate-result-slam-3d {
-    animation: result-slam-3d 1.5s cubic-bezier(0.1, 0.9, 0.2, 1) forwards;
+    animation: result-slam-3d 1.7s cubic-bezier(0.15, 1, 0.3, 1) forwards;
 }
 
 .premium-gold-text {
@@ -144,5 +142,5 @@
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
-    filter: drop-shadow(0 0 15px rgba(245,158,11,0.4));
+    filter: drop-shadow(0 0 20px rgba(245,158,11,0.5));
 }

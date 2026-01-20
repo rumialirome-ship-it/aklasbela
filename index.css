@@ -14,9 +14,9 @@
     align-items: center;
     justify-content: center;
     box-shadow: 
-        inset -5px -5px 10px rgba(0,0,0,0.7),
-        inset 3px 3px 6px rgba(255,255,255,0.4),
-        0 10px 20px rgba(0,0,0,0.6);
+        inset -5px -5px 10px rgba(0,0,0,0.8),
+        inset 3px 3px 6px rgba(255,255,255,0.3),
+        0 10px 20px rgba(0,0,0,0.7);
     background: radial-gradient(circle at 35% 35%, #fff 0%, var(--ball-color, #fff) 55%, #000 100%);
     transform: translate(-50%, -50%);
     transition: left 0.4s cubic-bezier(0.25, 1, 0.5, 1), top 0.4s cubic-bezier(0.25, 1, 0.5, 1);
@@ -32,7 +32,7 @@
     font-family: 'Inter', sans-serif;
     font-weight: 950;
     color: #000;
-    text-shadow: 0 1px 0 rgba(255,255,255,0.2);
+    text-shadow: 0 1px 0 rgba(255,255,255,0.1);
 }
 
 @media (min-width: 640px) {
@@ -44,9 +44,9 @@
     width: 32px;
     height: 32px;
     box-shadow: 
-        inset -6px -6px 12px rgba(0,0,0,0.8),
-        inset 4px 4px 8px rgba(255,255,255,0.6),
-        0 0 60px rgba(245,158,11,0.6);
+        inset -6px -6px 12px rgba(0,0,0,0.9),
+        inset 4px 4px 8px rgba(255,255,255,0.5),
+        0 0 60px rgba(245,158,11,0.5);
 }
 
 @media (min-width: 640px) {
@@ -55,21 +55,21 @@
 
 .ball-glow {
     position: absolute;
-    inset: -10px;
-    background: radial-gradient(circle, rgba(245,158,11,0.4) 0%, transparent 70%);
+    inset: -12px;
+    background: radial-gradient(circle, rgba(245,158,11,0.3) 0%, transparent 70%);
     border-radius: 50%;
-    filter: blur(5px);
-    animation: ball-pulse 1s infinite alternate;
+    filter: blur(8px);
+    animation: ball-pulse 0.8s infinite alternate;
 }
 
 @keyframes ball-pulse {
-    from { opacity: 0.5; transform: scale(0.9); }
-    to { opacity: 1; transform: scale(1.1); }
+    from { opacity: 0.4; transform: scale(0.9); }
+    to { opacity: 0.8; transform: scale(1.1); }
 }
 
 /* Internal Port Surfacing */
 .bg-radial-3d {
-    background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0.92) 100%);
+    background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.02) 0%, rgba(0,0,0,0.95) 100%);
 }
 
 /* Mechanical Shuffle Physics */
@@ -93,36 +93,33 @@
 }
 
 /* 
-   REFINED PIPE DELIVERY SEQUENCE (5s):
-   1. Port Center -> Exit Junction (Bottom Left)
-   2. Junction -> Pipe Descent
-   3. Journey Down the SVG Path
-   4. Exit Terminal -> Final Reveal
+   PHYSICAL PIPE PATHING:
+   Rotates smoothly while following the zigzag structure
 */
 @keyframes ball-mechanical-pipe-descent-sequence {
-    0%   { transform: translate(-50%, -50%) scale(1); top: 50%; left: 50%; opacity: 1; }
+    0%   { transform: translate(-50%, -50%) scale(1) rotate(0deg); top: 50%; left: 50%; opacity: 1; filter: blur(0); }
     
-    /* Rapid Rush to Junction */
-    12%  { transform: translate(-150px, 150px) scale(0.9); top: 50%; left: 50%; }
+    /* Move to Portal */
+    12%  { transform: translate(-150px, 150px) scale(0.95) rotate(45deg); top: 50%; left: 50%; }
     
-    /* Enter Pipe Head */
-    20%  { transform: translate(-200px, 200px) scale(0.8); top: 50%; left: 50%; }
+    /* Enter Tube Head */
+    20%  { transform: translate(-200px, 200px) scale(0.85) rotate(90deg); top: 50%; left: 50%; }
     
     /* Bend 1 */
-    40%  { transform: translate(-120px, 350px) scale(0.7); top: 50%; left: 50%; }
+    40%  { transform: translate(-120px, 350px) scale(0.75) rotate(180deg); top: 50%; left: 50%; }
     
-    /* Bend 2 (The Zig) */
-    65%  { transform: translate(180px, 500px) scale(0.65); top: 50%; left: 50%; }
+    /* Bend 2 (The Mid Zig) */
+    65%  { transform: translate(180px, 500px) scale(0.68) rotate(360deg); top: 50%; left: 50%; }
     
-    /* Arrival at Terminal */
-    90%  { transform: translate(20px, 650px) scale(0.6); top: 50%; left: 50%; opacity: 1; filter: blur(0); }
+    /* Terminal Socket Arrival */
+    90%  { transform: translate(20px, 650px) scale(0.65) rotate(480deg); top: 50%; left: 50%; opacity: 1; filter: blur(0); }
     
-    /* POP OUT AND EXPAND */
-    100% { transform: translate(20px, 700px) scale(2.0); top: 50%; left: 50%; opacity: 0; filter: blur(30px); }
+    /* EXPLOSIVE REVEAL TRANSITION */
+    100% { transform: translate(20px, 720px) scale(2.5) rotate(540deg); top: 50%; left: 50%; opacity: 0; filter: blur(20px); }
 }
 
 .ball-mechanical-pipe-descent {
-    animation: ball-mechanical-pipe-descent-sequence 5s forwards cubic-bezier(0.5, 0, 0.5, 1);
+    animation: ball-mechanical-pipe-descent-sequence 5s forwards cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .ball-hidden {
@@ -130,21 +127,22 @@
     transform: scale(0);
 }
 
-/* High-Impact Result Slam */
+/* Cinema-Grade Slam Reveal */
 @keyframes result-slam-3d {
-    0% { transform: perspective(1800px) scale(15) rotateX(95deg) translateY(-1000px); opacity: 0; filter: blur(150px); }
-    70% { transform: perspective(1800px) scale(0.7) rotateX(-25deg) translateY(60px); opacity: 1; filter: blur(0); }
-    100% { transform: perspective(1800px) scale(1) rotateX(0deg) translateY(0); opacity: 1; }
+    0% { transform: perspective(2000px) scale(12) rotateX(85deg) translateY(-800px); opacity: 0; filter: blur(100px); }
+    65% { transform: perspective(2000px) scale(0.8) rotateX(-15deg) translateY(40px); opacity: 1; filter: blur(0); }
+    85% { transform: perspective(2000px) scale(1.05) rotateX(5deg) translateY(-10px); }
+    100% { transform: perspective(2000px) scale(1) rotateX(0deg) translateY(0); opacity: 1; }
 }
 
 .animate-result-slam-3d {
-    animation: result-slam-3d 1.3s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+    animation: result-slam-3d 1.5s cubic-bezier(0.1, 0.9, 0.2, 1) forwards;
 }
 
 .premium-gold-text {
-    background: linear-gradient(to bottom, #fff 0%, #f59e0b 50%, #78350f 100%);
+    background: linear-gradient(to bottom, #ffffff 0%, #f59e0b 50%, #78350f 100%);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
-    filter: drop-shadow(0 0 10px rgba(245,158,11,0.3));
+    filter: drop-shadow(0 0 15px rgba(245,158,11,0.4));
 }

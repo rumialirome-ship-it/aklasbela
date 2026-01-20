@@ -30,30 +30,30 @@ class DrawAudioEngine {
             this.masterGain = this.ctx.createGain();
             this.masterGain.connect(this.ctx.destination);
             this.masterGain.gain.setValueAtTime(0, this.ctx.currentTime);
-            this.masterGain.gain.linearRampToValueAtTime(0.5, this.ctx.currentTime + 1.5);
+            this.masterGain.gain.linearRampToValueAtTime(0.4, this.ctx.currentTime + 2);
             
-            // Continuous Shuffling Machine Drone
+            // Low rumble machine drone
             this.drone = this.ctx.createOscillator();
             this.drone.type = 'triangle';
-            this.drone.frequency.setValueAtTime(45, this.ctx.currentTime);
+            this.drone.frequency.setValueAtTime(42, this.ctx.currentTime);
             const g = this.ctx.createGain();
-            g.gain.setValueAtTime(0.12, this.ctx.currentTime);
+            g.gain.setValueAtTime(0.1, this.ctx.currentTime);
             this.drone.connect(g);
             g.connect(this.masterGain);
             this.drone.start();
 
-            // Friction / Rolling Mechanical Noise
+            // Friction / Rolling Noise
             const bufferSize = 4096;
             this.noise = this.ctx.createScriptProcessor(bufferSize, 1, 1);
             this.noise.onaudioprocess = (e) => {
                 const output = e.outputBuffer.getChannelData(0);
                 for (let i = 0; i < bufferSize; i++) {
-                    output[i] = (Math.random() * 2 - 1) * 0.02;
+                    output[i] = (Math.random() * 2 - 1) * 0.015;
                 }
             };
             const filter = this.ctx.createBiquadFilter();
             filter.type = 'lowpass';
-            filter.frequency.setValueAtTime(180, this.ctx.currentTime);
+            filter.frequency.setValueAtTime(250, this.ctx.currentTime);
             this.noise.connect(filter);
             filter.connect(this.masterGain);
 
@@ -65,13 +65,13 @@ class DrawAudioEngine {
         const osc = this.ctx.createOscillator();
         const g = this.ctx.createGain();
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(1400 + Math.random() * 600, this.ctx.currentTime);
-        g.gain.setValueAtTime(0.25, this.ctx.currentTime);
-        g.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+        osc.frequency.setValueAtTime(1200 + Math.random() * 400, this.ctx.currentTime);
+        g.gain.setValueAtTime(0.2, this.ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
         osc.connect(g);
         g.connect(this.masterGain);
         osc.start();
-        osc.stop(this.ctx.currentTime + 0.15);
+        osc.stop(this.ctx.currentTime + 0.1);
     }
 
     playSlam() {
@@ -79,23 +79,23 @@ class DrawAudioEngine {
         const osc = this.ctx.createOscillator();
         const g = this.ctx.createGain();
         osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(80, this.ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(400, this.ctx.currentTime + 0.5);
-        g.gain.setValueAtTime(0.9, this.ctx.currentTime);
-        g.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 1.0);
+        osc.frequency.setValueAtTime(60, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(300, this.ctx.currentTime + 0.8);
+        g.gain.setValueAtTime(0.8, this.ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.9);
         osc.connect(g);
         g.connect(this.masterGain);
         osc.start();
-        osc.stop(this.ctx.currentTime + 1.0);
+        osc.stop(this.ctx.currentTime + 0.9);
     }
 
     stop() {
         if (this.masterGain && this.ctx) {
-            this.masterGain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.8);
+            this.masterGain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 1.0);
             setTimeout(() => {
                 if (this.drone) this.drone.stop();
                 this.ctx?.close();
-            }, 900);
+            }, 1100);
         }
     }
 }
@@ -114,15 +114,14 @@ const Ball: React.FC<{
         const ballSize = window.innerWidth < 640 ? 12 : 16;
         const maxR = bowlRadius - ballSize - 10;
         
-        // Grid layout for static state
-        const itemsPerRow = 10;
-        const col = index % itemsPerRow;
-        const row = Math.floor(index / itemsPerRow);
-        const gx = (col - itemsPerRow/2) * (ballSize * 2.1);
-        const gy = (row - 3.5) * (ballSize * 2.1);
+        // Initial Cluster at the bottom of the circular port
+        const angle = (index / 99) * Math.PI * 0.8 + (Math.PI * 0.1);
+        const clusterR = maxR * (0.6 + Math.random() * 0.4);
+        const gx = clusterR * Math.cos(angle + Math.PI / 2); // Spread across bottom arc
+        const gy = clusterR * Math.sin(angle + Math.PI / 2);
 
-        // Path points for chaotic shuffle
-        const path = Array.from({ length: 6 }).map(() => {
+        // Chaotic Pathing
+        const path = Array.from({ length: 8 }).map(() => {
             const r = Math.sqrt(Math.random()) * maxR;
             const t = Math.random() * 2 * Math.PI;
             return { x: r * Math.cos(t), y: r * Math.sin(t) };
@@ -132,11 +131,12 @@ const Ball: React.FC<{
             gx, gy,
             path,
             delay: Math.random() * -10,
-            duration: 0.35 + Math.random() * 0.4
+            duration: 0.4 + Math.random() * 0.3,
+            slowDuration: 1.5 + Math.random() * 1.0
         };
     }, [bowlRadius, index]);
 
-    // The Winning Ball handles its own EXITING phase
+    // Handle winning ball special path
     if (isWinner && (phase === 'EXITING' || phase === 'REVEAL')) {
         return (
             <div 
@@ -149,7 +149,9 @@ const Ball: React.FC<{
         );
     }
 
-    const currentPhase = (phase === 'REVEAL' || phase === 'EXITING') ? 'STATIC' : phase;
+    // Remaining balls during exit phase keep reanimating slightly
+    const currentPhase = (phase === 'EXITING') ? 'SHUFFLE' : phase;
+    const animDuration = (phase === 'EXITING') ? physics.slowDuration : physics.duration;
 
     return (
         <div 
@@ -157,7 +159,7 @@ const Ball: React.FC<{
             style={{ 
                 '--ball-color': color,
                 '--delay': `${physics.delay}s`,
-                '--duration': `${physics.duration}s`,
+                '--duration': `${animDuration}s`,
                 '--x1': `${physics.path[0]?.x || 0}px`, '--y1': `${physics.path[0]?.y || 0}px`,
                 '--x2': `${physics.path[1]?.x || 0}px`, '--y2': `${physics.path[1]?.y || 0}px`,
                 '--x3': `${physics.path[2]?.x || 0}px`, '--y3': `${physics.path[2]?.y || 0}px`,
@@ -177,8 +179,8 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
   const audioRef = useRef<DrawAudioEngine | null>(null);
   const balls = useMemo(() => Array.from({ length: 99 }).map((_, i) => i), []);
 
-  const SHUFFLE_DURATION = 40000; // 40 seconds of shuffle
-  const EXIT_DURATION = 5000;    // 5 seconds of pipe travel
+  const SHUFFLE_DURATION = 40000; 
+  const EXIT_DURATION = 5000;    
 
   useEffect(() => {
     audioRef.current = new DrawAudioEngine();
@@ -186,10 +188,10 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
 
     const startTime = Date.now();
     
-    // Auto start shuffle
+    // All balls clearly resting at start
     const startTimer = setTimeout(() => {
         setPhase('SHUFFLE');
-    }, 1000);
+    }, 2000);
 
     const sequenceInterval = setInterval(() => {
         const elapsed = Date.now() - startTime;
@@ -200,11 +202,10 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
             
             if (p >= 100) {
                 setPhase('EXITING');
-                // Play audio clinks for specific mechanical interaction points
-                setTimeout(() => audioRef.current?.playClink(), 800);   // Port Exit
-                setTimeout(() => audioRef.current?.playClink(), 1800);  // Pipe Bend 1
-                setTimeout(() => audioRef.current?.playClink(), 3000);  // Pipe Bend 2
-                setTimeout(() => audioRef.current?.playClink(), 4200);  // Terminal Hit
+                // Mechanical interaction audio
+                setTimeout(() => audioRef.current?.playClink(), 800);   
+                setTimeout(() => audioRef.current?.playClink(), 2500);  
+                setTimeout(() => audioRef.current?.playClink(), 4200);  
             }
         }
 
@@ -225,12 +226,12 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
   const bowlRadius = window.innerWidth < 640 ? 140 : 180;
 
   return (
-    <div className="fixed inset-0 z-[5000] bg-black flex flex-col items-center justify-center overflow-hidden font-sans">
+    <div className="fixed inset-0 z-[5000] bg-black flex flex-col items-center justify-center overflow-hidden font-sans select-none">
       
       {/* 45S TOTAL DRAW HUD */}
       {phase !== 'REVEAL' && (
           <div className="absolute top-10 text-center z-[60] animate-fade-in px-6">
-              <h2 className="text-white text-3xl sm:text-4xl font-black russo tracking-[0.2em] uppercase mb-4">
+              <h2 className="text-white text-3xl sm:text-4xl font-black russo tracking-[0.2em] uppercase mb-4 drop-shadow-[0_2px_10px_rgba(0,0,0,1)]">
                   {gameName} <span className="text-amber-500">Live</span>
               </h2>
               <div className="w-64 sm:w-80 h-1.5 bg-white/10 mx-auto rounded-full overflow-hidden p-[1px]">
@@ -239,20 +240,20 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
           </div>
       )}
 
-      {/* THE MECHANICAL ENGINE */}
+      {/* MECHANICAL CHAMBER & PIPE ENGINE */}
       <div className="relative flex flex-col items-center justify-center w-full h-full pointer-events-none">
         
-        {/* CIRCULAR PORT (MACHINE) */}
+        {/* CIRCULAR PORT (TRANSPARENT GLASS CHAMBER) */}
         <div className="relative w-[300px] h-[300px] sm:w-[420px] sm:h-[420px] z-20">
-            {/* The Outer Frame / Bezel */}
-            <div className="absolute -inset-4 rounded-full border-[10px] border-slate-900 shadow-[0_40px_80px_rgba(0,0,0,1),inset_0_2px_4px_rgba(255,255,255,0.1)]"></div>
+            {/* The Heavy Bezel */}
+            <div className="absolute -inset-6 rounded-full border-[12px] border-slate-900 shadow-[0_50px_100px_rgba(0,0,0,1),inset_0_4px_8px_rgba(255,255,255,0.05)]"></div>
             
-            {/* Glass Vacuum Chamber */}
-            <div className="absolute inset-0 rounded-full bg-[#020617] shadow-[inset_0_30px_60px_rgba(0,0,0,0.95),inset_0_-20px_40px_rgba(255,255,255,0.02)] overflow-hidden border border-white/5">
-                <div className="absolute inset-0 bg-radial-3d opacity-90"></div>
-                <div className="absolute top-[10%] left-[25%] w-[35%] h-[25%] bg-gradient-to-br from-white/10 to-transparent rounded-full blur-3xl rotate-[-15deg]"></div>
+            {/* Transparent Glass Chamber */}
+            <div className="absolute inset-0 rounded-full bg-[#020617] shadow-[inset_0_40px_80px_rgba(0,0,0,0.9),inset_0_-30px_60px_rgba(255,255,255,0.01)] overflow-hidden border border-white/5">
+                <div className="absolute inset-0 bg-radial-3d opacity-95"></div>
+                <div className="absolute top-[10%] left-[25%] w-[40%] h-[30%] bg-gradient-to-br from-white/10 to-transparent rounded-full blur-3xl rotate-[-20deg]"></div>
                 
-                {/* Balls Inside the Port */}
+                {/* Balls Inside Port - All visible and resting at start */}
                 <div className="relative w-full h-full">
                     {balls.map(i => (
                         <Ball 
@@ -264,9 +265,9 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
                             bowlRadius={bowlRadius} 
                         />
                     ))}
-                    {/* The Hidden Winning Ball (Before it launches) */}
+                    {/* The Winning Ball handles its own release animation */}
                     <Ball 
-                        index={parseInt(winningNumber) || 99} 
+                        index={parseInt(winningNumber) || 77} 
                         phase={phase} 
                         isWinner={true} 
                         winningNumber={winningNumber} 
@@ -275,100 +276,100 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
                 </div>
             </div>
 
-            {/* EXIT JUNCTION (Bottom-Left Port) */}
-            <div className="absolute bottom-[2%] left-[10%] w-24 h-24 z-50">
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 bg-slate-900 border-[5px] border-slate-700 rounded-2xl rotate-45 shadow-2xl flex items-center justify-center">
-                    <div className="w-10 h-10 bg-black rounded-full border border-white/10"></div>
+            {/* EXIT PORTAL (Bottom Junction) */}
+            <div className="absolute bottom-[2%] left-[12%] w-20 h-20 z-50">
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 bg-slate-900 border-[4px] border-slate-700 rounded-2xl rotate-45 shadow-2xl flex items-center justify-center">
+                    <div className="w-8 h-8 bg-black rounded-full border border-white/10 shadow-inner"></div>
                 </div>
             </div>
         </div>
 
-        {/* PHYSICAL DELIVERY PIPE (Joined to bottom-left) */}
-        <div className="relative w-[220px] sm:w-[380px] h-[500px] sm:h-[700px] z-10 translate-y-[-50px] sm:translate-y-[-80px] sm:translate-x-[-120px]">
-            <svg className="w-full h-full drop-shadow-[0_40px_60px_rgba(0,0,0,0.9)]" viewBox="0 0 400 600" fill="none" preserveAspectRatio="xMidYMid meet">
+        {/* TRANSPARENT DELIVERY PIPE */}
+        <div className="relative w-[240px] sm:w-[400px] h-[550px] sm:h-[750px] z-10 translate-y-[-40px] sm:translate-y-[-60px] sm:translate-x-[-100px]">
+            <svg className="w-full h-full drop-shadow-[0_40px_80px_rgba(0,0,0,0.9)]" viewBox="0 0 400 600" fill="none" preserveAspectRatio="xMidYMid meet">
                 <defs>
                     <linearGradient id="pipeMetalGloss" x1="0" y1="0" x2="1" y2="0">
-                        <stop offset="0%" stopColor="rgba(255,255,255,0.03)" />
-                        <stop offset="50%" stopColor="rgba(255,255,255,0.15)" />
-                        <stop offset="100%" stopColor="rgba(255,255,255,0.03)" />
+                        <stop offset="0%" stopColor="rgba(255,255,255,0.01)" />
+                        <stop offset="50%" stopColor="rgba(255,255,255,0.12)" />
+                        <stop offset="100%" stopColor="rgba(255,255,255,0.01)" />
                     </linearGradient>
-                    <filter id="pipeGlowBloom">
-                        <feGaussianBlur stdDeviation="8" result="blur" />
+                    <filter id="pipeBloom">
+                        <feGaussianBlur stdDeviation="10" result="blur" />
                         <feComposite in="SourceGraphic" in2="blur" operator="over" />
                     </filter>
                 </defs>
                 
-                {/* 3D Glass Tube Case */}
+                {/* The Tube Structure */}
                 <path 
                     d="M 50 100 L 150 250 L 350 400 L 200 550" 
-                    stroke="rgba(255,255,255,0.08)" 
-                    strokeWidth="64" 
+                    stroke="rgba(255,255,255,0.05)" 
+                    strokeWidth="70" 
                     strokeLinecap="round" 
                     strokeLinejoin="round" 
                 />
                 
-                {/* Internal Channel */}
+                {/* Internal Visible Channel */}
                 <path 
                     d="M 50 100 L 150 250 L 350 400 L 200 550" 
                     stroke="url(#pipeMetalGloss)" 
-                    strokeWidth="48" 
+                    strokeWidth="54" 
                     strokeLinecap="round" 
                     strokeLinejoin="round" 
                 />
 
-                {/* Reflection Highlight */}
+                {/* Glass Highlight */}
                 <path 
                     d="M 50 100 L 150 250 L 350 400 L 200 550" 
-                    stroke="rgba(255,255,255,0.2)" 
-                    strokeWidth="2" 
+                    stroke="rgba(255,255,255,0.15)" 
+                    strokeWidth="1" 
                     strokeLinecap="round" 
                     strokeLinejoin="round" 
-                    filter="url(#pipeGlowBloom)"
+                    filter="url(#pipeBloom)"
                 />
 
-                {/* Final Socket */}
+                {/* Final Landing Cup */}
                 <g transform="translate(200, 550)">
-                    <circle r="50" fill="#0f172a" stroke="rgba(255,255,255,0.1)" strokeWidth="6" />
-                    <circle r="30" fill="rgba(245,158,11,0.05)" stroke="rgba(245,158,11,0.4)" strokeWidth="1" className="animate-pulse" />
+                    <circle r="55" fill="#0f172a" stroke="rgba(255,255,255,0.1)" strokeWidth="8" />
+                    <circle r="35" fill="rgba(245,158,11,0.03)" stroke="rgba(245,158,11,0.3)" strokeWidth="1" className="animate-pulse" />
                 </g>
             </svg>
         </div>
 
       </div>
 
-      {/* CLIMAX REVEAL (HIDDEN UNTIL END) */}
+      {/* FINAL DISPLAY AREA (HIDDEN UNTIL SEQUENCE END) */}
       {phase === 'REVEAL' && (
-          <div className="absolute inset-0 z-[6000] bg-slate-950/98 backdrop-blur-3xl flex flex-col items-center justify-center animate-fade-in px-8">
-              <div className="relative animate-result-slam-3d mb-16">
-                  <div className="absolute -inset-48 bg-amber-500/20 blur-[200px] rounded-full animate-pulse"></div>
-                  <div className="relative bg-white text-slate-950 rounded-[6rem] px-32 sm:px-64 py-24 sm:py-36 border-[20px] border-amber-500 shadow-[0_0_250px_rgba(245,158,11,0.6)] overflow-hidden">
-                      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-slate-100/10 to-transparent"></div>
-                      <span className="relative text-[18rem] sm:text-[32rem] font-black russo tracking-tighter leading-none block drop-shadow-2xl">{winningNumber}</span>
+          <div className="absolute inset-0 z-[6000] bg-slate-950/99 backdrop-blur-3xl flex flex-col items-center justify-center animate-fade-in px-8">
+              <div className="relative animate-result-slam-3d mb-20">
+                  <div className="absolute -inset-64 bg-amber-500/10 blur-[200px] rounded-full animate-pulse"></div>
+                  <div className="relative bg-white text-slate-950 rounded-[5rem] px-36 sm:px-72 py-24 sm:py-40 border-[24px] border-amber-500 shadow-[0_0_200px_rgba(245,158,11,0.5)] overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-slate-200/5 to-transparent"></div>
+                      <span className="relative text-[20rem] sm:text-[36rem] font-black russo tracking-tighter leading-none block drop-shadow-2xl">{winningNumber}</span>
                   </div>
               </div>
               
               <div className="text-center">
-                  <h3 className="text-white text-5xl sm:text-8xl font-black russo tracking-tight uppercase mb-16 premium-gold-text">
-                      DRAW <span className="text-amber-500">COMPLETE</span>
+                  <h3 className="text-white text-6xl sm:text-8xl font-black russo tracking-tight uppercase mb-16 premium-gold-text italic">
+                      DECLARED
                   </h3>
                   <button 
                       onClick={onClose}
-                      className="bg-amber-600 hover:bg-amber-500 text-white font-black px-24 py-8 rounded-[2.5rem] transition-all active:scale-95 shadow-[0_30px_70px_rgba(245,158,11,0.4)] text-3xl uppercase tracking-[0.2em] border-b-[12px] border-amber-800"
+                      className="bg-amber-600 hover:bg-amber-500 text-white font-black px-32 py-10 rounded-[3rem] transition-all active:scale-95 shadow-[0_40px_80px_rgba(245,158,11,0.3)] text-4xl uppercase tracking-[0.3em] border-b-[16px] border-amber-800"
                   >
-                      Close Draw
+                      CONTINUE
                   </button>
               </div>
           </div>
       )}
 
-      {/* STATUS HUD */}
-      <div className="absolute right-12 bottom-12 flex items-center gap-6 opacity-30">
+      {/* MECHANICAL STATUS HUD */}
+      <div className="absolute right-12 bottom-12 flex items-center gap-8 opacity-20 group">
           <div className="text-right">
-              <p className="text-[10px] font-black text-white uppercase tracking-[0.5em] mb-1">Mechanical Feed</p>
-              <p className="text-[14px] font-bold text-amber-500 font-mono tracking-tighter uppercase">Sync_Protocol_Active_{winningNumber}</p>
+              <p className="text-[11px] font-black text-white uppercase tracking-[0.6em] mb-1">Authenticity Node</p>
+              <p className="text-[15px] font-bold text-amber-500 font-mono tracking-tighter uppercase">Physical_Simulation_Active_{winningNumber}</p>
           </div>
-          <div className="w-16 h-16 bg-slate-800 rounded-full border-[6px] border-slate-700 shadow-2xl flex items-center justify-center">
-              <div className="w-6 h-6 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-20 h-20 bg-slate-900 rounded-full border-[8px] border-slate-800 shadow-2xl flex items-center justify-center">
+              <div className="w-8 h-8 border-[6px] border-amber-500 border-t-transparent rounded-full animate-spin"></div>
           </div>
       </div>
 

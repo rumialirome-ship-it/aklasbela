@@ -150,7 +150,6 @@ const Ball: React.FC<{
     const maxR = bowlRadius - size - 10;
 
     // Centered distribution logic
-    // Using Golden Ratio for more uniform distribution within the circle
     const phi = (Math.sqrt(5) + 1) / 2;
     const t = index / 99;
     const gridAngle = 2 * Math.PI * index * phi;
@@ -184,7 +183,8 @@ const Ball: React.FC<{
         style={{ '--ball-color': '#ec4899', zIndex: 5000 } as any}
       >
         <div className="ball-glow" />
-        {phase === 'REVEAL' && <span className="ball-text-3d">{winningNumber}</span>}
+        {/* Show number on ball as it descends */}
+        <span className="ball-text-3d">{winningNumber}</span>
       </div>
     );
   }
@@ -248,10 +248,12 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({
     const shuffleTimer = setTimeout(() => setPhase('SHUFFLE'), 2500);
     const exitTimer = setTimeout(() => {
       setPhase('EXITING');
+      // Mechanical clinks synchronized with ball hitting pipe bends
       setTimeout(() => audio.current?.playClink(), 1000);
-      setTimeout(() => audio.current?.playClink(), 2600);
-      setTimeout(() => audio.current?.playClink(), 4400);
+      setTimeout(() => audio.current?.playClink(), 2500);
+      setTimeout(() => audio.current?.playClink(), 4000);
     }, 2500 + SHUFFLE_DURATION);
+    
     const revealTimer = setTimeout(() => {
       setPhase('REVEAL');
       audio.current?.playSlam();
@@ -315,7 +317,7 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({
             </div>
           </div>
 
-          {/* Mechanical Exit Portal (Now at the bottom for standard flow) */}
+          {/* Mechanical Exit Portal (At the bottom) */}
           <div className="absolute -bottom-[2%] left-1/2 -translate-x-1/2 w-[20%] h-[20%] z-50">
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-slate-900 border-[8px] border-slate-700 rounded-3xl rotate-45 shadow-4xl flex items-center justify-center">
               <div className="w-1/2 h-1/2 bg-black rounded-full border border-white/10 shadow-inner" />
@@ -329,7 +331,7 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({
            style={{ 
              width: `${chamberPx * 1.6}px`, 
              height: `${chamberPx * 1.8}px`,
-             transform: `translateY(${chamberPx * 0.4}px)`
+             transform: `translateY(${chamberPx * 0.45}px)`
            }}
         >
           <svg className="w-full h-full drop-shadow-[0_100px_200px_rgba(0,0,0,0.95)]" viewBox="0 0 600 800" fill="none" preserveAspectRatio="xMidYMid meet">
@@ -343,12 +345,12 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({
             </defs>
             
             {/* The industrial downward-flowing pipe */}
-            <path d="M 300 50 L 300 250 L 500 450 L 300 700" stroke="rgba(255,255,255,0.05)" strokeWidth="110" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M 300 50 L 300 250 L 500 450 L 300 700" stroke="url(#pipeGloss)" strokeWidth="90" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M 300 50 L 300 250 L 500 450 L 300 700" stroke="rgba(255,255,255,0.2)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" filter="url(#pipeGlow)" />
+            <path d="M 300 0 L 300 200 L 500 400 L 300 650" stroke="rgba(255,255,255,0.05)" strokeWidth="110" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M 300 0 L 300 200 L 500 400 L 300 650" stroke="url(#pipeGloss)" strokeWidth="90" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M 300 0 L 300 200 L 500 400 L 300 650" stroke="rgba(255,255,255,0.2)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" filter="url(#pipeGlow)" />
             
             {/* Receiving result socket */}
-            <g transform="translate(300, 700)">
+            <g transform="translate(300, 650)">
               <circle r="90" fill="#020617" stroke="rgba(255,255,255,0.1)" strokeWidth="16" />
               <circle r="60" fill="rgba(245,158,11,0.03)" stroke="rgba(245,158,11,0.4)" strokeWidth="2" className="animate-pulse" />
             </g>
@@ -356,7 +358,7 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({
         </div>
       </div>
 
-      {/* FINAL RESULT OVERLAY */}
+      {/* FINAL CINEMATIC RESULT OVERLAY */}
       {phase === 'REVEAL' && (
         <div className="absolute inset-0 z-[6000] bg-slate-950/99 backdrop-blur-3xl flex flex-col items-center justify-center animate-fade-in px-8">
           <div className="relative animate-result-slam-3d mb-12 sm:mb-20">
@@ -367,7 +369,7 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({
             </div>
           </div>
           <div className="text-center animate-fade-in" style={{ animationDelay: '0.9s' }}>
-            <h3 className="text-white text-5xl sm:text-[10rem] font-black russo tracking-tight uppercase mb-12 sm:mb-24 premium-gold-text italic">WINNER DECLARED</h3>
+            <h3 className="text-white text-5xl sm:text-[10rem] font-black russo tracking-tight uppercase mb-12 sm:mb-24 premium-gold-text italic text-center">WINNER DECLARED</h3>
             <button
               onClick={onClose}
               className="bg-amber-600 hover:bg-amber-500 text-white font-black px-40 py-12 sm:px-80 sm:py-20 rounded-[4.5rem] transition-all active:scale-95 shadow-[0_60px_100px_rgba(245,158,11,0.5)] text-3xl sm:text-7xl uppercase tracking-[0.5em] border-b-[14px] sm:border-b-[30px] border-amber-800"

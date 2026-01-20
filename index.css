@@ -80,28 +80,62 @@
 
 /* 
    REFINED PIPE PATHING:
-   Centered vertical flow for the centered machine globe
+   The winning ball exits the centered chamber and travels down the "up-side down" pipe.
 */
 @keyframes ball-mechanical-pipe-descent-sequence {
-    0%   { transform: translate(-50%, -50%) scale(1) rotate(0deg); top: 50%; left: 50%; opacity: 1; filter: blur(0); }
+    0%   { 
+        transform: translate(-50%, 50%) scale(1); 
+        top: 50%; 
+        left: 50%; 
+        opacity: 1; 
+        filter: blur(0); 
+    }
     
-    /* Pull into Mechanical Exit Portal at bottom */
-    12%  { transform: translate(0, 220px) scale(0.95) rotate(90deg); top: 50%; left: 50%; }
+    /* Pulling through the bottom exit hole */
+    10%  { 
+        transform: translate(-50%, 150px) scale(0.95) rotate(45deg); 
+        top: 50%; 
+        left: 50%; 
+    }
     
-    /* Enter Delivery Tube Section 1 (Vertical drop) */
-    25%  { transform: translate(0, 350px) scale(0.85) rotate(180deg); top: 50%; left: 50%; }
+    /* Entering the pipe at M 300 0 (relative to offset container) */
+    20%  { 
+        transform: translate(-50%, 250px) scale(0.9) rotate(90deg); 
+        top: 50%; 
+        left: 50%; 
+    }
     
-    /* First Zig-Zag Bend (To right) */
-    45%  { transform: translate(180px, 500px) scale(0.78) rotate(300deg); top: 50%; left: 50%; }
+    /* First vertical segment L 300 200 */
+    40%  { 
+        transform: translate(-50%, 450px) scale(0.85) rotate(180deg); 
+        top: 50%; 
+        left: 50%; 
+    }
     
-    /* Final Zig Bend toward Receiver (Back to center-ish) */
-    70%  { transform: translate(80px, 680px) scale(0.7) rotate(540deg); top: 50%; left: 50%; }
+    /* Right bend L 500 400 */
+    65%  { 
+        transform: translate(150px, 650px) scale(0.78) rotate(300deg); 
+        top: 50%; 
+        left: 50%; 
+    }
     
-    /* Arrival at Receiving Socket at the very bottom */
-    92%  { transform: translate(0, 850px) scale(0.68) rotate(720deg); top: 50%; left: 50%; opacity: 1; filter: blur(0); }
+    /* Final drop into socket L 300 650 */
+    90%  { 
+        transform: translate(-50%, 900px) scale(0.7) rotate(450deg); 
+        top: 50%; 
+        left: 50%; 
+        opacity: 1;
+        filter: blur(0);
+    }
     
-    /* Dramatic reveal scaling transition */
-    100% { transform: translate(0, 950px) scale(4.5) rotate(900deg); top: 50%; left: 50%; opacity: 0; filter: blur(40px); }
+    /* Explosion transition into Big Number reveal */
+    100% { 
+        transform: translate(-50%, 1000px) scale(6) rotate(540deg); 
+        top: 50%; 
+        left: 50%; 
+        opacity: 0; 
+        filter: blur(50px);
+    }
 }
 
 .ball-mechanical-pipe-descent {
@@ -113,7 +147,7 @@
     transform: scale(0);
 }
 
-/* Cinematic Result Reveal - 3D Slam */
+/* Cinematic Result Reveal - Central 3D Slam */
 @keyframes result-slam-3d {
     0% { transform: perspective(3000px) scale(25) rotateX(100deg) translateY(-1500px); opacity: 0; filter: blur(200px); }
     55% { transform: perspective(3000px) scale(0.7) rotateX(-30deg) translateY(80px); opacity: 1; filter: blur(0); }

@@ -43,7 +43,6 @@ class DrawAudioEngine {
       this.masterGain.gain.setValueAtTime(0, this.ctx.currentTime);
       this.masterGain.gain.linearRampToValueAtTime(0.5, this.ctx.currentTime + 2);
 
-      // Low Machine Drone
       this.drone = this.ctx.createOscillator();
       this.drone.type = 'triangle';
       this.drone.frequency.setValueAtTime(42, this.ctx.currentTime);
@@ -77,14 +76,12 @@ class DrawAudioEngine {
     };
 
     const sequence = () => {
-      const now = this.ctx!.currentTime;
+      if (!this.ctx) return;
+      const now = this.ctx.currentTime;
       for (let i = 0; i < 8; i++) {
         const t = now + i * 0.5;
-        // "Thump" bass heartbeat
         playPulse(60, t, 0.2, 0.4);
         if (i % 2 === 0) playPulse(120, t, 0.05, 0.2);
-        
-        // Eerie tension notes
         if (i === 0 || i === 4) {
           playPulse(180, t, 0.03, 0.8);
           playPulse(220, t, 0.03, 0.8);
@@ -149,10 +146,9 @@ const Ball: React.FC<{
   const number = index.toString().padStart(2, '0');
 
   const motion = useMemo(() => {
-    const size = window.innerWidth < 640 ? 16 : 22;
+    const size = bowlRadius * 0.08;
     const maxR = bowlRadius - size - 15;
 
-    // Distributed around the bottom port area
     const gridAngle = (index / 99) * Math.PI * 0.75 + Math.PI * 0.125;
     const gridR = maxR * (0.65 + Math.random() * 0.35);
 
@@ -224,7 +220,22 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({
 
   const audio = useRef<DrawAudioEngine | null>(null);
   const balls = useMemo(() => Array.from({ length: 99 }, (_, i) => i), []);
-  const bowlRadius = useMemo(() => (window.innerWidth < 640 ? 180 : 280), []);
+  
+  // Calculate bowl size dynamically for responsiveness: min(90vw, 70vh)
+  const [viewportSize, setViewportSize] = useState({ w: window.innerWidth, h: window.innerHeight });
+
+  useEffect(() => {
+    const handleResize = () => setViewportSize({ w: window.innerWidth, h: window.innerHeight });
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const chamberPx = useMemo(() => {
+    const minSide = Math.min(viewportSize.w * 0.9, viewportSize.h * 0.7);
+    return Math.min(minSide, 700); // Max size of 700px for giant desktop screens
+  }, [viewportSize]);
+
+  const bowlRadius = chamberPx / 2;
 
   useEffect(() => {
     audio.current = new DrawAudioEngine();
@@ -261,31 +272,35 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({
   return (
     <div className="fixed inset-0 z-[5000] bg-black flex flex-col items-center justify-center overflow-hidden font-sans select-none">
       
-      {/* HUD */}
+      {/* HUD - Dynamic positioning to stay above chamber */}
       {phase !== 'REVEAL' && (
-        <div className="absolute top-10 text-center z-[60] animate-fade-in px-6">
-          <h2 className="text-white text-3xl sm:text-5xl font-black russo tracking-[0.2em] uppercase mb-4 drop-shadow-[0_2px_15px_rgba(0,0,0,1)]">
+        <div className="absolute top-8 text-center z-[60] animate-fade-in px-6 w-full">
+          <h2 className="text-white text-3xl sm:text-5xl font-black russo tracking-[0.15em] uppercase mb-4 drop-shadow-[0_2px_15px_rgba(0,0,0,1)]">
             {gameName} <span className="text-amber-500">Live</span>
           </h2>
-          <div className="w-64 sm:w-[400px] h-2 bg-white/10 mx-auto rounded-full overflow-hidden p-[1px]">
+          <div className="w-64 sm:w-[450px] h-2 bg-white/10 mx-auto rounded-full overflow-hidden p-[1px]">
             <div className="h-full bg-amber-500 transition-all duration-300 linear shadow-[0_0_20px_#f59e0b]" style={{ width: `${progress}%` }} />
           </div>
-          <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.5em] mt-3 animate-pulse">Core Process Synchronizing...</p>
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] mt-3 animate-pulse">Establishing Mechanical Protocol...</p>
         </div>
       )}
 
-      {/* MECHANICAL ENGINE */}
-      <div className="relative flex flex-col items-center justify-center w-full h-full pointer-events-none scale-90 sm:scale-100">
+      {/* MECHANICAL ENGINE - PERFECTLY CENTERED */}
+      <div className="relative flex items-center justify-center w-full h-full pointer-events-none">
         
-        {/* BIGGER CHAMBER */}
-        <div className="relative w-[380px] h-[380px] sm:w-[600px] sm:h-[600px] z-20">
-          {/* Bezel */}
-          <div className="absolute -inset-10 rounded-full border-[18px] border-slate-900 shadow-[0_80px_150px_rgba(0,0,0,1),inset_0_4px_15px_rgba(255,255,255,0.05)]" />
+        {/* GIANT ROUND CHAMBER */}
+        <div 
+          className="relative z-20 rounded-full" 
+          style={{ width: `${chamberPx}px`, height: `${chamberPx}px` }}
+        >
+          {/* Bezel - Heavy industrial look */}
+          <div className="absolute -inset-[3%] sm:-inset-12 rounded-full border-[10px] sm:border-[24px] border-slate-900 shadow-[0_100px_200px_rgba(0,0,0,1),inset_0_4px_15px_rgba(255,255,255,0.05)]" />
           
-          {/* Glass */}
-          <div className="absolute inset-0 rounded-full bg-[#010411] shadow-[inset_0_60px_120px_rgba(0,0,0,1),inset_0_-50px_100px_rgba(255,255,255,0.01)] overflow-hidden border border-white/5">
+          {/* Glass Interior */}
+          <div className="absolute inset-0 rounded-full bg-[#010411] shadow-[inset_0_80px_150px_rgba(0,0,0,1),inset_0_-60px_120px_rgba(255,255,255,0.02)] overflow-hidden border border-white/5">
             <div className="absolute inset-0 bg-radial-3d opacity-98" />
-            <div className="absolute top-[8%] left-[22%] w-[45%] h-[35%] bg-gradient-to-br from-white/10 to-transparent rounded-full blur-[80px] rotate-[-18deg]" />
+            {/* Volumetric Refraction */}
+            <div className="absolute top-[5%] left-[20%] w-[50%] h-[40%] bg-gradient-to-br from-white/10 to-transparent rounded-full blur-[90px] rotate-[-15deg]" />
             
             <div className="relative w-full h-full">
               {balls.map((i) => (
@@ -295,51 +310,61 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({
             </div>
           </div>
 
-          {/* Exit Portal */}
-          <div className="absolute bottom-[2%] left-[12%] w-28 h-28 z-50">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 bg-slate-900 border-[6px] border-slate-700 rounded-3xl rotate-45 shadow-3xl flex items-center justify-center">
-              <div className="w-12 h-12 bg-black rounded-full border border-white/10 shadow-inner" />
+          {/* Bottom Exit Portal Socket */}
+          <div className="absolute bottom-[1%] left-[10%] w-[15%] h-[15%] z-50">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-slate-900 border-[6px] border-slate-700 rounded-[25%] rotate-45 shadow-3xl flex items-center justify-center">
+              <div className="w-1/2 h-1/2 bg-black rounded-full border border-white/10 shadow-inner" />
             </div>
           </div>
         </div>
 
-        {/* DELIVERY PIPE */}
-        <div className="relative w-[300px] sm:w-[500px] h-[650px] sm:h-[900px] z-10 translate-y-[-60px] sm:translate-y-[-100px] sm:translate-x-[-150px]">
-          <svg className="w-full h-full drop-shadow-[0_60px_120px_rgba(0,0,0,0.95)]" viewBox="0 0 400 600" fill="none" preserveAspectRatio="xMidYMid meet">
+        {/* DELIVERY PIPE - Positioned relative to central port */}
+        <div 
+           className="absolute z-10 opacity-60 sm:opacity-100"
+           style={{ 
+             width: `${chamberPx * 1.5}px`, 
+             height: `${chamberPx * 1.5}px`,
+             transform: `translate(${-chamberPx * 0.25}px, ${chamberPx * 0.25}px)`
+           }}
+        >
+          <svg className="w-full h-full drop-shadow-[0_80px_160px_rgba(0,0,0,0.95)]" viewBox="0 0 600 600" fill="none" preserveAspectRatio="xMidYMid meet">
             <defs>
               <linearGradient id="pipeGloss" x1="0" y1="0" x2="1" y2="0">
                 <stop offset="0%" stopColor="rgba(255,255,255,0.01)" />
-                <stop offset="50%" stopColor="rgba(255,255,255,0.08)" />
+                <stop offset="50%" stopColor="rgba(255,255,255,0.12)" />
                 <stop offset="100%" stopColor="rgba(255,255,255,0.01)" />
               </linearGradient>
-              <filter id="pipeGlow"><feGaussianBlur stdDeviation="15" result="blur" /><feComposite in="SourceGraphic" in2="blur" operator="over" /></filter>
+              <filter id="pipeGlow"><feGaussianBlur stdDeviation="20" result="blur" /><feComposite in="SourceGraphic" in2="blur" operator="over" /></filter>
             </defs>
-            <path d="M 50 100 L 150 250 L 350 400 L 200 550" stroke="rgba(255,255,255,0.03)" strokeWidth="88" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M 50 100 L 150 250 L 350 400 L 200 550" stroke="url(#pipeGloss)" strokeWidth="68" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M 50 100 L 150 250 L 350 400 L 200 550" stroke="rgba(255,255,255,0.1)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" filter="url(#pipeGlow)" />
-            <g transform="translate(200, 550)">
-              <circle r="70" fill="#040816" stroke="rgba(255,255,255,0.06)" strokeWidth="12" />
-              <circle r="45" fill="rgba(245,158,11,0.02)" stroke="rgba(245,158,11,0.2)" strokeWidth="1" className="animate-pulse" />
+            {/* The industrial zigzag path scaled to chamber */}
+            <path d="M 120 180 L 220 350 L 480 480 L 280 580" stroke="rgba(255,255,255,0.04)" strokeWidth="100" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M 120 180 L 220 350 L 480 480 L 280 580" stroke="url(#pipeGloss)" strokeWidth="80" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M 120 180 L 220 350 L 480 480 L 280 580" stroke="rgba(255,255,255,0.15)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" filter="url(#pipeGlow)" />
+            
+            {/* End Resting Cup */}
+            <g transform="translate(280, 580)">
+              <circle r="80" fill="#040816" stroke="rgba(255,255,255,0.08)" strokeWidth="14" />
+              <circle r="50" fill="rgba(245,158,11,0.02)" stroke="rgba(245,158,11,0.3)" strokeWidth="1" className="animate-pulse" />
             </g>
           </svg>
         </div>
       </div>
 
-      {/* FINAL CLIMAX */}
+      {/* FINAL CLIMAX OVERLAY */}
       {phase === 'REVEAL' && (
         <div className="absolute inset-0 z-[6000] bg-slate-950/99 backdrop-blur-3xl flex flex-col items-center justify-center animate-fade-in px-8">
-          <div className="relative animate-result-slam-3d mb-16">
-            <div className="absolute -inset-[100px] bg-amber-500/15 blur-[250px] rounded-full animate-pulse" />
-            <div className="relative bg-white text-slate-950 rounded-[6rem] px-48 sm:px-96 py-32 sm:py-56 border-[32px] border-amber-500 shadow-[0_0_300px_rgba(245,158,11,0.7)] overflow-hidden">
+          <div className="relative animate-result-slam-3d mb-12 sm:mb-16">
+            <div className="absolute -inset-[150px] bg-amber-500/15 blur-[300px] rounded-full animate-pulse" />
+            <div className="relative bg-white text-slate-950 rounded-[4rem] sm:rounded-[6rem] px-24 sm:px-96 py-20 sm:py-56 border-[16px] sm:border-[36px] border-amber-500 shadow-[0_0_400px_rgba(245,158,11,0.8)] overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-b from-transparent via-slate-200/10 to-transparent" />
-              <span className="relative text-[25rem] sm:text-[45rem] font-black russo tracking-tighter leading-none block drop-shadow-3xl">{winningNumber}</span>
+              <span className="relative text-[18rem] sm:text-[48rem] font-black russo tracking-tighter leading-none block drop-shadow-3xl">{winningNumber}</span>
             </div>
           </div>
-          <div className="text-center animate-fade-in" style={{ animationDelay: '1s' }}>
-            <h3 className="text-white text-7xl sm:text-9xl font-black russo tracking-tight uppercase mb-20 premium-gold-text italic">OFFICIAL RESULT</h3>
+          <div className="text-center animate-fade-in" style={{ animationDelay: '0.8s' }}>
+            <h3 className="text-white text-5xl sm:text-9xl font-black russo tracking-tight uppercase mb-12 sm:mb-20 premium-gold-text italic">DRAW SETTLED</h3>
             <button
               onClick={onClose}
-              className="bg-amber-600 hover:bg-amber-500 text-white font-black px-48 py-12 rounded-[4rem] transition-all active:scale-95 shadow-[0_60px_100px_rgba(245,158,11,0.5)] text-5xl uppercase tracking-[0.4em] border-b-[20px] border-amber-800"
+              className="bg-amber-600 hover:bg-amber-500 text-white font-black px-32 py-10 sm:px-64 sm:py-16 rounded-[4rem] transition-all active:scale-95 shadow-[0_60px_100px_rgba(245,158,11,0.5)] text-3xl sm:text-6xl uppercase tracking-[0.4em] border-b-[12px] sm:border-b-[24px] border-amber-800"
             >
               RETURN
             </button>
@@ -347,8 +372,8 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({
         </div>
       )}
 
-      <div className="absolute left-12 bottom-12 opacity-10">
-        <p className="text-[10px] font-black text-white uppercase tracking-[0.8em]">Secure Draw Sequence Active</p>
+      <div className="absolute left-8 bottom-8 sm:left-12 sm:bottom-12 opacity-10">
+        <p className="text-[9px] sm:text-[11px] font-black text-white uppercase tracking-[0.6em]">System Integrity: Authenticated</p>
       </div>
     </div>
   );

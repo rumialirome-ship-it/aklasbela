@@ -7,8 +7,8 @@
 
 .lottery-ball-3d {
     position: absolute;
-    width: 24px;
-    height: 24px;
+    width: clamp(20px, 5vw, 42px);
+    height: clamp(20px, 5vw, 42px);
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -23,52 +23,40 @@
     z-index: 5;
 }
 
-@media (min-width: 640px) {
-    .lottery-ball-3d { width: 36px; height: 36px; }
-}
-
 .ball-text-3d {
-    font-size: 10px;
+    font-size: clamp(8px, 1.5vw, 16px);
     font-family: 'Inter', sans-serif;
     font-weight: 950;
     color: #000;
     text-shadow: 0 1px 0 rgba(255,255,255,0.1);
 }
 
-@media (min-width: 640px) {
-    .ball-text-3d { font-size: 16px; }
-}
-
 .winner-ball-3d {
-    z-index: 4000 !important;
-    width: 36px;
-    height: 36px;
+    z-index: 5000 !important;
+    width: clamp(28px, 7vw, 56px);
+    height: clamp(28px, 7vw, 56px);
     box-shadow: 
         inset -6px -6px 12px rgba(0,0,0,0.9),
         inset 4px 4px 8px rgba(255,255,255,0.5),
-        0 0 70px rgba(245,158,11,0.6);
-}
-
-@media (min-width: 640px) {
-    .winner-ball-3d { width: 48px; height: 48px; }
+        0 0 80px rgba(245,158,11,0.7);
 }
 
 .ball-glow {
     position: absolute;
-    inset: -14px;
-    background: radial-gradient(circle, rgba(245,158,11,0.35) 0%, transparent 70%);
+    inset: -15px;
+    background: radial-gradient(circle, rgba(245,158,11,0.4) 0%, transparent 70%);
     border-radius: 50%;
-    filter: blur(10px);
+    filter: blur(12px);
     animation: ball-pulse 0.7s infinite alternate;
 }
 
 @keyframes ball-pulse {
-    from { opacity: 0.3; transform: scale(0.85); }
-    to { opacity: 0.7; transform: scale(1.15); }
+    from { opacity: 0.3; transform: scale(0.8); }
+    to { opacity: 0.8; transform: scale(1.2); }
 }
 
 .bg-radial-3d {
-    background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.015) 0%, rgba(0,0,0,0.96) 100%);
+    background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.02) 0%, rgba(0,0,0,0.97) 100%);
 }
 
 @keyframes mechanical-shuffle-contain {
@@ -91,33 +79,33 @@
 }
 
 /* 
-   REFINED PIPE PATHING:
-   Rotates smoothly while following the zigzag delivery structure
+   SCALED PIPE PATHING:
+   Dynamic offsets based on the centered chamber layout
 */
 @keyframes ball-mechanical-pipe-descent-sequence {
     0%   { transform: translate(-50%, -50%) scale(1) rotate(0deg); top: 50%; left: 50%; opacity: 1; filter: blur(0); }
     
-    /* Pull into Mechanical Exit */
-    15%  { transform: translate(-170px, 170px) scale(0.98) rotate(60deg); top: 50%; left: 50%; }
+    /* Pull into Mechanical Exit Portal */
+    12%  { transform: translate(-180px, 180px) scale(0.95) rotate(60deg); top: 50%; left: 50%; }
     
-    /* Enter Transparent Tube */
-    25%  { transform: translate(-230px, 230px) scale(0.9) rotate(140deg); top: 50%; left: 50%; }
+    /* Enter Delivery Tube Section 1 */
+    25%  { transform: translate(-250px, 250px) scale(0.85) rotate(140deg); top: 50%; left: 50%; }
     
-    /* First Large Bend */
-    45%  { transform: translate(-130px, 380px) scale(0.8) rotate(280deg); top: 50%; left: 50%; }
+    /* First Zig-Zag Bend */
+    45%  { transform: translate(-140px, 420px) scale(0.75) rotate(280deg); top: 50%; left: 50%; }
     
-    /* Second Zig Bend */
-    70%  { transform: translate(200px, 530px) scale(0.72) rotate(460deg); top: 50%; left: 50%; }
+    /* Final Zig Bend toward Receiver */
+    70%  { transform: translate(220px, 580px) scale(0.68) rotate(460deg); top: 50%; left: 50%; }
     
-    /* Final Terminal Lock */
-    92%  { transform: translate(25px, 680px) scale(0.7) rotate(640deg); top: 50%; left: 50%; opacity: 1; filter: blur(0); }
+    /* Arrival at Receiving Socket */
+    92%  { transform: translate(30px, 740px) scale(0.65) rotate(640deg); top: 50%; left: 50%; opacity: 1; filter: blur(0); }
     
-    /* DISAPPEARANCE FOR IMPACT REVEAL */
-    100% { transform: translate(25px, 760px) scale(2.8) rotate(720deg); top: 50%; left: 50%; opacity: 0; filter: blur(25px); }
+    /* Impact Explosion Transition */
+    100% { transform: translate(30px, 820px) scale(3.5) rotate(720deg); top: 50%; left: 50%; opacity: 0; filter: blur(30px); }
 }
 
 .ball-mechanical-pipe-descent {
-    animation: ball-mechanical-pipe-descent-sequence 5s forwards cubic-bezier(0.42, 0, 0.58, 1);
+    animation: ball-mechanical-pipe-descent-sequence 5s forwards cubic-bezier(0.45, 0, 0.55, 1);
 }
 
 .ball-hidden {
@@ -125,16 +113,16 @@
     transform: scale(0);
 }
 
-/* Cinema-Grade Slam Reveal */
+/* Impact Revel - Cinema Grade */
 @keyframes result-slam-3d {
-    0% { transform: perspective(2200px) scale(15) rotateX(90deg) translateY(-1000px); opacity: 0; filter: blur(120px); }
-    60% { transform: perspective(2200px) scale(0.8) rotateX(-20deg) translateY(50px); opacity: 1; filter: blur(0); }
-    80% { transform: perspective(2200px) scale(1.08) rotateX(8deg) translateY(-15px); }
-    100% { transform: perspective(2200px) scale(1) rotateX(0deg) translateY(0); opacity: 1; }
+    0% { transform: perspective(2500px) scale(20) rotateX(95deg) translateY(-1200px); opacity: 0; filter: blur(150px); }
+    60% { transform: perspective(2500px) scale(0.75) rotateX(-25deg) translateY(60px); opacity: 1; filter: blur(0); }
+    80% { transform: perspective(2500px) scale(1.1) rotateX(10deg) translateY(-20px); }
+    100% { transform: perspective(2500px) scale(1) rotateX(0deg) translateY(0); opacity: 1; }
 }
 
 .animate-result-slam-3d {
-    animation: result-slam-3d 1.7s cubic-bezier(0.15, 1, 0.3, 1) forwards;
+    animation: result-slam-3d 1.8s cubic-bezier(0.1, 1, 0.2, 1) forwards;
 }
 
 .premium-gold-text {
@@ -142,5 +130,5 @@
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
-    filter: drop-shadow(0 0 20px rgba(245,158,11,0.5));
+    filter: drop-shadow(0 0 25px rgba(245,158,11,0.6));
 }

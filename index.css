@@ -24,7 +24,7 @@
 }
 
 @media (min-width: 640px) {
-    .lottery-ball-3d { width: 36px; height: 36px; }
+    .lottery-ball-3d { width: 32px; height: 32px; }
 }
 
 .ball-text-3d {
@@ -36,27 +36,27 @@
 }
 
 @media (min-width: 640px) {
-    .ball-text-3d { font-size: 15px; }
+    .ball-text-3d { font-size: 14px; }
 }
 
 .winner-ball-3d {
-    z-index: 3000 !important;
+    z-index: 4000 !important;
     width: 32px;
     height: 32px;
     box-shadow: 
         inset -6px -6px 12px rgba(0,0,0,0.8),
         inset 4px 4px 8px rgba(255,255,255,0.6),
-        0 0 60px rgba(236,72,153,0.8);
+        0 0 60px rgba(245,158,11,0.6);
 }
 
 @media (min-width: 640px) {
-    .winner-ball-3d { width: 48px; height: 48px; }
+    .winner-ball-3d { width: 44px; height: 44px; }
 }
 
 .ball-glow {
     position: absolute;
     inset: -10px;
-    background: radial-gradient(circle, rgba(236,72,153,0.4) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(245,158,11,0.4) 0%, transparent 70%);
     border-radius: 50%;
     filter: blur(5px);
     animation: ball-pulse 1s infinite alternate;
@@ -75,8 +75,9 @@
 /* Mechanical Shuffle Physics */
 @keyframes mechanical-shuffle-contain {
     0%   { transform: translate(calc(-50% + var(--x1)), calc(-50% + var(--y1))) rotate(0deg); }
-    33%  { transform: translate(calc(-50% + var(--x2)), calc(-50% + var(--y2))) rotate(120deg); }
-    66%  { transform: translate(calc(-50% + var(--x3)), calc(-50% + var(--y3))) rotate(240deg); }
+    25%  { transform: translate(calc(-50% + var(--x2)), calc(-50% + var(--y2))) rotate(90deg); }
+    50%  { transform: translate(calc(-50% + var(--x3)), calc(-50% + var(--y3))) rotate(180deg); }
+    75%  { transform: translate(calc(-50% + var(--x4)), calc(-50% + var(--y4))) rotate(270deg); }
     100% { transform: translate(calc(-50% + var(--x1)), calc(-50% + var(--y1))) rotate(360deg); }
 }
 
@@ -85,50 +86,43 @@
     animation-delay: var(--delay);
 }
 
-.ball-static-pile {
-    animation: idle-micro-bounce 0.3s infinite alternate ease-in-out;
-}
-
-@keyframes idle-micro-bounce {
-    from { transform: translate(-50%, -50%) scale(1); }
-    to { transform: translate(-50%, -49.2%) scale(1.03); }
+.ball-grid-static {
+    left: calc(50% + var(--grid-x));
+    top: calc(50% + var(--grid-y));
+    transform: translate(-50%, -50%);
 }
 
 /* 
-   REFINED MECHANICAL DELIVERY SEQUENCE:
-   1. Port Center -> Exit Gate (Head)
-   2. Junction -> Zigzag Pipe Start
-   3. Journey Down Pipe Bends
-   4. Exit Terminal -> Big Reveal
+   REFINED PIPE DELIVERY SEQUENCE (5s):
+   1. Port Center -> Exit Junction (Bottom Left)
+   2. Junction -> Pipe Descent
+   3. Journey Down the SVG Path
+   4. Exit Terminal -> Final Reveal
 */
-@keyframes ball-mechanical-delivery-sequence {
-    0%   { transform: translate(-50%, -50%) scale(1); top: 50%; left: 50%; opacity: 1; filter: blur(0); }
+@keyframes ball-mechanical-pipe-descent-sequence {
+    0%   { transform: translate(-50%, -50%) scale(1); top: 50%; left: 50%; opacity: 1; }
     
-    /* Sudden Acceleration to Junction */
-    10%  { transform: translate(120px, -120px) scale(0.9); top: 50%; left: 50%; }
+    /* Rapid Rush to Junction */
+    12%  { transform: translate(-150px, 150px) scale(0.9); top: 50%; left: 50%; }
     
-    /* Transition into Pipe Start (at Junction) */
-    15%  { transform: translate(170px, -120px) scale(0.85); top: 50%; left: 50%; }
+    /* Enter Pipe Head */
+    20%  { transform: translate(-200px, 200px) scale(0.8); top: 50%; left: 50%; }
     
-    /* High-Velocity Corner 1 (Rightward) */
-    35%  { transform: translate(280px, -120px) scale(0.8); top: 50%; left: 50%; }
-    45%  { transform: translate(450px, 0px) scale(0.75); top: 50%; left: 50%; }
+    /* Bend 1 */
+    40%  { transform: translate(-120px, 350px) scale(0.7); top: 50%; left: 50%; }
     
-    /* Sharp Return Corner 2 (Leftward) */
-    65%  { transform: translate(200px, 150px) scale(0.7); top: 50%; left: 50%; }
+    /* Bend 2 (The Zig) */
+    65%  { transform: translate(180px, 500px) scale(0.65); top: 50%; left: 50%; }
     
-    /* Plunge to Final Terminal Corner 3 (Downwards) */
-    85%  { transform: translate(350px, 300px) scale(0.65); top: 50%; left: 50%; }
+    /* Arrival at Terminal */
+    90%  { transform: translate(20px, 650px) scale(0.6); top: 50%; left: 50%; opacity: 1; filter: blur(0); }
     
-    /* Arrival at Exit Terminal Node */
-    95%  { transform: translate(350px, 400px) scale(0.6); top: 50%; left: 50%; opacity: 1; filter: blur(0); }
-    
-    /* EXITING THE PIPE: POP TO FRONT */
-    100% { transform: translate(350px, 450px) scale(1.5); top: 50%; left: 50%; opacity: 0; filter: blur(20px); }
+    /* POP OUT AND EXPAND */
+    100% { transform: translate(20px, 700px) scale(2.0); top: 50%; left: 50%; opacity: 0; filter: blur(30px); }
 }
 
-.ball-mechanical-delivery {
-    animation: ball-mechanical-delivery-sequence 4.5s forwards cubic-bezier(0.5, 0, 0.5, 1);
+.ball-mechanical-pipe-descent {
+    animation: ball-mechanical-pipe-descent-sequence 5s forwards cubic-bezier(0.5, 0, 0.5, 1);
 }
 
 .ball-hidden {
@@ -136,23 +130,21 @@
     transform: scale(0);
 }
 
-/* High-Impact Result Slam (Climax) */
+/* High-Impact Result Slam */
 @keyframes result-slam-3d {
-    0% { transform: perspective(2000px) scale(12) rotateX(90deg) translateY(-800px); opacity: 0; filter: blur(120px); }
-    75% { transform: perspective(2000px) scale(0.8) rotateX(-20deg) translateY(50px); opacity: 1; filter: blur(0); }
-    100% { transform: perspective(2000px) scale(1) rotateX(0deg) translateY(0); opacity: 1; }
+    0% { transform: perspective(1800px) scale(15) rotateX(95deg) translateY(-1000px); opacity: 0; filter: blur(150px); }
+    70% { transform: perspective(1800px) scale(0.7) rotateX(-25deg) translateY(60px); opacity: 1; filter: blur(0); }
+    100% { transform: perspective(1800px) scale(1) rotateX(0deg) translateY(0); opacity: 1; }
 }
 
 .animate-result-slam-3d {
-    animation: result-slam-3d 1.2s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+    animation: result-slam-3d 1.3s cubic-bezier(0.19, 1, 0.22, 1) forwards;
 }
 
-.gold-shimmer {
-    background: linear-gradient(to right, #fff 0%, #ec4899 50%, #fff 100%);
-    background-size: 200% auto;
+.premium-gold-text {
+    background: linear-gradient(to bottom, #fff 0%, #f59e0b 50%, #78350f 100%);
     -webkit-background-clip: text;
     background-clip: text;
-    animation: shimmer-effect 3s linear infinite;
+    color: transparent;
+    filter: drop-shadow(0 0 10px rgba(245,158,11,0.3));
 }
-
-@keyframes shimmer-effect { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }

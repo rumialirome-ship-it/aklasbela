@@ -47,29 +47,39 @@ if (!dbConnected) {
     systemError = "Database schema not found. Run setup.";
 }
 
-// --- AUTOMATED MARKET RESET (4:00 PM PKT / 11:00 AM UTC) ---
+// --- AUTOMATED MARKET RESET (4:00 PM PKT) ---
 let lastResetDate = null;
+
 function checkMarketReset() {
-    const now = new Date();
-    // PKT is UTC+5. 16:00 PKT = 11:00 UTC.
-    const resetHourUTC = 11;
-    const todayStr = now.toISOString().split('T')[0];
-    
-    // Check if we are past the reset hour and haven't reset today
-    if (now.getUTCHours() >= resetHourUTC && lastResetDate !== todayStr) {
-        console.log(`[SYSTEM] Scheduled Market Reset initiated at ${now.toISOString()} PKT`);
-        try {
-            database.resetAllGames();
-            lastResetDate = todayStr;
-        } catch (e) {
-            console.error('[SYSTEM] Reset failed:', e);
+    try {
+        const now = new Date();
+        // Convert current time to Pakistan Standard Time (PKT)
+        const pktString = now.toLocaleString("en-US", { timeZone: "Asia/Karachi" });
+        const pktDate = new Date(pktString);
+        
+        const pktHour = pktDate.getHours();
+        const pktDateStr = pktDate.toDateString(); // e.g., "Mon May 22 2024"
+
+        // Initialize lastResetDate on first run to today if it's already past 4pm 
+        // to avoid double reset if server restarts at 5pm.
+        if (lastResetDate === null) {
+            lastResetDate = pktDateStr;
+            return;
         }
+
+        // Market reset window: 4:00 PM PKT
+        if (pktHour >= 16 && lastResetDate !== pktDateStr) {
+            console.log(`[SYSTEM] Scheduled Market Reset initiated at ${pktString} PKT`);
+            database.resetAllGames();
+            lastResetDate = pktDateStr;
+        }
+    } catch (e) {
+        console.error('[SYSTEM] Market reset check failed:', e);
     }
 }
-// Check every 30 seconds
+
+// Check frequently to catch the 4:00 PM window
 setInterval(checkMarketReset, 30000);
-// Run immediate check on startup
-checkMarketReset();
 
 // Maintenance Middleware
 app.use((req, res, next) => {
@@ -223,4 +233,159 @@ app.put('/api/admin/games/:id/update-winner', authMiddleware, (req, res) => {
     try {
         const game = database.updateWinningNumber(req.params.id, req.body.newWinningNumber);
         res.json(game);
-    } catch (e
+    } catch (e) { res.status(400).json({ message: e.message }); }
+});
+
+app.post('/api/admin/games/:id/approve-payouts', authMiddleware, (req, res) => {
+    if (req.user.role !== 'ADMIN') return res.status(403).end();
+    try {
+        const game = database.approvePayoutsForGame(req.params.id);
+        res.json(game);
+    } catch (e) { res.status(400).json({ message: e.message }); }
+});
+
+app.put('/api/admin/games/:id/toggle-visibility', authMiddleware, (req, res) => {
+    if (req.user.role !== 'ADMIN') return res.status(403).end();
+    try {
+        const game = database.toggleGameVisibility(req.params.id);
+        res.json(game);
+    } catch (e) { res.status(400).json({ message: e.message }); }
+});
+
+app.put('/api/admin/accounts/:type/:id/toggle-restriction', authMiddleware, (req, res) => {
+    if (req.user.role !== 'ADMIN') return res.status(403).end();
+    try {
+        const acc = database.toggleAccountRestrictionByAdmin(req.params.id, req.params.type);
+        res.json(acc);
+    } catch (e) { res.status(400).json({ message: e.message }); }
+});
+
+app.get('/api/admin/limits', authMiddleware, (req, res) => {
+    if (req.user.role !== 'ADMIN') return res.status(403).end();
+    res.json(database.getAllNumberLimits());
+});
+
+app.post('/api/admin/limits', authMiddleware, (req, res) => {
+    if (req.user.role !== 'ADMIN') return res.status(403).end();
+    try {
+        const limit = database.saveNumberLimit(req.body);
+        res.json(limit);
+    } catch (e) { res.status(400).json({ message: e.message }); }
+});
+
+app.delete('/api/admin/limits/:id', authMiddleware, (req, res) => {
+    if (req.user.role !== 'ADMIN') return res.status(403).end();
+    try {
+        database.deleteNumberLimit(req.params.id);
+        res.json({ success: true });
+    } catch (e) { res.status(400).json({ message: e.message }); }
+});
+
+app.put('/api/admin/games/:id/draw-time', authMiddleware, (req, res) => {
+    if (req.user.role !== 'ADMIN') return res.status(403).end();
+    try {
+        const game = database.updateGameDrawTime(req.params.id, req.body.newDrawTime);
+        res.json(game);
+    } catch (e) { res.status(400).json({ message: e.message }); }
+});
+
+app.put('/api/admin/games/:id', authMiddleware, (req, res) => {
+    if (req.user.role !== 'ADMIN') return res.status(403).end();
+    try {
+        const game = database.updateGame(req.params.id, req.body);
+        res.json(game);
+    } catch (e) { res.status(400).json({ message: e.message }); }
+});
+
+// --- DEALER MANAGEMENT ---
+app.post('/api/dealer/users', authMiddleware, (req, res) => {
+    if (req.user.role !== 'DEALER') return res.status(403).end();
+    const { userData, initialDeposit } = req.body;
+    try {
+        const user = database.createUser(userData, req.user.id, initialDeposit);
+        res.status(201).json(user);
+    } catch (e) { res.status(e.status || 500).json({ message: e.message }); }
+});
+
+app.put('/api/dealer/users/:id', authMiddleware, (req, res) => {
+    if (req.user.role !== 'DEALER') return res.status(403).end();
+    try {
+        const user = database.updateUser(req.body, req.params.id, req.user.id);
+        res.json(user);
+    } catch (e) { res.status(e.status || 500).json({ message: e.message }); }
+});
+
+app.delete('/api/dealer/users/:id', authMiddleware, (req, res) => {
+    if (req.user.role !== 'DEALER') return res.status(403).end();
+    try {
+        database.deleteUserByDealer(req.params.id, req.user.id);
+        res.json({ success: true });
+    } catch (e) { res.status(e.status || 500).json({ message: e.message }); }
+});
+
+app.post('/api/dealer/topup/user', authMiddleware, (req, res) => {
+    if (req.user.role !== 'DEALER') return res.status(403).end();
+    const { userId, amount } = req.body;
+    try {
+        database.runInTransaction(() => {
+            database.addLedgerEntry(userId, 'USER', 'Dealer Deposit', 0, amount);
+            database.addLedgerEntry(req.user.id, 'DEALER', `User Deposit: ${userId}`, amount, 0);
+        });
+        res.json({ success: true });
+    } catch (e) { res.status(400).json({ message: e.message }); }
+});
+
+app.post('/api/dealer/withdraw/user', authMiddleware, (req, res) => {
+    if (req.user.role !== 'DEALER') return res.status(403).end();
+    const { userId, amount } = req.body;
+    try {
+        database.runInTransaction(() => {
+            database.addLedgerEntry(userId, 'USER', 'Dealer Cash-out', amount, 0);
+            database.addLedgerEntry(req.user.id, 'DEALER', `User Payout: ${userId}`, 0, amount);
+        });
+        res.json({ success: true });
+    } catch (e) { res.status(400).json({ message: e.message }); }
+});
+
+app.put('/api/dealer/users/:id/toggle-restriction', authMiddleware, (req, res) => {
+    if (req.user.role !== 'DEALER') return res.status(403).end();
+    try {
+        const user = database.toggleUserRestrictionByDealer(req.params.id, req.user.id);
+        res.json(user);
+    } catch (e) { res.status(400).json({ message: e.message }); }
+});
+
+app.post('/api/dealer/bets/bulk', authMiddleware, (req, res) => {
+    if (req.user.role !== 'DEALER') return res.status(403).end();
+    const { userId, gameId, betGroups } = req.body;
+    try {
+        const result = database.placeBulkBets(userId, gameId, betGroups, 'DEALER');
+        res.status(201).json(result);
+    } catch (e) { res.status(e.status || 500).json({ message: e.message }); }
+});
+
+// --- USER ACTIONS ---
+app.post('/api/user/bets', authMiddleware, (req, res) => {
+    if (req.user.role !== 'USER') return res.status(403).end();
+    const { gameId, betGroups } = req.body;
+    try {
+        const result = database.placeBulkBets(req.user.id, gameId, betGroups, 'USER');
+        res.status(201).json(result);
+    } catch (e) { res.status(e.status || 500).json({ message: e.message }); }
+});
+
+// --- HEALTH CHECK ---
+app.get('/api/health', (req, res) => {
+    res.json({ 
+        status: systemError ? 'DEGRADED' : 'OPERATIONAL', 
+        warning: systemWarning,
+        message: systemError || "Node synchronization complete." 
+    });
+});
+
+const PORT = process.env.PORT || 3005;
+app.listen(PORT, () => {
+    console.log(`[SERVER] Aklasbela Nexus active on port ${PORT}`);
+    if (systemWarning) console.warn(`[SERVER] ${systemWarning}`);
+    if (systemError) console.error(`[SERVER] CRITICAL: ${systemError}`);
+});

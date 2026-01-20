@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Dealer, User, PrizeRates, LedgerEntry, BetLimits, Bet, Game, SubGameType } from '../types';
 import { Icons, GAME_LOGOS } from '../constants';
@@ -105,15 +106,15 @@ export const UserForm: React.FC<{
                     perDraw: user.betLimits?.perDraw ?? 20000,
                 },
                 prizeRates: {
-                    oneDigitOpen: user.prizeRates?.oneDigitOpen ?? 9.50,
-                    oneDigitClose: user.prizeRates?.oneDigitClose ?? 9.50,
-                    twoDigit: user.prizeRates?.twoDigit ?? 85.00
+                    oneDigitOpen: user.prizeRates?.oneDigitOpen ?? 90,
+                    oneDigitClose: user.prizeRates?.oneDigitClose ?? 90,
+                    twoDigit: user.prizeRates?.twoDigit ?? 900
                 }
             };
         }
         return {
             id: '', name: '', area: '', contact: '', commissionRate: 0, 
-            prizeRates: { oneDigitOpen: 9.50, oneDigitClose: 9.50, twoDigit: 85.00 }, 
+            prizeRates: { oneDigitOpen: 90, oneDigitClose: 90, twoDigit: 900 }, 
             avatarUrl: '', wallet: 0,
             betLimits: { oneDigit: 1000, twoDigit: 5000, perDraw: 20000 }
         };
@@ -140,7 +141,7 @@ export const UserForm: React.FC<{
         if (password && password !== confirmPassword) { showToast("⚠️ Passwords do not match.", "error"); return; }
         
         const isIdTaken = !user && users.some(u => u.id.toLowerCase() === formData.id.toLowerCase());
-        if (isIdTaken) { showToast("⚠️ Username already exists.", "error"); return; }
+        if (isIdTaken) { showToast("⚠️ Username already exists in your managed pool.", "error"); return; }
 
         setIsLoading(true);
         try {
@@ -151,22 +152,22 @@ export const UserForm: React.FC<{
                 isRestricted: user?.isRestricted ?? false,
                 ledger: user?.ledger ?? [],
                 betLimits: {
-                    oneDigit: Number(formData.betLimits.oneDigit),
-                    twoDigit: Number(formData.betLimits.twoDigit),
-                    perDraw: Number(formData.betLimits.perDraw)
+                    oneDigit: Number(formData.betLimits.oneDigit) || 0,
+                    twoDigit: Number(formData.betLimits.twoDigit) || 0,
+                    perDraw: Number(formData.betLimits.perDraw) || 0
                 },
                 prizeRates: {
-                    oneDigitOpen: Number(formData.prizeRates.oneDigitOpen),
-                    oneDigitClose: Number(formData.prizeRates.oneDigitClose),
-                    twoDigit: Number(formData.prizeRates.twoDigit)
+                    oneDigitOpen: Number(formData.prizeRates.oneDigitOpen) || 0,
+                    oneDigitClose: Number(formData.prizeRates.oneDigitClose) || 0,
+                    twoDigit: Number(formData.prizeRates.twoDigit) || 0
                 }
             } as User;
 
-            await onSave(userPayload, user?.id, user ? undefined : Number(formData.wallet));
+            await onSave(userPayload, user?.id, user ? undefined : Number(formData.wallet) || 0);
             showToast(user ? "✅ User updated successfully!" : "✅ User added successfully!", "success");
             onCancel();
         } catch (err: any) {
-            showToast(`⚠️ ${err.message || 'Error processing user'}`, 'error');
+            showToast(`⚠️ ${err.message || 'ID might be taken globally. Operation failed.'}`, 'error');
         } finally {
             setIsLoading(false); 
         }
@@ -206,7 +207,7 @@ export const UserForm: React.FC<{
                 </div>
 
                 <div className="sm:col-span-1">
-                    <label className={labelClass}>Wallet Balance (PKR)</label>
+                    <label className={labelClass}>Initial Wallet Top-up (PKR)</label>
                     <input type="number" name="wallet" value={formData.wallet} onChange={handleChange} className={inputClass} disabled={!!user} step="0.01" />
                 </div>
                 <div className="sm:col-span-1">
@@ -216,17 +217,17 @@ export const UserForm: React.FC<{
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 rounded-lg bg-slate-800/30 border border-slate-700/50">
-                <div className="sm:col-span-3 text-xs font-black text-emerald-500 uppercase tracking-tighter mb-1">Prize Settings</div>
+                <div className="sm:col-span-3 text-xs font-black text-emerald-500 uppercase tracking-tighter mb-1">Prize Rates</div>
                 <div>
-                    <label className={labelClass}>Rate (2 Digit)</label>
+                    <label className={labelClass}>Multiplier (2 Digit)</label>
                     <input type="number" step="0.01" name="prizeRates.twoDigit" value={formData.prizeRates.twoDigit} onChange={handleChange} className={inputClass} />
                 </div>
                 <div>
-                    <label className={labelClass}>Rate (Open)</label>
+                    <label className={labelClass}>Multiplier (Open)</label>
                     <input type="number" step="0.01" name="prizeRates.oneDigitOpen" value={formData.prizeRates.oneDigitOpen} onChange={handleChange} className={inputClass} />
                 </div>
                 <div>
-                    <label className={labelClass}>Rate (Close)</label>
+                    <label className={labelClass}>Multiplier (Close)</label>
                     <input type="number" step="0.01" name="prizeRates.oneDigitClose" value={formData.prizeRates.oneDigitClose} onChange={handleChange} className={inputClass} />
                 </div>
             </div>

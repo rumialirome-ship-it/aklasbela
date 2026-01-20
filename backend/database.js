@@ -292,14 +292,15 @@ const getFinancialSummary = () => {
 };
 
 const createDealer = (d) => {
-    if (db.prepare('SELECT id FROM dealers WHERE LOWER(id) = ?').get(d.id.toLowerCase())) throw { status: 400, message: "Taken." };
+    const existing = findAccountForLogin(d.id);
+    if (existing.account) throw { status: 400, message: `ID "${d.id}" already exists.` };
     db.prepare('INSERT INTO dealers (id, name, password, area, contact, wallet, commissionRate, isRestricted, prizeRates, avatarUrl) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(d.id, d.name, d.password, d.area, d.contact, d.wallet || 0, d.commissionRate, 0, JSON.stringify(d.prizeRates), d.avatarUrl);
     if (d.wallet > 0) addLedgerEntry(d.id, 'DEALER', 'Initial Deposit', 0, d.wallet);
     return findAccountById(d.id, 'dealers');
 };
 
 const updateDealer = (d, originalId) => {
-    if (d.id.toLowerCase() !== originalId.toLowerCase() && db.prepare('SELECT id FROM dealers WHERE LOWER(id) = ?').get(d.id.toLowerCase())) throw { status: 400, message: "Taken." };
+    if (d.id.toLowerCase() !== originalId.toLowerCase() && findAccountForLogin(d.id).account) throw { status: 400, message: `ID "${d.id}" is already taken.` };
     db.prepare('UPDATE dealers SET id = ?, name = ?, password = ?, area = ?, contact = ?, commissionRate = ?, prizeRates = ?, avatarUrl = ? WHERE LOWER(id) = LOWER(?)').run(d.id, d.name, d.password, d.area, d.contact, d.commissionRate, JSON.stringify(d.prizeRates), d.avatarUrl, originalId);
     if (d.id !== originalId) {
         db.prepare('UPDATE users SET dealerId = ? WHERE LOWER(dealerId) = LOWER(?)').run(d.id, originalId);
@@ -322,16 +323,28 @@ const findUserByDealer = (uId, dId) => {
 };
 
 const createUser = (u, dId, dep = 0) => {
+    // Global ID uniqueness check
+    const existing = findAccountForLogin(u.id);
+    if (existing.account) throw { status: 400, message: `The ID "${u.id}" is already taken on the platform.` };
+    
     const dealer = findAccountById(dId, 'dealers');
-    if (!dealer || dealer.wallet < dep) throw { status: 400, message: 'Insufficient.' };
-    db.prepare('INSERT INTO users (id, name, password, dealerId, area, contact, wallet, commissionRate, isRestricted, prizeRates, betLimits, avatarUrl) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(u.id, u.name, u.password, dId, u.area, u.contact, 0, u.commissionRate, 0, JSON.stringify(u.prizeRates), JSON.stringify(u.betLimits), u.avatarUrl);
-    if (dep > 0) { addLedgerEntry(dId, 'DEALER', `User Initial: ${u.name}`, dep, 0); addLedgerEntry(u.id, 'USER', `Initial from Dealer`, 0, dep); }
+    const depositAmount = Number(dep) || 0;
+    if (isNaN(depositAmount) || depositAmount < 0) throw { status: 400, message: 'Invalid deposit amount.' };
+    if (!dealer || dealer.wallet < depositAmount) throw { status: 400, message: 'Insufficient dealer liquidity to fund user.' };
+    
+    runInTransaction(() => {
+        db.prepare('INSERT INTO users (id, name, password, dealerId, area, contact, wallet, commissionRate, isRestricted, prizeRates, betLimits, avatarUrl) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(u.id, u.name, u.password, dId, u.area, u.contact, 0, u.commissionRate, 0, JSON.stringify(u.prizeRates), JSON.stringify(u.betLimits), u.avatarUrl);
+        if (depositAmount > 0) { 
+            addLedgerEntry(dId, 'DEALER', `User Allocation: ${u.name}`, depositAmount, 0); 
+            addLedgerEntry(u.id, 'USER', `Funded by Dealer`, 0, depositAmount); 
+        }
+    });
     return findAccountById(u.id, 'users');
 };
 
 const updateUser = (u, uId, dId) => {
     const existing = findUserByDealer(uId, dId);
-    if (!existing) throw { status: 404, message: "Not found." };
+    if (!existing) throw { status: 404, message: "User not found." };
     runInTransaction(() => {
         db.prepare('UPDATE users SET id = ?, name = ?, password = ?, area = ?, contact = ?, commissionRate = ?, prizeRates = ?, betLimits = ?, avatarUrl = ? WHERE LOWER(id) = LOWER(?)').run(u.id, u.name, u.password || existing.password, u.area, u.contact, u.commissionRate, JSON.stringify(u.prizeRates), JSON.stringify(u.betLimits), u.avatarUrl, uId);
         if (u.id.toLowerCase() !== uId.toLowerCase()) {

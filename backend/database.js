@@ -333,7 +333,8 @@ const createUser = (u, dId, dep = 0) => {
     if (!dealer || dealer.wallet < depositAmount) throw { status: 400, message: 'Insufficient dealer liquidity to fund user.' };
     
     runInTransaction(() => {
-        db.prepare('INSERT INTO users (id, name, password, dealerId, area, contact, wallet, commissionRate, isRestricted, prizeRates, betLimits, avatarUrl) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(u.id, u.name, u.password, dId, u.area, u.contact, 0, u.commissionRate, 0, JSON.stringify(u.prizeRates), JSON.stringify(u.betLimits), u.avatarUrl);
+        const betLimits = u.betLimits || { oneDigit: 1000, twoDigit: 5000, perDraw: 20000 };
+        db.prepare('INSERT INTO users (id, name, password, dealerId, area, contact, wallet, commissionRate, isRestricted, prizeRates, betLimits, avatarUrl) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(u.id, u.name, u.password, dId, u.area, u.contact, 0, u.commissionRate, 0, JSON.stringify(u.prizeRates), JSON.stringify(betLimits), u.avatarUrl);
         if (depositAmount > 0) { 
             addLedgerEntry(dId, 'DEALER', `User Allocation: ${u.name}`, depositAmount, 0); 
             addLedgerEntry(u.id, 'USER', `Funded by Dealer`, 0, depositAmount); 
@@ -543,5 +544,5 @@ function resetAllGames() {
 }
 
 module.exports = {
-    connect, isSchemaValid, findAccountById, findAccountForLogin, updatePassword, getAllFromTable, runInTransaction, addLedgerEntry, createDealer, updateDealer, findUsersByDealerId, findUserByDealer, findBetsByUserId, createUser, updateUser, updateUserByAdmin, deleteUserByDealer, toggleAccountRestrictionByAdmin, toggleUserRestrictionByDealer, declareWinnerForGame, updateWinningNumber, approvePayoutsForGame, getFinancialSummary, getNumberStakeSummary, placeBulkBets, updateGame, updateGameDrawTime, resetAllGames, getAllNumberLimits, saveNumberLimit, deleteNumberLimit, findBetsByDealerId, findBetsByGameId, toggleGameVisibility
+    connect, isSchemaValid, findAccountById, findAccountForLogin, updatePassword, getAllFromTable, runInTransaction, addLedgerEntry, createDealer, updateDealer, findUsersByDealerId, findUserByDealer, findBetsByUserId, createUser, updateUser, updateUserByAdmin, deleteUserByDealer, toggleAccountRestrictionByAdmin, toggleUserRestrictionByDealer, declareWinnerForGame, updateWinningNumber, approvePayoutsForGame, findBetsByDealerId, findBetsByGameId, toggleGameVisibility, getFinancialSummary, getNumberStakeSummary, placeBulkBets, updateGame, updateGameDrawTime, resetAllGames, getAllNumberLimits, saveNumberLimit, deleteNumberLimit
 };

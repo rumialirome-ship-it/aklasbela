@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Dealer, User, PrizeRates, LedgerEntry, BetLimits, Bet, Game, SubGameType } from '../types';
-import { Icons, GAME_LOGOS } from '../constants';
+import { Dealer, User, PrizeRates, LedgerEntry, Bet, Game, SubGameType } from '../types';
+import { Icons } from '../constants';
 import { useCountdown } from '../hooks/useCountdown';
 
 const formatTime12h = (time24: string) => {
@@ -135,6 +135,12 @@ export const UserForm: React.FC<{
     
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!formData.id.trim()) {
+            showToast("⚠️ Login ID is required.", "error");
+            return;
+        }
+
         const activePass = user ? (password || user.password) : password;
         
         if (!user && !password) { showToast("⚠️ Password is required.", "error"); return; }
@@ -181,7 +187,16 @@ export const UserForm: React.FC<{
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="sm:col-span-1">
                     <label className={labelClass}>Username / Login ID</label>
-                    <input type="text" name="id" value={formData.id} className={inputClass} required disabled={!!user} placeholder="e.g. jhon123" />
+                    <input 
+                        type="text" 
+                        name="id" 
+                        value={formData.id} 
+                        onChange={handleChange}
+                        className={inputClass} 
+                        required 
+                        disabled={!!user} 
+                        placeholder="e.g. jhon123" 
+                    />
                 </div>
                 <div className="sm:col-span-1">
                     <label className={labelClass}>Full Display Name</label>

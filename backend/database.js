@@ -18,27 +18,28 @@ function getGameCycle(drawTime) {
     
     const [drawH, drawM] = drawTime.split(':').map(Number);
     
-    // Create a date object for the draw time on the "current" PKT day
+    // Create a date object for the draw time on the current PKT day
     let closePKT = new Date(nowPKT);
     closePKT.setHours(drawH, drawM, 0, 0);
 
-    // If the draw hour is early (e.g., 00:55, 02:10), it belongs to the cycle that started YESTERDAY 4PM
-    // and ends TODAY early morning.
-    // If the draw hour is late (e.g., 18:15, 21:55), it belongs to the cycle that starts TODAY 4PM.
+    // If current time is after today's draw, it might refer to the next cycle
+    if (nowPKT > closePKT) {
+        // Only if draw is actually tomorrow in standard cycle
+        // But for lottery, if we passed the draw, we are closed anyway
+    }
     
     let openPKT = new Date(closePKT);
     if (drawH < OPEN_HOUR_PKT) {
-        // This is an early morning draw (e.g., LS3 at 02:10 AM)
-        // It belongs to the cycle that started at 4PM the day before.
+        // Late night/early morning draw (e.g. 00:55, 02:10)
+        // Opened at 4 PM YESTERDAY
         openPKT.setDate(openPKT.getDate() - 1);
         openPKT.setHours(OPEN_HOUR_PKT, 0, 0, 0);
     } else {
-        // This is an evening draw (e.g., Ali Baba at 6:15 PM)
-        // It belongs to the cycle starting at 4PM today.
+        // Evening draw (e.g. 18:15, 21:55)
+        // Opened at 4 PM TODAY
         openPKT.setHours(OPEN_HOUR_PKT, 0, 0, 0);
     }
 
-    // Convert back to UTC for standard comparison
     return {
         openTime: new Date(openPKT.getTime() - PKT_OFFSET_MS),
         closeTime: new Date(closePKT.getTime() - PKT_OFFSET_MS)
@@ -49,6 +50,7 @@ function isGameOpen(drawTime) {
     if (!drawTime) return false;
     const now = new Date();
     const { openTime, closeTime } = getGameCycle(drawTime);
+    // Market is open if now is between 4pm (openTime) and drawTime (closeTime)
     return now >= openTime && now < closeTime;
 }
 
@@ -58,7 +60,6 @@ const connect = () => {
         db.pragma('journal_mode = WAL');
         db.pragma('foreign_keys = ON');
         
-        // Migration for isVisible column
         try {
             db.prepare("ALTER TABLE games ADD COLUMN isVisible INTEGER DEFAULT 1").run();
         } catch (e) {}
@@ -185,7 +186,7 @@ const declareWinnerForGame = (gameId, winningNumber) => {
     let finalGame;
     runInTransaction(() => {
         const game = db.prepare('SELECT * FROM games WHERE id = ?').get(gameId);
-        if (!game || game.winningNumber) throw { status: 400, message: 'Game not found or winner already declared.' };
+        if (!game || game.winningNumber) throw { status: 400, message: 'Winner already declared for this game.' };
         if (game.name === 'AK') {
             db.prepare('UPDATE games SET winningNumber = ? WHERE id = ?').run(`${winningNumber}_`, gameId);
         } else if (game.name === 'AKC') {
@@ -206,7 +207,7 @@ const updateWinningNumber = (gameId, newWinningNumber) => {
     let updatedGame;
     runInTransaction(() => {
         const game = db.prepare('SELECT * FROM games WHERE id = ?').get(gameId);
-        if (!game || !game.winningNumber || game.payoutsApproved) throw { status: 400, message: 'Cannot update.' };
+        if (!game || !game.winningNumber || game.payoutsApproved) throw { status: 400, message: 'Cannot update after approval.' };
         if (game.name === 'AK') {
             const closeDigit = game.winningNumber.endsWith('_') ? '_' : game.winningNumber.slice(1, 2);
             db.prepare('UPDATE games SET winningNumber = ? WHERE id = ?').run(newWinningNumber + closeDigit, gameId);
@@ -326,18 +327,18 @@ const findUserByDealer = (uId, dId) => {
 
 const createUser = (u, dId, dep = 0) => {
     const existing = findAccountForLogin(u.id);
-    if (existing.account) throw { status: 400, message: `The ID "${u.id}" is already taken on the platform.` };
+    if (existing.account) throw { status: 400, message: `The ID "${u.id}" is already taken.` };
     
     const dealer = findAccountById(dId, 'dealers');
     const depositAmount = Number(dep) || 0;
-    if (isNaN(depositAmount) || depositAmount < 0) throw { status: 400, message: 'Invalid deposit amount.' };
-    if (!dealer || dealer.wallet < depositAmount) throw { status: 400, message: 'Insufficient dealer liquidity to fund user.' };
+    if (isNaN(depositAmount) || depositAmount < 0) throw { status: 400, message: 'Invalid deposit.' };
+    if (!dealer || dealer.wallet < depositAmount) throw { status: 400, message: 'Insufficient dealer liquidity.' };
     
     runInTransaction(() => {
         const betLimits = u.betLimits || { oneDigit: 1000, twoDigit: 5000, perDraw: 20000 };
         db.prepare('INSERT INTO users (id, name, password, dealerId, area, contact, wallet, commissionRate, isRestricted, prizeRates, betLimits, avatarUrl) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(u.id, u.name, u.password, dId, u.area, u.contact, 0, u.commissionRate, 0, JSON.stringify(u.prizeRates), JSON.stringify(betLimits), u.avatarUrl);
         if (depositAmount > 0) { 
-            addLedgerEntry(dId, 'DEALER', `User Allocation: ${u.name}`, depositAmount, 0); 
+            addLedgerEntry(dId, 'DEALER', `User Initial Balance: ${u.name}`, depositAmount, 0); 
             addLedgerEntry(u.id, 'USER', `Funded by Dealer`, 0, depositAmount); 
         }
     });
@@ -430,14 +431,14 @@ const placeBulkBets = (uId, gId, groups, placedBy = 'USER') => {
     let result = null;
     runInTransaction(() => {
         const user = findAccountById(uId, 'users');
-        if (!user || user.isRestricted) throw { status: 403, message: 'Restricted or not found.' };
+        if (!user || user.isRestricted) throw { status: 403, message: 'User access restricted or not found.' };
         const dealer = findAccountById(user.dealerId, 'dealers');
         const game = findAccountById(gId, 'games');
-        if (!game) throw { status: 404, message: 'Market not found.' };
+        if (!game) throw { status: 404, message: 'Game market not found.' };
         
-        // Ensure market is open
+        // Strictly verify market is open on server
         if (!isGameOpen(game.drawTime)) {
-            throw { status: 400, message: `Market Closed: Trading for ${game.name} is currently suspended.` };
+            throw { status: 400, message: `Market Closed: No more entries allowed for ${game.name}.` };
         }
 
         const admin = findAccountById('Guru', 'admins');
@@ -447,7 +448,7 @@ const placeBulkBets = (uId, gId, groups, placedBy = 'USER') => {
         const requestTotal = groups.reduce((s, g) => s + g.numbers.length * g.amountPerNumber, 0);
         
         if (user.betLimits?.perDraw > 0 && (userExistingTotal + requestTotal) > user.betLimits.perDraw) {
-            throw { status: 400, message: `Limit Reached: Draw total exceeds your PKR ${user.betLimits.perDraw} limit.` };
+            throw { status: 400, message: `Draw Limit Reached: Your max stake for this game is PKR ${user.betLimits.perDraw}.` };
         }
         
         const numberStakeMap = new Map();
@@ -471,26 +472,26 @@ const placeBulkBets = (uId, gId, groups, placedBy = 'USER') => {
                 const newStake = currentStake + stake;
                 const globalLimit = globalLimits.find(l => l.gameType === limitType && l.numberValue === n);
                 if (globalLimit && newStake > globalLimit.limitAmount) {
-                    throw { status: 400, message: `Market Limit: Total stake for '${n}' (${type}) exceeds market limit of PKR ${globalLimit.limitAmount}.` };
+                    throw { status: 400, message: `Stake Limit Reached: Selection '${n}' (${type}) is full in the market.` };
                 }
                 if (userSingleLimit > 0 && newStake > userSingleLimit) {
-                    throw { status: 400, message: `User Limit: Your stake for '${n}' (${type}) exceeds your personal limit of PKR ${userSingleLimit}.` };
+                    throw { status: 400, message: `Personal Limit: Stake for '${n}' (${type}) exceeds your limit of PKR ${userSingleLimit}.` };
                 }
             });
         });
 
-        if (user.wallet < requestTotal) throw { status: 400, message: `Insufficient funds.` };
+        if (user.wallet < requestTotal) throw { status: 400, message: `Insufficient Funds: Balance too low to place entries.` };
         
         const userComm = requestTotal * (user.commissionRate / 100);
         const dComm = requestTotal * ((dealer.commissionRate - user.commissionRate) / 100);
         
-        addLedgerEntry(user.id, 'USER', `Bet placed on ${game.name}`, requestTotal, 0);
-        if (userComm > 0) addLedgerEntry(user.id, 'USER', `Comm earned`, 0, userComm);
+        addLedgerEntry(user.id, 'USER', `Game Ticket: ${game.name}`, requestTotal, 0);
+        if (userComm > 0) addLedgerEntry(user.id, 'USER', `Commission Earned`, 0, userComm);
         addLedgerEntry(admin.id, 'ADMIN', `Stake: ${user.name}`, 0, requestTotal);
-        if (userComm > 0) addLedgerEntry(admin.id, 'ADMIN', `Comm to user`, userComm, 0);
+        if (userComm > 0) addLedgerEntry(admin.id, 'ADMIN', `User Rebate`, userComm, 0);
         if (dComm > 0) { 
-            addLedgerEntry(admin.id, 'ADMIN', `Comm to dealer`, dComm, 0); 
-            addLedgerEntry(dealer.id, 'DEALER', `Comm from ${user.name}`, 0, dComm); 
+            addLedgerEntry(admin.id, 'ADMIN', `Dealer Rebate`, dComm, 0); 
+            addLedgerEntry(dealer.id, 'DEALER', `Rebate from ${user.name}`, 0, dComm); 
         }
 
         const created = [];
@@ -552,7 +553,7 @@ function resetAllGames() {
             db.prepare('UPDATE games SET winningNumber = NULL, payoutsApproved = 0').run();
             db.prepare('DELETE FROM bets').run(); 
         });
-        console.log('[DB] Market Restarted.');
+        console.log('[DB] Market reset for new session.');
     } catch (e) {
         console.error('[DB] Failed to reset games:', e);
     }

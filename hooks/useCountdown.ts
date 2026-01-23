@@ -3,27 +3,34 @@ import { useState, useEffect, useCallback } from 'react';
 
 export const useCountdown = (drawTime: string) => {
     const OPEN_HOUR = 16; // 4:00 PM
+    const PKT_OFFSET = 5 * 60; // Minutes
 
     const [display, setDisplay] = useState<{status: 'LOADING' | 'SOON' | 'OPEN' | 'CLOSED', text: string}>({ status: 'LOADING', text: '...' });
 
     const getCycle = useCallback(() => {
         const now = new Date();
-        const [drawHours, drawMinutes] = drawTime.split(':').map(Number);
+        // Convert local/UTC to PKT
+        const nowPKT = new Date(now.getTime() + (now.getTimezoneOffset() + PKT_OFFSET) * 60000);
         
-        let openTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), OPEN_HOUR, 0, 0);
-        let closeTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), drawHours, drawMinutes, 0, 0);
+        const [drawH, drawM] = drawTime.split(':').map(Number);
+        
+        // Draw time PKT
+        let closePKT = new Date(nowPKT);
+        closePKT.setHours(drawH, drawM, 0, 0);
 
-        if (drawHours < OPEN_HOUR) {
-            // Draw time is "before" open time (e.g., 14:10 vs 16:00, or 00:55 vs 16:00)
-            // This means the cycle's open time was *yesterday* relative to its close time.
-             openTime.setDate(openTime.getDate() - 1);
+        let openPKT = new Date(closePKT);
+        if (drawH < OPEN_HOUR) {
+            // Draw is early morning (e.g. 02:10 AM) - Belongs to cycle opening yesterday 4PM
+            openPKT.setDate(openPKT.getDate() - 1);
+            openPKT.setHours(OPEN_HOUR, 0, 0, 0);
+        } else {
+            // Draw is evening - Belongs to cycle opening today 4PM
+            openPKT.setHours(OPEN_HOUR, 0, 0, 0);
         }
 
-        // If 'now' is already past the end of this cycle, calculate the next cycle.
-        if (now >= closeTime) {
-            openTime.setDate(openTime.getDate() + 1);
-            closeTime.setDate(closeTime.getDate() + 1);
-        }
+        // Convert PKT points back to standard Date objects (approximate for diffing)
+        const openTime = new Date(now.getTime() + (openPKT.getTime() - nowPKT.getTime()));
+        const closeTime = new Date(now.getTime() + (closePKT.getTime() - nowPKT.getTime()));
         
         return { openTime, closeTime };
     }, [drawTime]);
@@ -35,48 +42,27 @@ export const useCountdown = (drawTime: string) => {
             const ampm = hours >= 12 ? 'PM' : 'AM';
             hours = hours % 12;
             hours = hours || 12;
-            const minutesStr = String(minutes).padStart(2, '0');
-            return `${String(hours).padStart(2, '0')}:${minutesStr} ${ampm}`;
+            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')} ${ampm}`;
         };
-
-        // Set initial state
-        const initialCycle = getCycle();
-        const now = new Date();
-        if (now < initialCycle.openTime) setDisplay({ status: 'SOON', text: formatTime12h(initialCycle.openTime) });
-        else if (now >= initialCycle.openTime && now < initialCycle.closeTime) setDisplay({ status: 'OPEN', text: '...' });
-        else setDisplay({ status: 'CLOSED', text: 'CLOSED' });
-
 
         const timer = setInterval(() => {
             const now = new Date();
             const { openTime, closeTime } = getCycle();
             
-            let newDisplay;
-
             if (now < openTime) {
-                // Not yet open
-                newDisplay = {
-                    status: 'SOON',
-                    text: formatTime12h(openTime)
-                };
+                setDisplay({ status: 'SOON', text: formatTime12h(openTime) });
             } else if (now >= openTime && now < closeTime) {
-                // Open
                 const distance = closeTime.getTime() - now.getTime();
                 const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
                 const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
                 const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-                newDisplay = {
+                setDisplay({
                     status: 'OPEN',
                     text: `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
-                };
+                });
             } else {
-                // This case should be handled by `getCycle` recalculating for the next day,
-                // but as a fallback, we show closed. `getCycle` will fix it on the next tick.
-                newDisplay = { status: 'CLOSED', text: 'CLOSED' };
+                setDisplay({ status: 'CLOSED', text: 'MARKET CLOSED' });
             }
-
-            setDisplay(newDisplay);
-
         }, 1000);
 
         return () => clearInterval(timer);

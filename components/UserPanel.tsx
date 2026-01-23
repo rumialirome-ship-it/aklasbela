@@ -29,11 +29,12 @@ const StatCard: React.FC<{ title: string; value: string | number; icon: React.Re
 const ActivityTab: React.FC<{ active: boolean; onClick: () => void; label: string; icon: React.ReactNode }> = ({ active, onClick, label, icon }) => (
     <button
         onClick={onClick}
-        className={`flex items-center gap-2 sm:gap-3 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all duration-300 ${
-            active 
-            ? 'bg-amber-500 text-slate-950 shadow-[0_0_25px_rgba(245,158,11,0.2)]' 
-            : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
-        }`}
+        className="flex items-center gap-2 sm:gap-3 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all duration-300"
+        style={{
+            backgroundColor: active ? '#f59e0b' : 'transparent',
+            color: active ? '#020617' : '#64748b',
+            boxShadow: active ? '0 0 25px rgba(245,158,11,0.2)' : 'none'
+        }}
     >
         <span className={active ? 'animate-pulse' : ''}>{icon}</span>
         <span className="hidden xs:inline">{label}</span>
@@ -45,9 +46,8 @@ const GameCard: React.FC<{ game: Game; onPlay: (game: Game) => void; onWatch: (g
     const { status, text: countdownText } = useCountdown(game.drawTime);
     const hasFinalWinner = !!game.winningNumber && !game.winningNumber.endsWith('_');
     
-    // UI Logic update: Relaxed isPlayable to ensure user can click even if clock sync is slightly off.
-    // The server will perform the final validation.
-    const isPlayable = !isRestricted && !hasFinalWinner && status !== 'CLOSED';
+    // Core Game Logic: Market must be explicitly OPEN to play
+    const isPlayable = !isRestricted && !hasFinalWinner && status === 'OPEN';
     
     const logo = getDynamicLogo(game.name);
 
@@ -71,17 +71,17 @@ const GameCard: React.FC<{ game: Game; onPlay: (game: Game) => void; onWatch: (g
                     <div className="bg-slate-950/60 rounded-2xl p-3 sm:p-4 border border-white/5 text-center min-h-[80px] sm:min-h-[90px] flex flex-col justify-center">
                         {hasFinalWinner ? (
                             <>
-                                <span className="text-[8px] sm:text-[9px] font-black text-emerald-500 uppercase tracking-[0.3em] mb-1">Market Settled</span>
+                                <span className="text-[8px] sm:text-[9px] font-black text-emerald-500 uppercase tracking-[0.3em] mb-1">Game Results</span>
                                 <span className="text-3xl sm:text-4xl font-black text-white russo gold-shimmer">{game.winningNumber}</span>
                             </>
                         ) : status === 'OPEN' ? (
                             <>
-                                <span className="text-[8px] sm:text-[9px] font-black text-amber-500/60 uppercase tracking-[0.3em] mb-1">Trading Closes</span>
+                                <span className="text-[8px] sm:text-[9px] font-black text-amber-500/60 uppercase tracking-[0.3em] mb-1">Entries Close In</span>
                                 <span className="text-2xl sm:text-3xl font-black text-amber-400 font-mono tracking-tighter">{countdownText}</span>
                             </>
                         ) : status === 'SOON' ? (
                             <>
-                                <span className="text-[8px] sm:text-[9px] font-black text-slate-600 uppercase tracking-[0.3em] mb-1">Market Opens</span>
+                                <span className="text-[8px] sm:text-[9px] font-black text-slate-600 uppercase tracking-[0.3em] mb-1">Market Opens @</span>
                                 <span className="text-lg sm:text-xl font-black text-slate-500 font-mono">{countdownText}</span>
                             </>
                         ) : (
@@ -103,7 +103,7 @@ const GameCard: React.FC<{ game: Game; onPlay: (game: Game) => void; onWatch: (g
                             : 'bg-slate-800 text-slate-600 cursor-not-allowed border border-white/5'
                         }`}
                     >
-                        {hasFinalWinner ? 'Watch Draw' : isPlayable ? 'Initiate Trade' : 'Market Closed'}
+                        {hasFinalWinner ? 'Watch Draw' : isPlayable ? 'Play Game' : status === 'SOON' ? 'Wait for Opening' : 'Closed'}
                     </button>
                 </div>
             </div>
@@ -160,13 +160,13 @@ const ActivityCenter: React.FC<{ bets: Bet[]; games: Game[]; user: User }> = ({ 
                     <ActivityTab 
                         active={activeTab === 'history'} 
                         onClick={() => setActiveTab('history')} 
-                        label="Trade History" 
+                        label="Play History" 
                         icon={Icons.clipboardList} 
                     />
                     <ActivityTab 
                         active={activeTab === 'ledger'} 
                         onClick={() => setActiveTab('ledger')} 
-                        label="Finance Log" 
+                        label="Account Logs" 
                         icon={Icons.bookOpen} 
                     />
                 </div>
@@ -181,10 +181,10 @@ const ActivityCenter: React.FC<{ bets: Bet[]; games: Game[]; user: User }> = ({ 
                         {activeTab === 'history' && (
                             <div className="relative flex-grow sm:w-48">
                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600 scale-75">{Icons.search}</span>
-                                <input type="text" placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} className={inputClass + " pl-10"} />
+                                <input type="text" placeholder="Filter..." value={search} onChange={e => setSearch(e.target.value)} className={inputClass + " pl-10"} />
                             </div>
                         )}
-                        <button onClick={() => setDateRange({start: '', end: ''})} className="shrink-0 px-4 py-2.5 rounded-xl border border-white/5 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-white hover:bg-white/5 transition-all">All</button>
+                        <button onClick={() => setDateRange({start: '', end: ''})} className="shrink-0 px-4 py-2.5 rounded-xl border border-white/5 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-white hover:bg-white/5 transition-all">Reset</button>
                     </div>
                 </div>
             </div>
@@ -193,20 +193,20 @@ const ActivityCenter: React.FC<{ bets: Bet[]; games: Game[]; user: User }> = ({ 
                 <table className="w-full text-left min-w-[650px]">
                     <thead className="border-b border-white/5">
                         <tr>
-                            <th className="pb-4 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-slate-600">Time</th>
+                            <th className="pb-4 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-slate-600">Timestamp</th>
                             {activeTab === 'history' ? (
                                 <>
-                                    <th className="pb-4 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-slate-600">Market / Contract</th>
+                                    <th className="pb-4 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-slate-600">Game / Selection</th>
                                     <th className="pb-4 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-slate-600 text-right">Stake</th>
-                                    <th className="pb-4 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-slate-600 text-right">Yield</th>
-                                    <th className="pb-4 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-slate-600 text-right">Status</th>
+                                    <th className="pb-4 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-slate-600 text-right">Winning</th>
+                                    <th className="pb-4 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-slate-600 text-right">Result</th>
                                 </>
                             ) : (
                                 <>
                                     <th className="pb-4 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-slate-600">Narration</th>
                                     <th className="pb-4 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-slate-600 text-right">Debit</th>
                                     <th className="pb-4 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-slate-600 text-right">Credit</th>
-                                    <th className="pb-4 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-slate-600 text-right">Balance</th>
+                                    <th className="pb-4 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-slate-600 text-right">Current Balance</th>
                                 </>
                             )}
                         </tr>
@@ -237,7 +237,7 @@ const ActivityCenter: React.FC<{ bets: Bet[]; games: Game[]; user: User }> = ({ 
                                             <span className={`text-[8px] sm:text-[9px] font-black uppercase tracking-widest px-2 py-0.5 sm:py-1 rounded-full border ${
                                                 isPending ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : payout > 0 ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20'
                                             }`}>
-                                                {isPending ? 'Live' : payout > 0 ? 'Won' : 'Loss'}
+                                                {isPending ? 'Live' : payout > 0 ? 'Winner' : 'No Win'}
                                             </span>
                                         </td>
                                     </tr>
@@ -314,7 +314,7 @@ const BettingModal: React.FC<{
             setNumbers('');
             setAmount('');
         } catch (err) {
-            // Error is handled in the parent's handlePlaceBet catch block
+            // Handled via parent apiError
         } finally {
             setIsProcessing(false);
         }
@@ -334,7 +334,7 @@ const BettingModal: React.FC<{
                 <div className="p-8 sm:p-10">
                     <div className="flex justify-between items-start mb-8">
                         <div>
-                            <h3 className="text-2xl font-black text-white russo tracking-tighter mb-1 uppercase">EXCHANGE CONTRACT</h3>
+                            <h3 className="text-2xl font-black text-white russo tracking-tighter mb-1 uppercase">GAME ENTRY TICKET</h3>
                             <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{game.name} // DRAW @ {formatTime12h(game.drawTime)}</p>
                         </div>
                         <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full text-slate-500 hover:text-white transition-all">{Icons.close}</button>
@@ -382,22 +382,22 @@ const BettingModal: React.FC<{
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Stake Per Unit (PKR)</label>
+                            <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Amount Per Number (PKR)</label>
                             <input 
                                 type="number" 
                                 value={amount}
                                 onChange={e => setAmount(e.target.value === '' ? '' : parseFloat(e.target.value))}
                                 className="w-full bg-slate-950/50 p-4 rounded-2xl border border-white/5 focus:ring-2 focus:ring-amber-500/50 focus:outline-none text-white font-mono placeholder-slate-800"
-                                placeholder="Enter amount..."
+                                placeholder="Enter stake amount..."
                             />
                         </div>
 
                         {calculatedNumbers.length > 0 && (
                             <div className="p-3 bg-white/5 rounded-xl border border-white/5">
-                                <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">Generated Pairs</p>
+                                <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">Generated Selection</p>
                                 <div className="text-[10px] text-amber-500 font-mono flex flex-wrap gap-x-2">
                                     {calculatedNumbers.slice(0, 20).join(', ')}{calculatedNumbers.length > 20 ? '...' : ''}
-                                    <span className="text-white">({calculatedNumbers.length} units)</span>
+                                    <span className="text-white">({calculatedNumbers.length} entries)</span>
                                 </div>
                             </div>
                         )}
@@ -410,7 +410,7 @@ const BettingModal: React.FC<{
 
                         <div className="bg-slate-950/50 p-6 rounded-2xl border border-white/5 flex justify-between items-center">
                             <div>
-                                <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">Total Obligation</p>
+                                <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">Total Stake</p>
                                 <p className="text-xl font-black text-white russo tracking-tighter">PKR {totalStake.toLocaleString()}</p>
                             </div>
                             <button
@@ -418,7 +418,7 @@ const BettingModal: React.FC<{
                                 disabled={isProcessing || !amount || calculatedNumbers.length === 0}
                                 className="bg-amber-500 hover:bg-amber-400 disabled:bg-slate-800 disabled:text-slate-600 text-slate-950 font-black px-8 py-3 rounded-xl transition-all uppercase tracking-widest text-[11px] shadow-lg shadow-amber-500/10"
                             >
-                                {isProcessing ? 'PROCESSING...' : 'CONFIRM TRADE'}
+                                {isProcessing ? 'SUBMITTING...' : 'CONFIRM ENTRY'}
                             </button>
                         </div>
                     </div>
@@ -438,7 +438,7 @@ const UserPanel: React.FC<any> = ({ user, games, bets, placeBet, onWatchDraw }) 
             setSelectedGame(null);
             setApiError(null);
         } catch (err: any) {
-            setApiError(err.message || "Execution Error");
+            setApiError(err.message || "Entry Execution Error");
         }
     };
 
@@ -457,25 +457,25 @@ const UserPanel: React.FC<any> = ({ user, games, bets, placeBet, onWatchDraw }) 
             <div className="flex flex-col xl:flex-row gap-6 sm:gap-8 items-start justify-between mb-10 sm:mb-16">
                 <div className="space-y-2 w-full xl:w-auto">
                     <div className="inline-block bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-full text-[8px] sm:text-[9px] font-black text-amber-500 uppercase tracking-[0.3em] mb-2 animate-pulse">
-                        Verified Member Node
+                        Authorized Player Node
                     </div>
-                    <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white russo tracking-tighter leading-tight">
-                        TRADING <span className="text-amber-500">FLOOR</span>
+                    <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white russo tracking-tighter leading-tight uppercase">
+                        Lottery <span className="text-amber-500">Center</span>
                     </h1>
-                    <p className="text-slate-500 text-[11px] sm:text-sm font-medium">Market synchronization active for <span className="text-white font-bold">{user.name}</span>.</p>
+                    <p className="text-slate-500 text-[11px] sm:text-sm font-medium">Verified session active for <span className="text-white font-bold">{user.name}</span>.</p>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 w-full xl:w-auto">
-                    <StatCard title="Total Liquidity" value={`PKR ${stats.netWorth.toLocaleString(undefined, {minimumFractionDigits: 2})}`} icon={Icons.wallet} color="text-amber-500" />
-                    <StatCard title="Daily Stake" value={`PKR ${stats.todayVolume.toLocaleString()}`} icon={Icons.chartBar} color="text-cyan-400" />
-                    <StatCard title="Active Positions" value={stats.activeTickets} icon={Icons.clipboardList} color="text-emerald-400" />
+                    <StatCard title="Wallet Balance" value={`PKR ${stats.netWorth.toLocaleString(undefined, {minimumFractionDigits: 2})}`} icon={Icons.wallet} color="text-amber-500" />
+                    <StatCard title="Today's Stake" value={`PKR ${stats.todayVolume.toLocaleString()}`} icon={Icons.chartBar} color="text-cyan-400" />
+                    <StatCard title="Active Tickets" value={stats.activeTickets} icon={Icons.clipboardList} color="text-emerald-400" />
                 </div>
             </div>
 
             <div className="mb-10">
                 <div className="flex items-center gap-3 mb-6 sm:mb-8">
                     <div className="w-8 sm:w-10 h-1 bg-amber-500 rounded-full"></div>
-                    <h2 className="text-[10px] sm:text-xs font-black text-slate-500 uppercase tracking-[0.4em]">Exchange Markets</h2>
+                    <h2 className="text-[10px] sm:text-xs font-black text-slate-500 uppercase tracking-[0.4em]">Available Games</h2>
                 </div>
                 <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 md:gap-8">
                     {games.map(g => <GameCard key={g.id} game={g} onPlay={(game) => { setApiError(null); setSelectedGame(game); }} onWatch={() => onWatchDraw(g)} isRestricted={user.isRestricted} />)}

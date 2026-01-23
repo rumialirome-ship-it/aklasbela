@@ -37,7 +37,7 @@ const GameDisplayCard: React.FC<{ game: Game; onClick: () => void }> = ({ game, 
                 <div className={`text-center w-full p-3 mt-5 rounded-xl bg-slate-950/50 border border-white/5 min-h-[90px] flex flex-col justify-center transition-all duration-500 group-hover:bg-slate-950/80`}>
                     {hasFinalWinner ? (
                         <>
-                            <div className="text-[9px] uppercase tracking-[0.4em] text-emerald-400 font-black mb-1">FINAL RESULT</div>
+                            <div className="text-[9px] uppercase tracking-[0.4em] text-emerald-400 font-black mb-1">WINNING NUMBER</div>
                             <div className="text-4xl md:text-5xl font-mono font-black text-white gold-shimmer">
                                 {game.winningNumber}
                             </div>
@@ -49,12 +49,12 @@ const GameDisplayCard: React.FC<{ game: Game; onClick: () => void }> = ({ game, 
                         </>
                     ) : status === 'OPEN' ? (
                         <>
-                            <div className="text-[10px] uppercase tracking-widest text-amber-500/60 font-bold mb-1">CLOSES IN</div>
+                            <div className="text-[10px] uppercase tracking-widest text-amber-500/60 font-bold mb-1">ENTRIES CLOSE</div>
                             <div className="text-3xl font-mono font-bold text-amber-400 tracking-tighter">{countdownText}</div>
                         </>
                     ) : (
                         <>
-                            <div className="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-1">NEXT MARKET</div>
+                            <div className="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-1">NEXT GAME</div>
                             <div className="text-xl font-mono font-bold text-slate-400">{countdownText}</div>
                         </>
                     )}
@@ -110,7 +110,7 @@ const LoginPanel: React.FC<{ onForgotPassword: () => void }> = ({ onForgotPasswo
             <div className="p-8 sm:p-10">
                 <form onSubmit={handleLoginSubmit} className="space-y-6">
                     <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Access Identity</label>
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Login ID</label>
                         <input 
                             type="text" 
                             value={loginId} 
@@ -122,7 +122,7 @@ const LoginPanel: React.FC<{ onForgotPassword: () => void }> = ({ onForgotPasswo
                     
                     <div className="space-y-2">
                         <div className="flex justify-between items-center ml-1">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Secret Key</label>
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Security Code</label>
                             <button type="button" onClick={onForgotPassword} className="text-[10px] font-bold text-amber-500/60 hover:text-amber-400 transition-colors uppercase tracking-widest">Help?</button>
                         </div>
                         <div className="relative">
@@ -146,7 +146,7 @@ const LoginPanel: React.FC<{ onForgotPassword: () => void }> = ({ onForgotPasswo
                         disabled={isLoading}
                         className="w-full bg-amber-500 hover:bg-amber-400 disabled:bg-slate-800 disabled:text-slate-600 text-slate-950 font-black py-4 rounded-2xl transition-all duration-300 transform active:scale-95 shadow-xl shadow-amber-500/10 uppercase tracking-[0.2em] text-sm flex items-center justify-center gap-3"
                     >
-                        {isLoading ? <div className="w-5 h-5 border-2 border-slate-950/30 border-t-slate-950 rounded-full animate-spin"></div> : 'Authorize Access'}
+                        {isLoading ? <div className="w-5 h-5 border-2 border-slate-950/30 border-t-slate-950 rounded-full animate-spin"></div> : 'Secure Authorization'}
                     </button>
                 </form>
             </div>
@@ -161,7 +161,7 @@ const LandingPage: React.FC<{ games: Game[] }> = ({ games }) => {
                 <header className="text-center pt-16 pb-12 md:pt-24 md:pb-20">
                     <div className="inline-block mb-4">
                         <div className="bg-amber-500/10 border border-amber-500/20 px-4 py-1 rounded-full text-[10px] font-black text-amber-500 uppercase tracking-[0.3em] mb-4 animate-pulse">
-                            Institutional Grade Lottery
+                            Secure Digital Lottery
                         </div>
                     </div>
                     <div className="relative inline-block">
@@ -171,7 +171,7 @@ const LandingPage: React.FC<{ games: Game[] }> = ({ games }) => {
                         <div className="absolute -inset-x-20 -top-20 -bottom-20 bg-amber-500/5 blur-[100px] pointer-events-none -z-10"></div>
                     </div>
                     <p className="text-base md:text-xl text-slate-500 max-w-2xl mx-auto font-medium leading-relaxed mt-4">
-                        The gold standard of digital lotteries. Track results in real-time and trade with absolute confidence on our secure node.
+                        The gold standard of digital lotteries. View live results and play with total security on our encrypted platform.
                     </p>
                 </header>
 
@@ -179,11 +179,11 @@ const LandingPage: React.FC<{ games: Game[] }> = ({ games }) => {
                     <div className="flex items-center justify-between mb-10">
                         <h2 className="text-xl md:text-2xl font-black text-white uppercase tracking-[0.2em] flex items-center gap-3">
                             <span className="w-8 h-1 bg-amber-500 rounded-full"></span>
-                            Active Markets
+                            Live Games
                         </h2>
                         <div className="hidden sm:flex items-center gap-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
                             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                            Live Data Feed
+                            Synchronized Feed
                         </div>
                     </div>
                     
@@ -202,16 +202,16 @@ const LandingPage: React.FC<{ games: Game[] }> = ({ games }) => {
                             <div className="w-16 h-16 bg-slate-900 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-700">
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
                             </div>
-                            <p className="text-slate-500 font-bold uppercase tracking-[0.2em] mb-2">Synchronizing Markets...</p>
-                            <p className="text-sm text-slate-600">Our decentralized verification nodes are updating the ledger. Please stand by.</p>
+                            <p className="text-slate-500 font-bold uppercase tracking-[0.2em] mb-2">Syncing Game Data...</p>
+                            <p className="text-sm text-slate-600">Verification nodes are updating the ledger. Please wait.</p>
                         </div>
                     )}
                 </section>
 
                 <section id="login" className="max-w-md mx-auto w-full pb-24 scroll-mt-24">
                     <div className="text-center mb-8">
-                        <h2 className="text-xl font-black text-white uppercase tracking-[0.2em]">Gateway Portal</h2>
-                        <p className="text-xs text-slate-500 mt-2">Enter your encrypted credentials to access the floor.</p>
+                        <h2 className="text-xl font-black text-white uppercase tracking-[0.2em]">Game Portal</h2>
+                        <p className="text-xs text-slate-500 mt-2">Enter your credentials to enter the platform.</p>
                     </div>
                     <LoginPanel onForgotPassword={() => alert("Please contact your administrator for credential recovery.")} />
                 </section>
@@ -219,15 +219,15 @@ const LandingPage: React.FC<{ games: Game[] }> = ({ games }) => {
                 <footer className="mt-auto border-t border-white/5 py-12 flex flex-col md:flex-row justify-between items-center gap-6">
                     <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center font-black text-slate-950 text-xs">AK</div>
-                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-600">Aklasbela Protocol v4.2</span>
+                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-600">Aklasbela Protocol v4.5</span>
                     </div>
                     <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">
-                        &copy; {new Date().getFullYear()} Aklasbela-tv. Digital Assets Security Certified.
+                        &copy; {new Date().getFullYear()} Aklasbela-tv. All Rights Reserved.
                     </p>
                     <div className="flex gap-6">
-                        <div className="text-[10px] font-bold text-slate-700 uppercase tracking-widest hover:text-amber-500 cursor-pointer transition-colors">Terminals</div>
+                        <div className="text-[10px] font-bold text-slate-700 uppercase tracking-widest hover:text-amber-500 cursor-pointer transition-colors">Support</div>
+                        <div className="text-[10px] font-bold text-slate-700 uppercase tracking-widest hover:text-amber-500 cursor-pointer transition-colors">Terms</div>
                         <div className="text-[10px] font-bold text-slate-700 uppercase tracking-widest hover:text-amber-500 cursor-pointer transition-colors">Privacy</div>
-                        <div className="text-[10px] font-bold text-slate-700 uppercase tracking-widest hover:text-amber-500 cursor-pointer transition-colors">Nodes</div>
                     </div>
                 </footer>
             </div>

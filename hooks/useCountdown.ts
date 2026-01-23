@@ -8,29 +8,34 @@ export const useCountdown = (drawTime: string) => {
     const [display, setDisplay] = useState<{status: 'LOADING' | 'SOON' | 'OPEN' | 'CLOSED', text: string}>({ status: 'LOADING', text: '...' });
 
     const getCycle = useCallback(() => {
+        if (!drawTime) return { openTime: new Date(0), closeTime: new Date(0) };
+
         const now = new Date();
-        // Convert local/UTC to PKT
+        // Convert user's local time -> UTC -> PKT
         const nowPKT = new Date(now.getTime() + (now.getTimezoneOffset() + PKT_OFFSET) * 60000);
         
         const [drawH, drawM] = drawTime.split(':').map(Number);
         
-        // Draw time PKT
-        let closePKT = new Date(nowPKT);
-        closePKT.setHours(drawH, drawM, 0, 0);
-
-        let openPKT = new Date(closePKT);
-        if (drawH < OPEN_HOUR) {
-            // Draw is early morning (e.g. 02:10 AM) - Belongs to cycle opening yesterday 4PM
+        // 1. Determine cycle start (Current 4 PM context)
+        let openPKT = new Date(nowPKT);
+        openPKT.setHours(16, 0, 0, 0);
+        if (nowPKT.getHours() < 16) {
             openPKT.setDate(openPKT.getDate() - 1);
-            openPKT.setHours(OPEN_HOUR, 0, 0, 0);
-        } else {
-            // Draw is evening - Belongs to cycle opening today 4PM
-            openPKT.setHours(OPEN_HOUR, 0, 0, 0);
         }
 
-        // Convert PKT points back to standard Date objects (approximate for diffing)
-        const openTime = new Date(now.getTime() + (openPKT.getTime() - nowPKT.getTime()));
-        const closeTime = new Date(now.getTime() + (closePKT.getTime() - nowPKT.getTime()));
+        // 2. Determine draw close relative to that start
+        let closePKT = new Date(openPKT);
+        closePKT.setHours(drawH, drawM, 0, 0);
+        if (drawH < 16) {
+            closePKT.setDate(closePKT.getDate() + 1);
+        }
+
+        // Convert PKT date context back to user's Local context for comparison
+        const diffOpen = openPKT.getTime() - nowPKT.getTime();
+        const diffClose = closePKT.getTime() - nowPKT.getTime();
+
+        const openTime = new Date(now.getTime() + diffOpen);
+        const closeTime = new Date(now.getTime() + diffClose);
         
         return { openTime, closeTime };
     }, [drawTime]);
@@ -50,7 +55,7 @@ export const useCountdown = (drawTime: string) => {
             const { openTime, closeTime } = getCycle();
             
             if (now < openTime) {
-                setDisplay({ status: 'SOON', text: formatTime12h(openTime) });
+                setDisplay({ status: 'SOON', text: `Starts @ ${formatTime12h(openTime)}` });
             } else if (now >= openTime && now < closeTime) {
                 const distance = closeTime.getTime() - now.getTime();
                 const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));

@@ -6,55 +6,52 @@ const { v4: uuidv4 } = require('uuid');
 const DB_PATH = path.join(__dirname, 'database.sqlite');
 let db;
 
-// --- CENTRALIZED GAME TIMING LOGIC (PKT TIMEZONE) ---
-const PKT_OFFSET_MS = 5 * 60 * 60 * 1000;
-const OPEN_HOUR_PKT = 16; // 4:00 PM in Pakistan
-
+// --- ROBUST PKT MARKET TIMING ENGINE ---
 function getGameCycle(drawTime) {
     if (!drawTime || typeof drawTime !== 'string' || !drawTime.includes(':')) {
         return { openTime: new Date(0), closeTime: new Date(0) };
     }
 
+    // Get current time in Pakistan Standard Time
     const nowUTC = new Date();
-    // Get current time in PKT
-    const nowPKT = new Date(nowUTC.getTime() + PKT_OFFSET_MS);
+    const pktString = nowUTC.toLocaleString("en-US", { timeZone: "Asia/Karachi" });
+    const nowPKT = new Date(pktString);
     
     const [drawH, drawM] = drawTime.split(':').map(Number);
     
-    // Create a date object for the draw time on the current PKT day
-    let closePKT = new Date(nowPKT);
-    closePKT.setHours(drawH, drawM, 0, 0);
-
-    let openPKT = new Date(closePKT);
-    if (drawH < OPEN_HOUR_PKT) {
-        // Late night or early morning draw (e.g., 00:55, 02:10)
-        // This draw belongs to the cycle that opened yesterday at 4:00 PM
-        openPKT.setDate(openPKT.getDate() - 1);
-        openPKT.setHours(OPEN_HOUR_PKT, 0, 0, 0);
-        
-        // If it's currently evening (past 4PM), today's early morning draw is in the past.
-        // We look for the "next" draw window.
-        if (nowPKT.getHours() >= OPEN_HOUR_PKT) {
-            closePKT.setDate(closePKT.getDate() + 1);
-        }
-    } else {
-        // Evening draw (e.g., 18:15, 21:55)
-        // This draw belongs to the cycle that opens today at 4:00 PM
-        openPKT.setHours(OPEN_HOUR_PKT, 0, 0, 0);
+    // 1. Determine when the CURRENT market cycle started (Always 4:00 PM PKT)
+    let cycleStartPKT = new Date(nowPKT);
+    cycleStartPKT.setHours(16, 0, 0, 0);
+    
+    // If it's currently before 4 PM, the cycle we are in started yesterday
+    if (nowPKT.getHours() < 16) {
+        cycleStartPKT.setDate(cycleStartPKT.getDate() - 1);
     }
 
-    return {
-        openTime: new Date(openPKT.getTime() - PKT_OFFSET_MS),
-        closeTime: new Date(closePKT.getTime() - PKT_OFFSET_MS)
-    };
+    // 2. Determine when THIS SPECIFIC DRAW closes relative to that cycle start
+    let drawClosePKT = new Date(cycleStartPKT);
+    drawClosePKT.setHours(drawH, drawM, 0, 0);
+
+    // If the draw hour is before 4 PM (e.g., 00:55, 02:10), 
+    // it happens on the calendar day AFTER the cycle started.
+    if (drawH < 16) {
+        drawClosePKT.setDate(drawClosePKT.getDate() + 1);
+    }
+
+    // Return UTC equivalents for the server to compare
+    // Note: We use the timestamp diff to adjust the original UTC 'now'
+    const offset = drawClosePKT.getTime() - cycleStartPKT.getTime();
+    const openUTC = new Date(cycleStartPKT.toLocaleString("en-US", { timeZone: "UTC" })); // Rough conversion
+    
+    // Simplest approach: compare everything in PKT context
+    return { nowPKT, cycleStartPKT, drawClosePKT };
 }
 
 function isGameOpen(drawTime) {
     if (!drawTime) return false;
-    const now = new Date();
-    const { openTime, closeTime } = getGameCycle(drawTime);
-    // Game is playable if now is after 4 PM opening and before the draw time
-    return now >= openTime && now < closeTime;
+    const { nowPKT, cycleStartPKT, drawClosePKT } = getGameCycle(drawTime);
+    // Open if: Now is after 4 PM opening AND before the scheduled draw
+    return nowPKT >= cycleStartPKT && nowPKT < drawClosePKT;
 }
 
 const connect = () => {
@@ -100,17 +97,21 @@ const findAccountById = (id, table) => {
             account.isVisible = !!account.isVisible;
         }
         
-        // Defensive parsing for JSON fields
+        // CRITICAL FIX: Robust JSON parsing with fallback to prevents 'null' property errors
+        const defaultPrizeRates = { oneDigitOpen: 90, oneDigitClose: 90, twoDigit: 900 };
+        const defaultBetLimits = { oneDigit: 1000, twoDigit: 5000, perDraw: 20000 };
+
         if (account.prizeRates && typeof account.prizeRates === 'string') {
-            try { account.prizeRates = JSON.parse(account.prizeRates); } catch(e) { account.prizeRates = null; }
+            try { account.prizeRates = JSON.parse(account.prizeRates); } catch(e) { account.prizeRates = defaultPrizeRates; }
+        } else if (!account.prizeRates && table !== 'games') {
+            account.prizeRates = defaultPrizeRates;
         }
+
         if (account.betLimits && typeof account.betLimits === 'string') {
-            try { account.betLimits = JSON.parse(account.betLimits); } catch(e) { account.betLimits = null; }
+            try { account.betLimits = JSON.parse(account.betLimits); } catch(e) { account.betLimits = defaultBetLimits; }
+        } else if (!account.betLimits && table === 'users') {
+            account.betLimits = defaultBetLimits;
         }
-        
-        // Ensure defaults if parsing failed or fields were missing
-        if (!account.prizeRates) account.prizeRates = { oneDigitOpen: 90, oneDigitClose: 90, twoDigit: 900 };
-        if (!account.betLimits) account.betLimits = { oneDigit: 1000, twoDigit: 5000, perDraw: 20000 };
         
         if ('isRestricted' in account) account.isRestricted = !!account.isRestricted;
         
@@ -157,12 +158,14 @@ const getAllFromTable = (table, withLedger = false) => {
                     acc.isMarketOpen = isGameOpen(acc.drawTime);
                     acc.isVisible = !!acc.isVisible;
                 }
-                if (acc.prizeRates && typeof acc.prizeRates === 'string') acc.prizeRates = JSON.parse(acc.prizeRates);
-                if (acc.betLimits && typeof acc.betLimits === 'string') acc.betLimits = JSON.parse(acc.betLimits);
                 
-                // Defaults for list views
-                if (!acc.prizeRates && table !== 'games') acc.prizeRates = { oneDigitOpen: 0, oneDigitClose: 0, twoDigit: 0 };
-                if (!acc.betLimits && table === 'users') acc.betLimits = { oneDigit: 0, twoDigit: 0, perDraw: 0 };
+                // Deep null safety for list results
+                if (acc.prizeRates && typeof acc.prizeRates === 'string') {
+                    try { acc.prizeRates = JSON.parse(acc.prizeRates); } catch(e) { acc.prizeRates = { oneDigitOpen: 0, oneDigitClose: 0, twoDigit: 0 }; }
+                }
+                if (acc.betLimits && typeof acc.betLimits === 'string') {
+                    try { acc.betLimits = JSON.parse(acc.betLimits); } catch(e) { acc.betLimits = { oneDigit: 0, twoDigit: 0, perDraw: 0 }; }
+                }
 
                 if (table === 'bets' && acc.numbers && typeof acc.numbers === 'string') acc.numbers = JSON.parse(acc.numbers);
                 if ('isRestricted' in acc) acc.isRestricted = !!acc.isRestricted;

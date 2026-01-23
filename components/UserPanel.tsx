@@ -43,6 +43,7 @@ const GameCard: React.FC<{ game: Game; onPlay: (game: Game) => void; onWatch: (g
     const { status, text: countdownText } = useCountdown(game.drawTime);
     const hasFinalWinner = !!game.winningNumber && !game.winningNumber.endsWith('_');
     
+    // UI logic is now lenient, relying on robust cycle logic in useCountdown
     const canPlay = !isRestricted && !hasFinalWinner;
     const logo = getDynamicLogo(game.name);
 
@@ -69,10 +70,12 @@ const GameCard: React.FC<{ game: Game; onPlay: (game: Game) => void; onWatch: (g
                                 <span className="text-[8px] sm:text-[9px] font-black text-emerald-500 uppercase tracking-[0.3em] mb-1">Final Outcome</span>
                                 <span className="text-3xl sm:text-4xl font-black text-white russo gold-shimmer">{game.winningNumber}</span>
                             </>
-                        ) : status === 'OPEN' ? (
+                        ) : status === 'OPEN' || status === 'SOON' ? (
                             <>
-                                <span className="text-[8px] sm:text-[9px] font-black text-amber-500/60 uppercase tracking-[0.3em] mb-1">Market Closes In</span>
-                                <span className="text-2xl sm:text-3xl font-black text-amber-400 font-mono tracking-tighter">{countdownText}</span>
+                                <span className="text-[8px] sm:text-[9px] font-black text-amber-500/60 uppercase tracking-[0.3em] mb-1">
+                                    {status === 'OPEN' ? 'Market Closes In' : 'Market Status'}
+                                </span>
+                                <span className={`text-2xl sm:text-3xl font-black font-mono tracking-tighter ${status === 'OPEN' ? 'text-amber-400' : 'text-sky-400 text-lg'}`}>{countdownText}</span>
                             </>
                         ) : (
                             <>
@@ -120,14 +123,11 @@ const BettingModal: React.FC<{
 
     const handleNumberInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const val = e.target.value;
-        
-        // Auto-comma logic for 2-Digit game mode
         if (subGameType === SubGameType.TwoDigit) {
             const digitsOnly = val.replace(/\D/g, '');
             const pairs = digitsOnly.match(/.{1,2}/g) || [];
             setNumbers(pairs.join(', '));
         } else if (subGameType === SubGameType.OneDigitOpen || subGameType === SubGameType.OneDigitClose) {
-            // Auto-comma logic for 1-Digit modes
             const digitsOnly = val.replace(/\D/g, '');
             const singles = digitsOnly.split('');
             setNumbers(singles.join(', '));
@@ -138,7 +138,6 @@ const BettingModal: React.FC<{
 
     const calculatedNumbers = useMemo(() => {
         const rawList = numbers.split(/[-,.\s\n\r]+/).filter(n => n.trim().length > 0).map(n => n.trim());
-        
         if (subGameType === SubGameType.Combo) {
             const digits = rawList.join('').split('').filter((v, i, a) => a.indexOf(v) === i);
             const combos: string[] = [];
@@ -171,14 +170,14 @@ const BettingModal: React.FC<{
             setNumbers('');
             setAmount('');
         } catch (err) {
-            // Error managed via parent
+            // Managed by parent
         } finally {
             setIsProcessing(false);
         }
     };
 
     const modeInfo = {
-        [SubGameType.TwoDigit]: { label: '2-Digit', desc: 'Enter pairs (00-99) - Auto Formatting Active', color: 'amber' },
+        [SubGameType.TwoDigit]: { label: '2-Digit', desc: 'Enter pairs (00-99)', color: 'amber' },
         [SubGameType.OneDigitOpen]: { label: 'Open', desc: 'Enter first digit (0-9)', color: 'sky' },
         [SubGameType.OneDigitClose]: { label: 'Close', desc: 'Enter second digit (0-9)', color: 'emerald' },
         [SubGameType.Bulk]: { label: 'Bulk', desc: 'Paste multiple pairs at once', color: 'indigo' },
@@ -294,9 +293,11 @@ const ActivityCenter: React.FC<{ bets: Bet[]; games: Game[]; user: User }> = ({ 
             }
             if (isWin) winsCount++;
         });
-        const multipliers = userPrizeRates || { oneDigitOpen: 0, oneDigitClose: 0, twoDigit: 0 };
-        const multiplier = bet.subGameType === SubGameType.OneDigitOpen ? multipliers.oneDigitOpen : (bet.subGameType === SubGameType.OneDigitClose ? multipliers.oneDigitClose : multipliers.twoDigit);
-        return winsCount * bet.amountPerNumber * multiplier;
+        
+        // Deep null safety for prize multipliers
+        const rates = userPrizeRates || { oneDigitOpen: 0, oneDigitClose: 0, twoDigit: 0 };
+        const multiplier = bet.subGameType === SubGameType.OneDigitOpen ? (rates.oneDigitOpen || 0) : (bet.subGameType === SubGameType.OneDigitClose ? (rates.oneDigitClose || 0) : (rates.twoDigit || 0));
+        return winsCount * (bet.amountPerNumber || 0) * multiplier;
     };
 
     const filteredData = useMemo(() => {
@@ -305,7 +306,7 @@ const ActivityCenter: React.FC<{ bets: Bet[]; games: Game[]; user: User }> = ({ 
                 const bDate = b.timestamp.toISOString().split('T')[0];
                 const game = games.find(g => g.id === b.gameId);
                 const matchesDate = (!dateRange.start || bDate >= dateRange.start) && (!dateRange.end || bDate <= dateRange.end);
-                const matchesSearch = !search || game?.name.toLowerCase().includes(search.toLowerCase()) || b.subGameType.toLowerCase().includes(search.toLowerCase());
+                const matchesSearch = !search || (game?.name || '').toLowerCase().includes(search.toLowerCase()) || (b.subGameType || '').toLowerCase().includes(search.toLowerCase());
                 return matchesDate && matchesSearch;
             }).sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
         } else {
@@ -347,20 +348,20 @@ const ActivityCenter: React.FC<{ bets: Bet[]; games: Game[]; user: User }> = ({ 
                 <table className="w-full text-left min-w-[650px]">
                     <thead className="border-b border-white/5">
                         <tr>
-                            <th className="pb-4 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-slate-600">Timestamp</th>
+                            <th className="p-4 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-slate-600">Timestamp</th>
                             {activeTab === 'history' ? (
                                 <>
-                                    <th className="pb-4 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-slate-600">Game / Type</th>
-                                    <th className="pb-4 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-slate-600 text-right">Stake</th>
-                                    <th className="pb-4 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-slate-600 text-right">Winning</th>
-                                    <th className="pb-4 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-slate-600 text-right">Status</th>
+                                    <th className="p-4 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-slate-600">Game / Type</th>
+                                    <th className="p-4 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-slate-600 text-right">Stake</th>
+                                    <th className="p-4 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-slate-600 text-right">Winning</th>
+                                    <th className="p-4 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-slate-600 text-right">Status</th>
                                 </>
                             ) : (
                                 <>
-                                    <th className="pb-4 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-slate-600">Description</th>
-                                    <th className="pb-4 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-slate-600 text-right">Debit</th>
-                                    <th className="pb-4 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-slate-600 text-right">Credit</th>
-                                    <th className="pb-4 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-slate-600 text-right">Balance</th>
+                                    <th className="p-4 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-slate-600">Description</th>
+                                    <th className="p-4 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-slate-600 text-right">Debit</th>
+                                    <th className="p-4 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-slate-600 text-right">Credit</th>
+                                    <th className="p-4 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-slate-600 text-right">Balance</th>
                                 </>
                             )}
                         </tr>
@@ -375,16 +376,16 @@ const ActivityCenter: React.FC<{ bets: Bet[]; games: Game[]; user: User }> = ({ 
                                 const isPending = !game?.winningNumber || game.winningNumber.endsWith('_');
                                 return (
                                     <tr key={item.id} className="hover:bg-white/[0.02] transition-colors group">
-                                        <td className="py-4 sm:py-5 text-[9px] sm:text-[10px] font-mono text-slate-500 whitespace-nowrap">{item.timestamp.toLocaleString([], { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' })}</td>
-                                        <td className="py-4 sm:py-5">
+                                        <td className="p-4 sm:py-5 text-[9px] sm:text-[10px] font-mono text-slate-500 whitespace-nowrap">{item.timestamp.toLocaleString([], { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' })}</td>
+                                        <td className="p-4 sm:py-5">
                                             <div className="flex items-center gap-2">
                                                 <div className="russo text-[10px] text-amber-500 uppercase">{game?.name || '---'}</div>
                                                 <div className="text-[9px] text-slate-500 font-mono truncate max-w-[150px] uppercase">[{item.subGameType}]: {item.numbers.join(',')}</div>
                                             </div>
                                         </td>
-                                        <td className="py-4 sm:py-5 text-right font-mono text-xs font-bold text-slate-300">PKR {item.totalAmount.toFixed(0)}</td>
-                                        <td className="py-4 sm:py-5 text-right font-mono text-xs font-black text-emerald-400">{payout > 0 ? `+${payout.toFixed(2)}` : '-'}</td>
-                                        <td className="py-4 sm:py-5 text-right">
+                                        <td className="p-4 sm:py-5 text-right font-mono text-xs font-bold text-slate-300">PKR {item.totalAmount.toFixed(0)}</td>
+                                        <td className="p-4 sm:py-5 text-right font-mono text-xs font-black text-emerald-400">{payout > 0 ? `+${payout.toFixed(2)}` : '-'}</td>
+                                        <td className="p-4 sm:py-5 text-right">
                                             <span className={`text-[8px] sm:text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-full border ${
                                                 isPending ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : payout > 0 ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20'
                                             }`}>{isPending ? 'Live' : payout > 0 ? 'Winner' : 'Closed'}</span>
@@ -395,11 +396,11 @@ const ActivityCenter: React.FC<{ bets: Bet[]; games: Game[]; user: User }> = ({ 
                                 const e = item as LedgerEntry;
                                 return (
                                     <tr key={e.id} className="hover:bg-white/[0.02] transition-colors">
-                                        <td className="py-4 sm:py-5 text-[9px] sm:text-[10px] font-mono text-slate-500">{e.timestamp.toLocaleString()}</td>
-                                        <td className="py-4 sm:py-5 text-[11px] font-bold text-white uppercase tracking-wider">{e.description}</td>
-                                        <td className="py-4 sm:py-5 text-right font-mono text-xs text-red-400">{e.debit > 0 ? e.debit.toFixed(2) : '-'}</td>
-                                        <td className="py-4 sm:py-5 text-right font-mono text-xs text-emerald-400">{e.credit > 0 ? e.credit.toFixed(2) : '-'}</td>
-                                        <td className="py-4 sm:py-5 text-right font-mono text-xs font-black text-white">PKR {e.balance.toFixed(2)}</td>
+                                        <td className="p-4 sm:py-5 text-[9px] sm:text-[10px] font-mono text-slate-500">{e.timestamp.toLocaleString()}</td>
+                                        <td className="p-4 sm:py-5 text-[11px] font-bold text-white uppercase tracking-wider">{e.description}</td>
+                                        <td className="p-4 sm:py-5 text-right font-mono text-xs text-red-400">{e.debit > 0 ? e.debit.toFixed(2) : '-'}</td>
+                                        <td className="p-4 sm:py-5 text-right font-mono text-xs text-emerald-400">{e.credit > 0 ? e.credit.toFixed(2) : '-'}</td>
+                                        <td className="p-4 sm:py-5 text-right font-mono text-xs font-black text-white">PKR {e.balance.toFixed(2)}</td>
                                     </tr>
                                 );
                             }
@@ -431,7 +432,7 @@ const UserPanel: React.FC<any> = ({ user, games, bets, placeBet, onWatchDraw }) 
         return {
             todayVolume: todayBets.reduce((s, b) => s + b.totalAmount, 0),
             activeTickets: todayBets.length,
-            netWorth: user.wallet || 0
+            netWorth: (user && user.wallet) || 0
         };
     }, [bets, user]);
 
@@ -441,7 +442,7 @@ const UserPanel: React.FC<any> = ({ user, games, bets, placeBet, onWatchDraw }) 
                 <div className="space-y-2 w-full xl:w-auto">
                     <div className="inline-block bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-full text-[8px] sm:text-[9px] font-black text-amber-500 uppercase tracking-[0.3em] mb-2 animate-pulse">Account verified</div>
                     <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white russo tracking-tighter leading-tight uppercase">GAME <span className="text-amber-500">TERMINAL</span></h1>
-                    <p className="text-slate-500 text-[11px] sm:text-sm font-medium">Verified session active for <span className="text-white font-bold">{user.name}</span></p>
+                    <p className="text-slate-500 text-[11px] sm:text-sm font-medium">Verified session active for <span className="text-white font-bold">{(user && user.name) || 'Player'}</span></p>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 w-full xl:w-auto">
                     <StatCard title="Wallet Liquidity" value={`PKR ${stats.netWorth.toLocaleString(undefined, {minimumFractionDigits: 2})}`} icon={Icons.wallet} color="text-amber-500" />
@@ -456,7 +457,7 @@ const UserPanel: React.FC<any> = ({ user, games, bets, placeBet, onWatchDraw }) 
                     <h2 className="text-[10px] sm:text-xs font-black text-slate-500 uppercase tracking-[0.4em]">Available Markets</h2>
                 </div>
                 <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 md:gap-8">
-                    {games.map(g => <GameCard key={g.id} game={g} onPlay={(game) => { setApiError(null); setSelectedGame(game); }} onWatch={() => onWatchDraw(g)} isRestricted={user.isRestricted} />)}
+                    {games.map(g => <GameCard key={g.id} game={g} onPlay={(game) => { setApiError(null); setSelectedGame(game); }} onWatch={() => onWatchDraw(g)} isRestricted={(user && user.isRestricted) || false} />)}
                 </div>
             </div>
 

@@ -100,8 +100,18 @@ const findAccountById = (id, table) => {
             account.isVisible = !!account.isVisible;
         }
         
-        if (account.prizeRates && typeof account.prizeRates === 'string') account.prizeRates = JSON.parse(account.prizeRates);
-        if (account.betLimits && typeof account.betLimits === 'string') account.betLimits = JSON.parse(account.betLimits);
+        // Defensive parsing for JSON fields
+        if (account.prizeRates && typeof account.prizeRates === 'string') {
+            try { account.prizeRates = JSON.parse(account.prizeRates); } catch(e) { account.prizeRates = null; }
+        }
+        if (account.betLimits && typeof account.betLimits === 'string') {
+            try { account.betLimits = JSON.parse(account.betLimits); } catch(e) { account.betLimits = null; }
+        }
+        
+        // Ensure defaults if parsing failed or fields were missing
+        if (!account.prizeRates) account.prizeRates = { oneDigitOpen: 90, oneDigitClose: 90, twoDigit: 900 };
+        if (!account.betLimits) account.betLimits = { oneDigit: 1000, twoDigit: 5000, perDraw: 20000 };
+        
         if ('isRestricted' in account) account.isRestricted = !!account.isRestricted;
         
         return account;
@@ -149,6 +159,11 @@ const getAllFromTable = (table, withLedger = false) => {
                 }
                 if (acc.prizeRates && typeof acc.prizeRates === 'string') acc.prizeRates = JSON.parse(acc.prizeRates);
                 if (acc.betLimits && typeof acc.betLimits === 'string') acc.betLimits = JSON.parse(acc.betLimits);
+                
+                // Defaults for list views
+                if (!acc.prizeRates && table !== 'games') acc.prizeRates = { oneDigitOpen: 0, oneDigitClose: 0, twoDigit: 0 };
+                if (!acc.betLimits && table === 'users') acc.betLimits = { oneDigit: 0, twoDigit: 0, perDraw: 0 };
+
                 if (table === 'bets' && acc.numbers && typeof acc.numbers === 'string') acc.numbers = JSON.parse(acc.numbers);
                 if ('isRestricted' in acc) acc.isRestricted = !!acc.isRestricted;
             } catch (e) { console.error(`[DB] Row parse error in ${table}:`, e); }
@@ -237,7 +252,10 @@ const approvePayoutsForGame = (gameId) => {
         const allUsers = Object.fromEntries(getAllFromTable('users').map(u => [u.id, u]));
         const allDealers = Object.fromEntries(getAllFromTable('dealers').map(d => [d.id, d]));
         const admin = findAccountById('Guru', 'admins');
-        const getMultiplier = (r, t) => t === "1 Digit Open" ? r.oneDigitOpen : t === "1 Digit Close" ? r.oneDigitClose : r.twoDigit;
+        const getMultiplier = (r, t) => {
+            if (!r) return 0;
+            return t === "1 Digit Open" ? r.oneDigitOpen : t === "1 Digit Close" ? r.oneDigitClose : r.twoDigit;
+        };
         winningBets.forEach(bet => {
             const wins = bet.numbers.filter(n => {
                 if (bet.subGameType === "1 Digit Open") return game.winningNumber.length === 2 && n === game.winningNumber[0];
@@ -266,7 +284,10 @@ const getFinancialSummary = () => {
     const games = db.prepare('SELECT * FROM games WHERE winningNumber IS NOT NULL').all();
     const allBets = db.prepare('SELECT * FROM bets').all().map(b => ({...b, numbers: JSON.parse(b.numbers)}));
     const allUsers = Object.fromEntries(getAllFromTable('users').map(u => [u.id, u])), allDealers = Object.fromEntries(getAllFromTable('dealers').map(d => [d.id, d]));
-    const getMultiplier = (r, t) => t === "1 Digit Open" ? r.oneDigitOpen : t === "1 Digit Close" ? r.oneDigitClose : r.twoDigit;
+    const getMultiplier = (r, t) => {
+        if (!r) return 0;
+        return t === "1 Digit Open" ? r.oneDigitOpen : t === "1 Digit Close" ? r.oneDigitClose : r.twoDigit;
+    };
     const summary = games.map(game => {
         const gameBets = allBets.filter(b => b.gameId === game.id);
         const totalStake = gameBets.reduce((s, b) => s + b.totalAmount, 0);
@@ -450,8 +471,11 @@ const placeBulkBets = (uId, gId, groups, placedBy = 'USER') => {
         const userExistingTotal = existingBets.filter(b => b.userId === uId).reduce((s, b) => s + b.totalAmount, 0);
         const requestTotal = groups.reduce((s, g) => s + g.numbers.length * g.amountPerNumber, 0);
         
-        if (user.betLimits?.perDraw > 0 && (userExistingTotal + requestTotal) > user.betLimits.perDraw) {
-            throw { status: 400, message: `Personal Cap Reached: Max entry for this draw is PKR ${user.betLimits.perDraw}.` };
+        // Defensive default for betLimits
+        const activeLimits = user.betLimits || { oneDigit: 1000, twoDigit: 5000, perDraw: 20000 };
+
+        if (activeLimits.perDraw > 0 && (userExistingTotal + requestTotal) > activeLimits.perDraw) {
+            throw { status: 400, message: `Personal Cap Reached: Max entry for this draw is PKR ${activeLimits.perDraw}.` };
         }
         
         const numberStakeMap = new Map();
@@ -468,7 +492,8 @@ const placeBulkBets = (uId, gId, groups, placedBy = 'USER') => {
             const stake = g.amountPerNumber;
             const type = g.subGameType;
             const limitType = type === '1 Digit Open' ? '1-open' : type === '1 Digit Close' ? '1-close' : '2-digit';
-            const userSingleLimit = limitType === '2-digit' ? user.betLimits.twoDigit : user.betLimits.oneDigit;
+            const userSingleLimit = limitType === '2-digit' ? activeLimits.twoDigit : activeLimits.oneDigit;
+            
             g.numbers.forEach(n => {
                 const key = `${type}_${n}`;
                 const currentStake = numberStakeMap.get(key) || 0;

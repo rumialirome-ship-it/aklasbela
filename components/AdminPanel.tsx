@@ -48,7 +48,7 @@ const PotentialWinners: React.FC<{ gameId: string; winningNum: string; bets: Bet
         .filter(b => b.gameId === gameId)
         .map(bet => {
             const user = users.find(u => u.id === bet.userId);
-            if (!user) return null;
+            if (!user || !user.prizeRates) return null;
             
             let winsCount = 0;
             bet.numbers.forEach(n => {
@@ -571,7 +571,7 @@ const AdminPanel: React.FC<any> = ({
                                         </td>
                                         <td className="p-6">
                                             <div className="flex gap-4 text-[10px] font-black uppercase tracking-widest">
-                                                <span className="text-amber-500">2D: {user.prizeRates.twoDigit}</span>
+                                                <span className="text-amber-500">2D: {user.prizeRates?.twoDigit ?? 0}</span>
                                                 <span className="text-sky-500">{user.commissionRate}%</span>
                                             </div>
                                         </td>
@@ -805,9 +805,9 @@ const DealerForm: React.FC<{ dealer?: Dealer; onSave: (d: Dealer, originalId?: s
             <div className="bg-slate-950/40 p-6 rounded-3xl border border-white/5 space-y-4">
                 <p className="text-[10px] font-black text-red-500 uppercase tracking-[0.3em]">Authorized Prize Multipliers</p>
                 <div className="grid grid-cols-3 gap-4">
-                    <div><label className={labelClass}>2 Digit</label><input type="number" step="0.1" name="prizeRates.twoDigit" value={formData.prizeRates.twoDigit} onChange={handleChange} className={inputClass} /></div>
-                    <div><label className={labelClass}>1D Open</label><input type="number" step="0.1" name="prizeRates.oneDigitOpen" value={formData.prizeRates.oneDigitOpen} onChange={handleChange} className={inputClass} /></div>
-                    <div><label className={labelClass}>1D Close</label><input type="number" step="0.1" name="prizeRates.oneDigitClose" value={formData.prizeRates.oneDigitClose} onChange={handleChange} className={inputClass} /></div>
+                    <div><label className={labelClass}>2 Digit</label><input type="number" step="0.1" name="prizeRates.twoDigit" value={formData.prizeRates?.twoDigit ?? 900} onChange={handleChange} className={inputClass} /></div>
+                    <div><label className={labelClass}>1D Open</label><input type="number" step="0.1" name="prizeRates.oneDigitOpen" value={formData.prizeRates?.oneDigitOpen ?? 90} onChange={handleChange} className={inputClass} /></div>
+                    <div><label className={labelClass}>1D Close</label><input type="number" step="0.1" name="prizeRates.oneDigitClose" value={formData.prizeRates?.oneDigitClose ?? 90} onChange={handleChange} className={inputClass} /></div>
                 </div>
             </div>
             <button type="submit" className="w-full bg-red-600 hover:bg-red-500 text-white font-black py-4 rounded-2xl transition-all uppercase tracking-widest text-xs shadow-xl shadow-red-900/20">
@@ -846,9 +846,9 @@ const UserForm: React.FC<{ user?: User; onSave: (u: User, originalId?: string) =
             <div className="bg-slate-950/40 p-6 rounded-3xl border border-white/5 space-y-4">
                 <p className="text-[10px] font-black text-amber-500 uppercase tracking-[0.3em]">User Specific Prize Overrides</p>
                 <div className="grid grid-cols-3 gap-4">
-                    <div><label className={labelClass}>2 Digit</label><input type="number" step="0.1" name="prizeRates.twoDigit" value={formData.prizeRates.twoDigit} onChange={handleChange} className={inputClass} /></div>
-                    <div><label className={labelClass}>1D Open</label><input type="number" step="0.1" name="prizeRates.oneDigitOpen" value={formData.prizeRates.oneDigitOpen} onChange={handleChange} className={inputClass} /></div>
-                    <div><label className={labelClass}>1D Close</label><input type="number" step="0.1" name="prizeRates.oneDigitClose" value={formData.prizeRates.oneDigitClose} onChange={handleChange} className={inputClass} /></div>
+                    <div><label className={labelClass}>2 Digit</label><input type="number" step="0.1" name="prizeRates.twoDigit" value={formData.prizeRates?.twoDigit ?? 800} onChange={handleChange} className={inputClass} /></div>
+                    <div><label className={labelClass}>1D Open</label><input type="number" step="0.1" name="prizeRates.oneDigitOpen" value={formData.prizeRates?.oneDigitOpen ?? 80} onChange={handleChange} className={inputClass} /></div>
+                    <div><label className={labelClass}>1D Close</label><input type="number" step="0.1" name="prizeRates.oneDigitClose" value={formData.prizeRates?.oneDigitClose ?? 80} onChange={handleChange} className={inputClass} /></div>
                 </div>
             </div>
             <button type="submit" className="w-full bg-red-600 hover:bg-red-500 text-white font-black py-4 rounded-2xl transition-all uppercase tracking-widest text-xs">Commit Updates</button>

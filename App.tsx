@@ -168,7 +168,8 @@ const AppContent: React.FC = () => {
         if (games.length > 0 && lastGamesRef.current.length > 0) {
             games.forEach(newGame => {
                 const oldGame = lastGamesRef.current.find(g => g.id === newGame.id);
-                if (newGame.winningNumber && !newGame.winningNumber.endsWith('_') && (!oldGame?.winningNumber || oldGame.winningNumber.endsWith('_'))) {
+                // Hardened check for reveal: must have a non-empty winner and have transitioned state
+                if (newGame.winningNumber && newGame.winningNumber.trim().length > 0 && !newGame.winningNumber.endsWith('_') && (!oldGame?.winningNumber || oldGame.winningNumber.endsWith('_'))) {
                     setActiveReveal({ name: newGame.name, number: newGame.winningNumber });
                 }
             });
@@ -177,13 +178,28 @@ const AppContent: React.FC = () => {
     }, [games]);
 
     const handleWatchDraw = (game: Game) => {
-        if (game.winningNumber && !game.winningNumber.endsWith('_')) {
+        if (game.winningNumber && game.winningNumber.trim().length > 0 && !game.winningNumber.endsWith('_')) {
             setActiveReveal({ name: game.name, number: game.winningNumber });
         }
     };
 
-    const placeBet = async (d: any) => { await fetchWithAuth('/api/user/bets', { method: 'POST', body: JSON.stringify(d) }); fetchPrivateData(); };
-    const placeBetAsDealer = async (d: any) => { await fetchWithAuth('/api/dealer/bets/bulk', { method: 'POST', body: JSON.stringify(d) }); fetchPrivateData(); };
+    const placeBet = async (d: any) => { 
+        const response = await fetchWithAuth('/api/user/bets', { method: 'POST', body: JSON.stringify(d) }); 
+        if (!response.ok) {
+            const errData = await response.json();
+            throw new Error(errData.message || "Entry rejected.");
+        }
+        fetchPrivateData(); 
+    };
+
+    const placeBetAsDealer = async (d: any) => { 
+        const response = await fetchWithAuth('/api/dealer/bets/bulk', { method: 'POST', body: JSON.stringify(d) }); 
+        if (!response.ok) {
+            const errData = await response.json();
+            throw new Error(errData.message || "Bulk entry rejected.");
+        }
+        fetchPrivateData(); 
+    };
     
     const onSaveUser = async (u: any, o: any, i: any) => {
         const method = o ? 'PUT' : 'POST';
@@ -203,22 +219,22 @@ const AppContent: React.FC = () => {
     };
 
     if (loading) return (
-        <div className="min-h-screen flex flex-col items-center justify-center">
+        <div className="min-h-screen flex flex-col items-center justify-center bg-slate-950">
             <div className="relative w-20 h-20 mb-8">
                 <div className="absolute inset-0 border-4 border-amber-500/20 rounded-full"></div>
                 <div className="absolute inset-0 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
             </div>
-            <div className="russo text-amber-500 text-lg md:text-xl tracking-[0.4em] animate-pulse">
-                INITIALIZING SECURE PROTOCOL...
+            <div className="russo text-amber-500 text-lg md:text-xl tracking-[0.4em] animate-pulse uppercase">
+                Synchronizing Nodes...
             </div>
         </div>
     );
 
     return (
-        <div className="min-h-screen flex flex-col relative">
-            {apiError && (
-                <div className={`fixed top-0 left-0 w-full z-[100] ${isMaintenance ? 'bg-red-600' : 'bg-amber-600'} text-white text-[10px] font-black uppercase tracking-[0.4em] py-2 text-center shadow-2xl`}>
-                    <span className="mr-4">{isMaintenance ? 'CRITICAL SYSTEM STATUS' : 'NODE WARNING'}</span>
+        <div className="min-h-screen flex flex-col relative bg-slate-950">
+            {apiError && !activeReveal && (
+                <div className={`fixed top-0 left-0 w-full z-[999] ${isMaintenance ? 'bg-red-600' : 'bg-amber-600'} text-white text-[10px] font-black uppercase tracking-[0.4em] py-2 text-center shadow-2xl`}>
+                    <span className="mr-4">{isMaintenance ? 'SYSTEM OFFLINE' : 'NODE STATUS'}</span>
                     <span className="opacity-80">|</span>
                     <span className="ml-4">{apiError}</span>
                 </div>

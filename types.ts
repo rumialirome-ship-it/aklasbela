@@ -74,8 +74,8 @@ export enum SubGameType {
     OneDigitOpen = "1 Digit Open",
     OneDigitClose = "1 Digit Close",
     TwoDigit = "2 Digit",
-    Bulk = "Bulk Game",
-    Combo = "Combo Game",
+    Bulk = "Bulk",
+    Combo = "Combo",
 }
 
 export interface Bet {

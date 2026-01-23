@@ -7,8 +7,8 @@ import { useAuth } from '../hooks/useAuth';
 
 const getTodayDateString = () => new Date().toISOString().split('T')[0];
 
-const formatTime12h = (time24: string) => {
-    if (!time24) return '--:--';
+const formatTime12h = (time24: string | undefined) => {
+    if (!time24 || typeof time24 !== 'string' || !time24.includes(':')) return '--:--';
     const [hours, minutes] = time24.split(':').map(Number);
     const ampm = hours >= 12 ? 'PM' : 'AM';
     const hours12 = hours % 12 || 12;
@@ -29,12 +29,9 @@ const StatCard: React.FC<{ title: string; value: string | number; icon: React.Re
 const ActivityTab: React.FC<{ active: boolean; onClick: () => void; label: string; icon: React.ReactNode }> = ({ active, onClick, label, icon }) => (
     <button
         onClick={onClick}
-        className="flex items-center gap-2 sm:gap-3 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all duration-300"
-        style={{
-            backgroundColor: active ? '#f59e0b' : 'transparent',
-            color: active ? '#020617' : '#64748b',
-            boxShadow: active ? '0 0 25px rgba(245,158,11,0.2)' : 'none'
-        }}
+        className={`flex items-center gap-2 sm:gap-3 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all duration-300 ${
+            active ? 'bg-amber-500 text-slate-950 shadow-[0_0_25px_rgba(245,158,11,0.2)]' : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
+        }`}
     >
         <span className={active ? 'animate-pulse' : ''}>{icon}</span>
         <span className="hidden xs:inline">{label}</span>
@@ -46,14 +43,14 @@ const GameCard: React.FC<{ game: Game; onPlay: (game: Game) => void; onWatch: (g
     const { status, text: countdownText } = useCountdown(game.drawTime);
     const hasFinalWinner = !!game.winningNumber && !game.winningNumber.endsWith('_');
     
-    // UI REFINEMENT: Allow "Play" if not restricted and not finished. 
-    // The server will handle the strict time-gate (4PM PKT) to avoid client clock issues.
-    const isVisibleForPlay = !isRestricted && !hasFinalWinner;
+    // UI Logic: Allow play if game is not settled and user isn't blocked
+    // Server will perform the strict market open/close check
+    const canPlay = !isRestricted && !hasFinalWinner;
     
     const logo = getDynamicLogo(game.name);
 
     return (
-        <div className={`group relative flex flex-col bg-slate-900/40 rounded-3xl border border-white/5 transition-all duration-500 overflow-hidden ${!isVisibleForPlay && !hasFinalWinner ? 'opacity-70 grayscale-[0.3]' : 'hover:border-amber-500/30 hover:bg-slate-900/60 hover:-translate-y-1'}`}>
+        <div className={`group relative flex flex-col bg-slate-900/40 rounded-3xl border border-white/5 transition-all duration-500 overflow-hidden ${!canPlay && !hasFinalWinner ? 'opacity-70 grayscale-[0.3]' : 'hover:border-amber-500/30 hover:bg-slate-900/60 hover:-translate-y-1'}`}>
             <div className="absolute top-0 left-0 w-full h-24 sm:h-32 bg-gradient-to-b from-white/5 to-transparent pointer-events-none"></div>
             
             <div className="p-5 sm:p-6 relative z-10 h-full flex flex-col">
@@ -63,7 +60,7 @@ const GameCard: React.FC<{ game: Game; onPlay: (game: Game) => void; onWatch: (g
                         <img src={logo} alt={game.name} className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-2xl border-2 border-white/5 object-cover shadow-2xl" />
                     </div>
                     <div className="text-right ml-2">
-                        <h3 className="text-lg sm:text-xl font-black text-white russo tracking-tighter leading-none mb-1 truncate max-w-[120px] sm:max-w-none">{game.name}</h3>
+                        <h3 className="text-lg sm:text-xl font-black text-white russo tracking-tighter leading-none mb-1 truncate max-w-[120px] sm:max-w-none uppercase">{game.name}</h3>
                         <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Draw @ {formatTime12h(game.drawTime)}</p>
                     </div>
                 </div>
@@ -72,171 +69,36 @@ const GameCard: React.FC<{ game: Game; onPlay: (game: Game) => void; onWatch: (g
                     <div className="bg-slate-950/60 rounded-2xl p-3 sm:p-4 border border-white/5 text-center min-h-[80px] sm:min-h-[90px] flex flex-col justify-center">
                         {hasFinalWinner ? (
                             <>
-                                <span className="text-[8px] sm:text-[9px] font-black text-emerald-500 uppercase tracking-[0.3em] mb-1">Official Result</span>
+                                <span className="text-[8px] sm:text-[9px] font-black text-emerald-500 uppercase tracking-[0.3em] mb-1">Final Outcome</span>
                                 <span className="text-3xl sm:text-4xl font-black text-white russo gold-shimmer">{game.winningNumber}</span>
                             </>
                         ) : status === 'OPEN' ? (
                             <>
-                                <span className="text-[8px] sm:text-[9px] font-black text-amber-500/60 uppercase tracking-[0.3em] mb-1">Time Remaining</span>
+                                <span className="text-[8px] sm:text-[9px] font-black text-amber-500/60 uppercase tracking-[0.3em] mb-1">Market Closes In</span>
                                 <span className="text-2xl sm:text-3xl font-black text-amber-400 font-mono tracking-tighter">{countdownText}</span>
                             </>
                         ) : (
                             <>
-                                <span className="text-[8px] sm:text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] mb-1">Next Draw @</span>
-                                <span className="text-lg sm:text-xl font-black text-slate-400 font-mono">{formatTime12h(game.drawTime)}</span>
+                                <span className="text-[8px] sm:text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] mb-1">Status</span>
+                                <span className="text-base sm:text-lg font-black text-slate-400 russo uppercase tracking-tighter">Market Closed</span>
                             </>
                         )}
                     </div>
 
                     <button 
                         onClick={() => hasFinalWinner ? onWatch(game) : onPlay(game)} 
-                        disabled={!isVisibleForPlay && !hasFinalWinner}
+                        disabled={!canPlay && !hasFinalWinner}
                         className={`w-full py-3.5 sm:py-4 rounded-2xl font-black text-[10px] sm:text-[11px] uppercase tracking-[0.2em] transition-all duration-300 transform active:scale-95 ${
                             hasFinalWinner 
                             ? 'bg-slate-800 text-amber-400 border border-amber-500/30 hover:bg-slate-700'
-                            : isVisibleForPlay 
+                            : canPlay 
                             ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/10 hover:bg-amber-400' 
                             : 'bg-slate-800 text-slate-600 cursor-not-allowed border border-white/5'
                         }`}
                     >
-                        {hasFinalWinner ? 'View Draw' : 'Play Game'}
+                        {hasFinalWinner ? 'Watch Draw' : 'Play Game'}
                     </button>
                 </div>
-            </div>
-            <div className="h-1 w-full bg-gradient-to-r from-transparent via-amber-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-        </div>
-    );
-};
-
-const ActivityCenter: React.FC<{ bets: Bet[]; games: Game[]; user: User }> = ({ bets, games, user }) => {
-    const [activeTab, setActiveTab] = useState<'history' | 'ledger'>('history');
-    const [dateRange, setDateRange] = useState({ start: getTodayDateString(), end: getTodayDateString() });
-    const [search, setSearch] = useState('');
-
-    const calculateBetPayout = (bet: Bet, game: Game | undefined, userPrizeRates: PrizeRates) => {
-        if (!game || !game.winningNumber || game.winningNumber.includes('_')) return 0;
-        const winningNumber = game.winningNumber;
-        let winsCount = 0;
-        bet.numbers.forEach(num => {
-            let isWin = false;
-            switch (bet.subGameType) {
-                case SubGameType.OneDigitOpen: if (winningNumber.length === 2) isWin = num === winningNumber[0]; break;
-                case SubGameType.OneDigitClose: if (game.name === 'AKC') isWin = num === winningNumber; else if (winningNumber.length === 2) isWin = num === winningNumber[1]; break;
-                default: isWin = num === winningNumber; break;
-            }
-            if (isWin) winsCount++;
-        });
-        const multiplier = bet.subGameType === SubGameType.OneDigitOpen ? userPrizeRates.oneDigitOpen : (bet.subGameType === SubGameType.OneDigitClose ? userPrizeRates.oneDigitClose : userPrizeRates.twoDigit);
-        return winsCount * bet.amountPerNumber * multiplier;
-    };
-
-    const filteredData = useMemo(() => {
-        if (activeTab === 'history') {
-            return (bets || []).filter(b => {
-                const bDate = b.timestamp.toISOString().split('T')[0];
-                const game = games.find(g => g.id === b.gameId);
-                const matchesDate = (!dateRange.start || bDate >= dateRange.start) && (!dateRange.end || bDate <= dateRange.end);
-                const matchesSearch = !search || game?.name.toLowerCase().includes(search.toLowerCase()) || b.subGameType.toLowerCase().includes(search.toLowerCase());
-                return matchesDate && matchesSearch;
-            }).sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-        } else {
-            return (user.ledger || []).filter(e => {
-                const eDate = e.timestamp.toISOString().split('T')[0];
-                return (!dateRange.start || eDate >= dateRange.start) && (!dateRange.end || eDate <= dateRange.end);
-            }).sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-        }
-    }, [activeTab, bets, games, user, dateRange, search]);
-
-    const inputClass = "bg-slate-950/50 border border-white/5 rounded-xl p-2.5 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-300 focus:ring-1 focus:ring-amber-500/50 outline-none transition-all w-full sm:w-auto";
-
-    return (
-        <div className="mt-10 sm:mt-16 bg-slate-900/30 rounded-[1.5rem] sm:rounded-[2rem] border border-white/5 p-4 sm:p-8 backdrop-blur-xl">
-            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-8 sm:mb-10">
-                <div className="flex gap-1.5 sm:gap-2 p-1 sm:p-1.5 bg-slate-950/40 rounded-2xl border border-white/5 w-full sm:w-auto overflow-x-auto no-scrollbar">
-                    <ActivityTab active={activeTab === 'history'} onClick={() => setActiveTab('history')} label="History" icon={Icons.clipboardList} />
-                    <ActivityTab active={activeTab === 'ledger'} onClick={() => setActiveTab('ledger')} label="Ledger" icon={Icons.bookOpen} />
-                </div>
-                <div className="flex flex-col sm:flex-row flex-wrap gap-3 items-center w-full lg:w-auto">
-                    <div className="flex gap-2 items-center w-full sm:w-auto">
-                        <input type="date" value={dateRange.start} onChange={e => setDateRange({...dateRange, start: e.target.value})} className={inputClass} />
-                        <span className="text-slate-700 font-bold text-[10px] uppercase">to</span>
-                        <input type="date" value={dateRange.end} onChange={e => setDateRange({...dateRange, end: e.target.value})} className={inputClass} />
-                    </div>
-                    <div className="flex gap-2 w-full sm:w-auto">
-                        {activeTab === 'history' && (
-                            <div className="relative flex-grow sm:w-48">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600 scale-75">{Icons.search}</span>
-                                <input type="text" placeholder="Filter..." value={search} onChange={e => setSearch(e.target.value)} className={inputClass + " pl-10"} />
-                            </div>
-                        )}
-                        <button onClick={() => setDateRange({start: '', end: ''})} className="shrink-0 px-4 py-2.5 rounded-xl border border-white/5 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-white hover:bg-white/5 transition-all">Clear</button>
-                    </div>
-                </div>
-            </div>
-
-            <div className="overflow-x-auto no-scrollbar -mx-4 sm:mx-0 px-4 sm:px-0">
-                <table className="w-full text-left min-w-[650px]">
-                    <thead className="border-b border-white/5">
-                        <tr>
-                            <th className="pb-4 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-slate-600">Timestamp</th>
-                            {activeTab === 'history' ? (
-                                <>
-                                    <th className="pb-4 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-slate-600">Game Type</th>
-                                    <th className="pb-4 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-slate-600 text-right">Stake</th>
-                                    <th className="pb-4 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-slate-600 text-right">Yield</th>
-                                    <th className="pb-4 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-slate-600 text-right">Status</th>
-                                </>
-                            ) : (
-                                <>
-                                    <th className="pb-4 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-slate-600">Description</th>
-                                    <th className="pb-4 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-slate-600 text-right">Debit</th>
-                                    <th className="pb-4 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-slate-600 text-right">Credit</th>
-                                    <th className="pb-4 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-slate-600 text-right">Balance</th>
-                                </>
-                            )}
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-white/5">
-                        {filteredData.length === 0 ? (
-                            <tr><td colSpan={6} className="py-16 sm:py-20 text-center text-slate-600 font-bold uppercase text-[9px] sm:text-[10px] tracking-widest">Empty synchronized data feed</td></tr>
-                        ) : filteredData.map((item: any) => {
-                            if (activeTab === 'history') {
-                                const game = games.find(g => g.id === item.gameId);
-                                const payout = calculateBetPayout(item, game, user.prizeRates);
-                                const isPending = !game?.winningNumber || game.winningNumber.endsWith('_');
-                                return (
-                                    <tr key={item.id} className="hover:bg-white/[0.02] transition-colors">
-                                        <td className="py-4 sm:py-5 text-[9px] sm:text-[10px] font-mono text-slate-500">{item.timestamp.toLocaleString([], { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' })}</td>
-                                        <td className="py-4 sm:py-5">
-                                            <div className="flex items-center gap-2">
-                                                <div className="russo text-[10px] text-amber-500">{game?.name || '---'}</div>
-                                                <div className="text-[9px] text-slate-600 font-mono tracking-tighter uppercase">{item.subGameType} [{item.numbers.join(',')}]</div>
-                                            </div>
-                                        </td>
-                                        <td className="py-4 sm:py-5 text-right font-mono text-xs font-bold text-slate-300">PKR {item.totalAmount.toFixed(0)}</td>
-                                        <td className="py-4 sm:py-5 text-right font-mono text-xs font-black text-emerald-400">{payout > 0 ? `+${payout.toFixed(2)}` : '-'}</td>
-                                        <td className="py-4 sm:py-5 text-right">
-                                            <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${
-                                                isPending ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : payout > 0 ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20'
-                                            }`}>{isPending ? 'Live' : payout > 0 ? 'Winner' : 'Closed'}</span>
-                                        </td>
-                                    </tr>
-                                );
-                            } else {
-                                const e = item as LedgerEntry;
-                                return (
-                                    <tr key={e.id} className="hover:bg-white/[0.02] transition-colors">
-                                        <td className="py-4 sm:py-5 text-[9px] sm:text-[10px] font-mono text-slate-500">{e.timestamp.toLocaleString()}</td>
-                                        <td className="py-4 sm:py-5 text-[11px] font-bold text-white uppercase">{e.description}</td>
-                                        <td className="py-4 sm:py-5 text-right font-mono text-xs text-red-400">{e.debit > 0 ? e.debit.toFixed(2) : '-'}</td>
-                                        <td className="py-4 sm:py-5 text-right font-mono text-xs text-emerald-400">{e.credit > 0 ? e.credit.toFixed(2) : '-'}</td>
-                                        <td className="py-4 sm:py-5 text-right font-mono text-xs font-black text-white">PKR {e.balance.toFixed(2)}</td>
-                                    </tr>
-                                );
-                            }
-                        })}
-                    </tbody>
-                </table>
             </div>
         </div>
     );
@@ -244,7 +106,6 @@ const ActivityCenter: React.FC<{ bets: Bet[]; games: Game[]; user: User }> = ({ 
 
 const BettingModal: React.FC<{
     game: Game | null;
-    games: Game[];
     user: User;
     onClose: () => void;
     onPlaceBet: (details: any) => Promise<void>;
@@ -261,11 +122,11 @@ const BettingModal: React.FC<{
     const isSingleDigitGame = game.name === 'AK' || game.name === 'AKC';
 
     const calculatedNumbers = useMemo(() => {
-        // Advanced parsing to handle any separators (comma, dash, newline, space, dot)
+        // Robust splitter to handle spaces, commas, dots, dashes and newlines
         const rawList = numbers.split(/[-,.\s\n\r]+/).filter(n => n.trim().length > 0).map(n => n.trim());
         
         if (subGameType === SubGameType.Combo) {
-            // Generate all pairs from provided single digits
+            // Generate unique pairs from any sequence of digits entered
             const digits = rawList.join('').split('').filter((v, i, a) => a.indexOf(v) === i);
             const combos: string[] = [];
             for (let i = 0; i < digits.length; i++) {
@@ -289,7 +150,7 @@ const BettingModal: React.FC<{
             await onPlaceBet({
                 gameId: game.id,
                 betGroups: [{
-                    // Backend expects specific mapped types
+                    // Bulk and Combo both translate to standard 2-Digit entries for the backend
                     subGameType: (subGameType === SubGameType.Combo || subGameType === SubGameType.Bulk) ? SubGameType.TwoDigit : subGameType,
                     numbers: calculatedNumbers,
                     amountPerNumber: Number(amount)
@@ -298,34 +159,34 @@ const BettingModal: React.FC<{
             setNumbers('');
             setAmount('');
         } catch (err) {
-            // Error managed via parent state
+            // Error managed via parent UserPanel's apiError state
         } finally {
             setIsProcessing(false);
         }
     };
 
     const modeInfo = {
-        [SubGameType.TwoDigit]: { label: '2-Digit', desc: 'Standard pairs (00-99)', color: 'amber' },
-        [SubGameType.OneDigitOpen]: { label: 'Open', desc: 'First digit only (0-9)', color: 'sky' },
-        [SubGameType.OneDigitClose]: { label: 'Close', desc: 'Second digit only (0-9)', color: 'emerald' },
+        [SubGameType.TwoDigit]: { label: '2-Digit', desc: 'Enter standard pairs (00-99)', color: 'amber' },
+        [SubGameType.OneDigitOpen]: { label: 'Open', desc: 'Enter first digit (0-9)', color: 'sky' },
+        [SubGameType.OneDigitClose]: { label: 'Close', desc: 'Enter second digit (0-9)', color: 'emerald' },
         [SubGameType.Bulk]: { label: 'Bulk', desc: 'Paste multiple pairs at once', color: 'indigo' },
-        [SubGameType.Combo]: { label: 'Combo', desc: 'Play all combinations of digits', color: 'pink' }
+        [SubGameType.Combo]: { label: 'Combo', desc: 'Combines all digits entered into pairs', color: 'pink' }
     };
 
     return (
-        <div className="fixed inset-0 z-[100] bg-slate-950/95 backdrop-blur-2xl flex items-center justify-center p-4 overflow-y-auto">
-            <div className="bg-slate-900 border border-white/10 rounded-[2rem] w-full max-w-lg overflow-hidden shadow-2xl animate-fade-in my-auto">
+        <div className="fixed inset-0 z-[9999] bg-slate-950/95 backdrop-blur-2xl flex items-center justify-center p-4 overflow-y-auto no-scrollbar">
+            <div className="bg-slate-900 border border-white/10 rounded-[2.5rem] w-full max-w-lg overflow-hidden shadow-2xl animate-fade-in my-auto">
                 <div className="p-8 sm:p-10">
                     <div className="flex justify-between items-start mb-8">
                         <div>
-                            <h3 className="text-2xl font-black text-white russo tracking-tighter mb-1 uppercase">GAME ENTRY TICKET</h3>
+                            <h3 className="text-2xl font-black text-white russo tracking-tighter mb-1 uppercase">GAME TICKET</h3>
                             <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{game.name} // Draw @ {formatTime12h(game.drawTime)}</p>
                         </div>
                         <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full text-slate-500 hover:text-white transition-all">{Icons.close}</button>
                     </div>
 
                     <div className="space-y-6">
-                        <div className="flex gap-1 p-1 bg-slate-950/60 rounded-2xl border border-white/5 overflow-x-auto no-scrollbar">
+                        <div className="flex gap-1.5 p-1 bg-slate-950/60 rounded-2xl border border-white/5 overflow-x-auto no-scrollbar">
                             {(isSingleDigitGame 
                                 ? [SubGameType.OneDigitOpen, SubGameType.OneDigitClose] 
                                 : [SubGameType.TwoDigit, SubGameType.OneDigitOpen, SubGameType.OneDigitClose, SubGameType.Bulk, SubGameType.Combo]
@@ -333,8 +194,8 @@ const BettingModal: React.FC<{
                                 <button
                                     key={type}
                                     onClick={() => { setSubGameType(type); setNumbers(''); }}
-                                    className={`shrink-0 py-3 px-4 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${
-                                        subGameType === type ? 'bg-amber-500 text-slate-950 shadow-lg' : 'text-slate-500 hover:text-slate-300'
+                                    className={`shrink-0 py-3 px-5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${
+                                        subGameType === type ? 'bg-amber-500 text-slate-950 shadow-lg' : 'bg-transparent text-slate-500 hover:text-slate-300'
                                     }`}
                                 >
                                     {modeInfo[type].label}
@@ -385,19 +246,154 @@ const BettingModal: React.FC<{
 
                         <div className="bg-slate-950/60 p-6 rounded-2xl border border-white/10 flex justify-between items-center">
                             <div>
-                                <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">Total Ticket Value</p>
+                                <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">Total Stake</p>
                                 <p className="text-xl font-black text-white russo tracking-tighter">PKR {totalStake.toLocaleString()}</p>
                             </div>
                             <button
                                 onClick={handleConfirm}
                                 disabled={isProcessing || !amount || calculatedNumbers.length === 0}
-                                className="bg-amber-500 hover:bg-amber-400 disabled:bg-slate-800 disabled:text-slate-600 text-slate-950 font-black px-8 py-3 rounded-xl transition-all uppercase tracking-widest text-[11px] shadow-lg"
+                                className="bg-amber-500 hover:bg-amber-400 disabled:bg-slate-800 disabled:text-slate-600 text-slate-950 font-black px-8 py-3 rounded-xl transition-all uppercase tracking-widest text-[11px] shadow-lg shadow-amber-500/10"
                             >
-                                {isProcessing ? 'PROCESSING...' : 'SUBMIT TICKET'}
+                                {isProcessing ? 'SUBMITTING...' : 'CONFIRM TICKET'}
                             </button>
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    );
+};
+
+const ActivityCenter: React.FC<{ bets: Bet[]; games: Game[]; user: User }> = ({ bets, games, user }) => {
+    const [activeTab, setActiveTab] = useState<'history' | 'ledger'>('history');
+    const [dateRange, setDateRange] = useState({ start: getTodayDateString(), end: getTodayDateString() });
+    const [search, setSearch] = useState('');
+
+    const calculateBetPayout = (bet: Bet, game: Game | undefined, userPrizeRates: PrizeRates) => {
+        if (!game || !game.winningNumber || game.winningNumber.includes('_')) return 0;
+        const winningNumber = game.winningNumber;
+        let winsCount = 0;
+        bet.numbers.forEach(num => {
+            let isWin = false;
+            switch (bet.subGameType) {
+                case SubGameType.OneDigitOpen: if (winningNumber.length === 2) isWin = num === winningNumber[0]; break;
+                case SubGameType.OneDigitClose: if (game.name === 'AKC') isWin = num === winningNumber; else if (winningNumber.length === 2) isWin = num === winningNumber[1]; break;
+                default: isWin = num === winningNumber; break;
+            }
+            if (isWin) winsCount++;
+        });
+        const multipliers = userPrizeRates || { oneDigitOpen: 0, oneDigitClose: 0, twoDigit: 0 };
+        const multiplier = bet.subGameType === SubGameType.OneDigitOpen ? multipliers.oneDigitOpen : (bet.subGameType === SubGameType.OneDigitClose ? multipliers.oneDigitClose : multipliers.twoDigit);
+        return winsCount * bet.amountPerNumber * multiplier;
+    };
+
+    const filteredData = useMemo(() => {
+        if (activeTab === 'history') {
+            return (bets || []).filter(b => {
+                const bDate = b.timestamp.toISOString().split('T')[0];
+                const game = games.find(g => g.id === b.gameId);
+                const matchesDate = (!dateRange.start || bDate >= dateRange.start) && (!dateRange.end || bDate <= dateRange.end);
+                const matchesSearch = !search || game?.name.toLowerCase().includes(search.toLowerCase()) || b.subGameType.toLowerCase().includes(search.toLowerCase());
+                return matchesDate && matchesSearch;
+            }).sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+        } else {
+            return (user.ledger || []).filter(e => {
+                const eDate = e.timestamp.toISOString().split('T')[0];
+                return (!dateRange.start || eDate >= dateRange.start) && (!dateRange.end || eDate <= dateRange.end);
+            }).sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+        }
+    }, [activeTab, bets, games, user, dateRange, search]);
+
+    const inputClass = "bg-slate-950/50 border border-white/5 rounded-xl p-2.5 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-300 focus:ring-1 focus:ring-amber-500/50 outline-none transition-all w-full sm:w-auto";
+
+    return (
+        <div className="mt-10 sm:mt-16 bg-slate-900/30 rounded-[1.5rem] sm:rounded-[2rem] border border-white/5 p-4 sm:p-8 backdrop-blur-xl">
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-8 sm:mb-10">
+                <div className="flex gap-1.5 sm:gap-2 p-1 sm:p-1.5 bg-slate-950/40 rounded-2xl border border-white/5 w-full sm:w-auto overflow-x-auto no-scrollbar">
+                    <ActivityTab active={activeTab === 'history'} onClick={() => setActiveTab('history')} label="History" icon={Icons.clipboardList} />
+                    <ActivityTab active={activeTab === 'ledger'} onClick={() => setActiveTab('ledger')} label="Ledger" icon={Icons.bookOpen} />
+                </div>
+                <div className="flex flex-col sm:flex-row flex-wrap gap-3 items-center w-full lg:w-auto">
+                    <div className="flex gap-2 items-center w-full sm:w-auto">
+                        <input type="date" value={dateRange.start} onChange={e => setDateRange({...dateRange, start: e.target.value})} className={inputClass} />
+                        <span className="text-slate-700 font-bold text-[10px] uppercase">to</span>
+                        <input type="date" value={dateRange.end} onChange={e => setDateRange({...dateRange, end: e.target.value})} className={inputClass} />
+                    </div>
+                    <div className="flex gap-2 w-full sm:w-auto">
+                        {activeTab === 'history' && (
+                            <div className="relative flex-grow sm:w-48">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600 scale-75">{Icons.search}</span>
+                                <input type="text" placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} className={inputClass + " pl-10"} />
+                            </div>
+                        )}
+                        <button onClick={() => setDateRange({start: '', end: ''})} className="shrink-0 px-4 py-2.5 rounded-xl border border-white/5 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-white hover:bg-white/5 transition-all">Reset</button>
+                    </div>
+                </div>
+            </div>
+
+            <div className="overflow-x-auto no-scrollbar -mx-4 sm:mx-0 px-4 sm:px-0">
+                <table className="w-full text-left min-w-[650px]">
+                    <thead className="border-b border-white/5">
+                        <tr>
+                            <th className="pb-4 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-slate-600">Timestamp</th>
+                            {activeTab === 'history' ? (
+                                <>
+                                    <th className="pb-4 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-slate-600">Game / Type</th>
+                                    <th className="pb-4 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-slate-600 text-right">Stake</th>
+                                    <th className="pb-4 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-slate-600 text-right">Winning</th>
+                                    <th className="pb-4 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-slate-600 text-right">Status</th>
+                                </>
+                            ) : (
+                                <>
+                                    <th className="pb-4 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-slate-600">Description</th>
+                                    <th className="pb-4 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-slate-600 text-right">Debit</th>
+                                    <th className="pb-4 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-slate-600 text-right">Credit</th>
+                                    <th className="pb-4 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-slate-600 text-right">Balance</th>
+                                </>
+                            )}
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                        {filteredData.length === 0 ? (
+                            <tr><td colSpan={6} className="py-16 sm:py-20 text-center text-slate-600 font-bold uppercase text-[9px] sm:text-[10px] tracking-widest">No entries found for this period</td></tr>
+                        ) : filteredData.map((item: any) => {
+                            if (activeTab === 'history') {
+                                const game = games.find(g => g.id === item.gameId);
+                                const payout = calculateBetPayout(item, game, user.prizeRates);
+                                const isPending = !game?.winningNumber || game.winningNumber.endsWith('_');
+                                return (
+                                    <tr key={item.id} className="hover:bg-white/[0.02] transition-colors group">
+                                        <td className="py-4 sm:py-5 text-[9px] sm:text-[10px] font-mono text-slate-500 whitespace-nowrap">{item.timestamp.toLocaleString([], { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' })}</td>
+                                        <td className="py-4 sm:py-5">
+                                            <div className="flex items-center gap-2">
+                                                <div className="russo text-[10px] text-amber-500 uppercase">{game?.name || '---'}</div>
+                                                <div className="text-[9px] text-slate-500 font-mono truncate max-w-[150px] uppercase">[{item.subGameType}]: {item.numbers.join(',')}</div>
+                                            </div>
+                                        </td>
+                                        <td className="py-4 sm:py-5 text-right font-mono text-xs font-bold text-slate-300">PKR {item.totalAmount.toFixed(0)}</td>
+                                        <td className="py-4 sm:py-5 text-right font-mono text-xs font-black text-emerald-400">{payout > 0 ? `+${payout.toFixed(2)}` : '-'}</td>
+                                        <td className="py-4 sm:py-5 text-right">
+                                            <span className={`text-[8px] sm:text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-full border ${
+                                                isPending ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : payout > 0 ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20'
+                                            }`}>{isPending ? 'Live' : payout > 0 ? 'Winner' : 'Closed'}</span>
+                                        </td>
+                                    </tr>
+                                );
+                            } else {
+                                const e = item as LedgerEntry;
+                                return (
+                                    <tr key={e.id} className="hover:bg-white/[0.02] transition-colors">
+                                        <td className="py-4 sm:py-5 text-[9px] sm:text-[10px] font-mono text-slate-500">{e.timestamp.toLocaleString()}</td>
+                                        <td className="py-4 sm:py-5 text-[11px] font-bold text-white uppercase tracking-wider">{e.description}</td>
+                                        <td className="py-4 sm:py-5 text-right font-mono text-xs text-red-400">{e.debit > 0 ? e.debit.toFixed(2) : '-'}</td>
+                                        <td className="py-4 sm:py-5 text-right font-mono text-xs text-emerald-400">{e.credit > 0 ? e.credit.toFixed(2) : '-'}</td>
+                                        <td className="py-4 sm:py-5 text-right font-mono text-xs font-black text-white">PKR {e.balance.toFixed(2)}</td>
+                                    </tr>
+                                );
+                            }
+                        })}
+                    </tbody>
+                </table>
             </div>
         </div>
     );
@@ -413,7 +409,7 @@ const UserPanel: React.FC<any> = ({ user, games, bets, placeBet, onWatchDraw }) 
             setSelectedGame(null);
             setApiError(null);
         } catch (err: any) {
-            setApiError(err.message || "Execution Failed");
+            setApiError(err.message || "Entry submission failed.");
         }
     };
 
@@ -431,21 +427,21 @@ const UserPanel: React.FC<any> = ({ user, games, bets, placeBet, onWatchDraw }) 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 animate-fade-in">
             <div className="flex flex-col xl:flex-row gap-6 sm:gap-8 items-start justify-between mb-10 sm:mb-16">
                 <div className="space-y-2 w-full xl:w-auto">
-                    <div className="inline-block bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-full text-[8px] sm:text-[9px] font-black text-amber-500 uppercase tracking-[0.3em] mb-2 animate-pulse">Member Portal Node</div>
+                    <div className="inline-block bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-full text-[8px] sm:text-[9px] font-black text-amber-500 uppercase tracking-[0.3em] mb-2 animate-pulse">Account verified</div>
                     <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white russo tracking-tighter leading-tight uppercase">GAME <span className="text-amber-500">TERMINAL</span></h1>
-                    <p className="text-slate-500 text-[11px] sm:text-sm font-medium">Player session active: <span className="text-white font-bold">{user.name}</span></p>
+                    <p className="text-slate-500 text-[11px] sm:text-sm font-medium">Verified session active for <span className="text-white font-bold">{user.name}</span></p>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 w-full xl:w-auto">
-                    <StatCard title="Wallet Balance" value={`PKR ${stats.netWorth.toLocaleString(undefined, {minimumFractionDigits: 2})}`} icon={Icons.wallet} color="text-amber-500" />
-                    <StatCard title="Today's Total" value={`PKR ${stats.todayVolume.toLocaleString()}`} icon={Icons.chartBar} color="text-cyan-400" />
-                    <StatCard title="Total Entries" value={stats.activeTickets} icon={Icons.clipboardList} color="text-emerald-400" />
+                    <StatCard title="Wallet Liquidity" value={`PKR ${stats.netWorth.toLocaleString(undefined, {minimumFractionDigits: 2})}`} icon={Icons.wallet} color="text-amber-500" />
+                    <StatCard title="Today's Stake" value={`PKR ${stats.todayVolume.toLocaleString()}`} icon={Icons.chartBar} color="text-cyan-400" />
+                    <StatCard title="Entry Count" value={stats.activeTickets} icon={Icons.clipboardList} color="text-emerald-400" />
                 </div>
             </div>
 
             <div className="mb-10">
                 <div className="flex items-center gap-3 mb-6 sm:mb-8">
                     <div className="w-8 sm:w-10 h-1 bg-amber-500 rounded-full"></div>
-                    <h2 className="text-[10px] sm:text-xs font-black text-slate-500 uppercase tracking-[0.4em]">Active Markets</h2>
+                    <h2 className="text-[10px] sm:text-xs font-black text-slate-500 uppercase tracking-[0.4em]">Available Markets</h2>
                 </div>
                 <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 md:gap-8">
                     {games.map(g => <GameCard key={g.id} game={g} onPlay={(game) => { setApiError(null); setSelectedGame(game); }} onWatch={() => onWatchDraw(g)} isRestricted={user.isRestricted} />)}
@@ -454,7 +450,16 @@ const UserPanel: React.FC<any> = ({ user, games, bets, placeBet, onWatchDraw }) 
 
             <ActivityCenter bets={bets} games={games} user={user} />
 
-            <BettingModal game={selectedGame} games={games} user={user} onClose={() => setSelectedGame(null)} onPlaceBet={handlePlaceBet} apiError={apiError} clearApiError={() => setApiError(null)} />
+            {selectedGame && (
+                <BettingModal 
+                    game={selectedGame} 
+                    user={user} 
+                    onClose={() => setSelectedGame(null)} 
+                    onPlaceBet={handlePlaceBet} 
+                    apiError={apiError} 
+                    clearApiError={() => setApiError(null)} 
+                />
+            )}
         </div>
     );
 };

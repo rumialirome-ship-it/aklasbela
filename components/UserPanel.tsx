@@ -43,10 +43,7 @@ const GameCard: React.FC<{ game: Game; onPlay: (game: Game) => void; onWatch: (g
     const { status, text: countdownText } = useCountdown(game.drawTime);
     const hasFinalWinner = !!game.winningNumber && !game.winningNumber.endsWith('_');
     
-    // UI Logic: Allow play if game is not settled and user isn't blocked
-    // Server will perform the strict market open/close check
     const canPlay = !isRestricted && !hasFinalWinner;
-    
     const logo = getDynamicLogo(game.name);
 
     return (
@@ -121,12 +118,28 @@ const BettingModal: React.FC<{
 
     const isSingleDigitGame = game.name === 'AK' || game.name === 'AKC';
 
+    const handleNumberInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const val = e.target.value;
+        
+        // Auto-comma logic for 2-Digit game mode
+        if (subGameType === SubGameType.TwoDigit) {
+            const digitsOnly = val.replace(/\D/g, '');
+            const pairs = digitsOnly.match(/.{1,2}/g) || [];
+            setNumbers(pairs.join(', '));
+        } else if (subGameType === SubGameType.OneDigitOpen || subGameType === SubGameType.OneDigitClose) {
+            // Auto-comma logic for 1-Digit modes
+            const digitsOnly = val.replace(/\D/g, '');
+            const singles = digitsOnly.split('');
+            setNumbers(singles.join(', '));
+        } else {
+            setNumbers(val);
+        }
+    };
+
     const calculatedNumbers = useMemo(() => {
-        // Robust splitter to handle spaces, commas, dots, dashes and newlines
         const rawList = numbers.split(/[-,.\s\n\r]+/).filter(n => n.trim().length > 0).map(n => n.trim());
         
         if (subGameType === SubGameType.Combo) {
-            // Generate unique pairs from any sequence of digits entered
             const digits = rawList.join('').split('').filter((v, i, a) => a.indexOf(v) === i);
             const combos: string[] = [];
             for (let i = 0; i < digits.length; i++) {
@@ -150,7 +163,6 @@ const BettingModal: React.FC<{
             await onPlaceBet({
                 gameId: game.id,
                 betGroups: [{
-                    // Bulk and Combo both translate to standard 2-Digit entries for the backend
                     subGameType: (subGameType === SubGameType.Combo || subGameType === SubGameType.Bulk) ? SubGameType.TwoDigit : subGameType,
                     numbers: calculatedNumbers,
                     amountPerNumber: Number(amount)
@@ -159,14 +171,14 @@ const BettingModal: React.FC<{
             setNumbers('');
             setAmount('');
         } catch (err) {
-            // Error managed via parent UserPanel's apiError state
+            // Error managed via parent
         } finally {
             setIsProcessing(false);
         }
     };
 
     const modeInfo = {
-        [SubGameType.TwoDigit]: { label: '2-Digit', desc: 'Enter standard pairs (00-99)', color: 'amber' },
+        [SubGameType.TwoDigit]: { label: '2-Digit', desc: 'Enter pairs (00-99) - Auto Formatting Active', color: 'amber' },
         [SubGameType.OneDigitOpen]: { label: 'Open', desc: 'Enter first digit (0-9)', color: 'sky' },
         [SubGameType.OneDigitClose]: { label: 'Close', desc: 'Enter second digit (0-9)', color: 'emerald' },
         [SubGameType.Bulk]: { label: 'Bulk', desc: 'Paste multiple pairs at once', color: 'indigo' },
@@ -207,13 +219,13 @@ const BettingModal: React.FC<{
                             <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">{modeInfo[subGameType].desc}</label>
                             {subGameType === SubGameType.Bulk ? (
                                 <textarea 
-                                    rows={4} value={numbers} onChange={e => setNumbers(e.target.value)}
+                                    rows={4} value={numbers} onChange={handleNumberInputChange}
                                     className="w-full bg-slate-950/80 p-4 rounded-2xl border border-white/10 focus:ring-2 focus:ring-amber-500/50 focus:outline-none text-white font-mono placeholder-slate-800 text-sm"
                                     placeholder="Paste many numbers (e.g. 14, 25, 88...)"
                                 />
                             ) : (
                                 <input 
-                                    type="text" value={numbers} onChange={e => setNumbers(e.target.value)}
+                                    type="text" value={numbers} onChange={handleNumberInputChange}
                                     className="w-full bg-slate-950/80 p-4 rounded-2xl border border-white/10 focus:ring-2 focus:ring-amber-500/50 focus:outline-none text-white font-mono placeholder-slate-800"
                                     placeholder={subGameType === SubGameType.Combo ? "Enter digits (e.g. 123)" : "Enter number(s)"}
                                 />

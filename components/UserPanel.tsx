@@ -44,8 +44,11 @@ const ActivityTab: React.FC<{ active: boolean; onClick: () => void; label: strin
 const GameCard: React.FC<{ game: Game; onPlay: (game: Game) => void; onWatch: (game: Game) => void; isRestricted: boolean; }> = ({ game, onPlay, onWatch, isRestricted }) => {
     const { status, text: countdownText } = useCountdown(game.drawTime);
     const hasFinalWinner = !!game.winningNumber && !game.winningNumber.endsWith('_');
-    const isMarketClosedForDisplay = !game.isMarketOpen;
-    const isPlayable = !!game.isMarketOpen && !isRestricted && status === 'OPEN';
+    
+    // UI Logic update: Relaxed isPlayable to ensure user can click even if clock sync is slightly off.
+    // The server will perform the final validation.
+    const isPlayable = !isRestricted && !hasFinalWinner && status !== 'CLOSED';
+    
     const logo = getDynamicLogo(game.name);
 
     return (
@@ -71,20 +74,20 @@ const GameCard: React.FC<{ game: Game; onPlay: (game: Game) => void; onWatch: (g
                                 <span className="text-[8px] sm:text-[9px] font-black text-emerald-500 uppercase tracking-[0.3em] mb-1">Market Settled</span>
                                 <span className="text-3xl sm:text-4xl font-black text-white russo gold-shimmer">{game.winningNumber}</span>
                             </>
-                        ) : isMarketClosedForDisplay ? (
-                            <>
-                                <span className="text-[8px] sm:text-[9px] font-black text-red-500 uppercase tracking-[0.3em] mb-1">Status</span>
-                                <span className="text-base sm:text-lg font-black text-slate-400 russo uppercase tracking-tighter">Market Suspended</span>
-                            </>
                         ) : status === 'OPEN' ? (
                             <>
                                 <span className="text-[8px] sm:text-[9px] font-black text-amber-500/60 uppercase tracking-[0.3em] mb-1">Trading Closes</span>
                                 <span className="text-2xl sm:text-3xl font-black text-amber-400 font-mono tracking-tighter">{countdownText}</span>
                             </>
-                        ) : (
+                        ) : status === 'SOON' ? (
                             <>
                                 <span className="text-[8px] sm:text-[9px] font-black text-slate-600 uppercase tracking-[0.3em] mb-1">Market Opens</span>
                                 <span className="text-lg sm:text-xl font-black text-slate-500 font-mono">{countdownText}</span>
+                            </>
+                        ) : (
+                            <>
+                                <span className="text-[8px] sm:text-[9px] font-black text-red-500 uppercase tracking-[0.3em] mb-1">Status</span>
+                                <span className="text-base sm:text-lg font-black text-slate-400 russo uppercase tracking-tighter">Market Closed</span>
                             </>
                         )}
                     </div>
@@ -311,6 +314,7 @@ const BettingModal: React.FC<{
             setNumbers('');
             setAmount('');
         } catch (err) {
+            // Error is handled in the parent's handlePlaceBet catch block
         } finally {
             setIsProcessing(false);
         }
@@ -432,6 +436,7 @@ const UserPanel: React.FC<any> = ({ user, games, bets, placeBet, onWatchDraw }) 
         try {
             await placeBet(details);
             setSelectedGame(null);
+            setApiError(null);
         } catch (err: any) {
             setApiError(err.message || "Execution Error");
         }
@@ -473,7 +478,7 @@ const UserPanel: React.FC<any> = ({ user, games, bets, placeBet, onWatchDraw }) 
                     <h2 className="text-[10px] sm:text-xs font-black text-slate-500 uppercase tracking-[0.4em]">Exchange Markets</h2>
                 </div>
                 <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 md:gap-8">
-                    {games.map(g => <GameCard key={g.id} game={g} onPlay={setSelectedGame} onWatch={() => onWatchDraw(g)} isRestricted={user.isRestricted} />)}
+                    {games.map(g => <GameCard key={g.id} game={g} onPlay={(game) => { setApiError(null); setSelectedGame(game); }} onWatch={() => onWatchDraw(g)} isRestricted={user.isRestricted} />)}
                 </div>
             </div>
 

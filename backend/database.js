@@ -7,37 +7,42 @@ const DB_PATH = path.join(__dirname, 'database.sqlite');
 let db;
 
 // --- CENTRALIZED GAME TIMING LOGIC (PKT TIMEZONE) ---
-const PKT_OFFSET_HOURS = 5;
+const PKT_OFFSET_MS = 5 * 60 * 60 * 1000;
 const OPEN_HOUR_PKT = 16; // 4:00 PM in Pakistan
 
 function getGameCycle(drawTime) {
-    const now = new Date(); // UTC
-    if (!drawTime) return { openTime: now, closeTime: now };
+    if (!drawTime) return { openTime: new Date(0), closeTime: new Date(0) };
+
+    const nowUTC = new Date();
+    const nowPKT = new Date(nowUTC.getTime() + PKT_OFFSET_MS);
     
-    const [drawHoursPKT, drawMinutesPKT] = drawTime.split(':').map(Number);
-    const year = now.getUTCFullYear();
-    const month = now.getUTCMonth();
-    const day = now.getUTCDate();
-    const openHourUTC = OPEN_HOUR_PKT - PKT_OFFSET_HOURS; // 11:00 AM UTC
-    const todayOpen = new Date(Date.UTC(year, month, day, openHourUTC, 0, 0));
-    const yesterdayOpen = new Date(todayOpen.getTime() - (24 * 60 * 60 * 1000));
+    const [drawH, drawM] = drawTime.split(':').map(Number);
+    
+    // Create a date object for the draw time on the "current" PKT day
+    let closePKT = new Date(nowPKT);
+    closePKT.setHours(drawH, drawM, 0, 0);
 
-    const calculateCloseTime = (openDate) => {
-        const closeDate = new Date(openDate.getTime());
-        const drawHourUTC = drawHoursPKT - PKT_OFFSET_HOURS;
-        closeDate.setUTCHours(drawHourUTC, drawMinutesPKT, 0, 0);
-        if (drawHoursPKT < OPEN_HOUR_PKT) {
-            closeDate.setUTCDate(closeDate.getUTCDate() + 1);
-        }
-        return closeDate;
-    };
-
-    const yesterdayCycleClose = calculateCloseTime(yesterdayOpen);
-    if (now >= yesterdayOpen && now < yesterdayCycleClose) {
-        return { openTime: yesterdayOpen, closeTime: yesterdayCycleClose };
+    // If the draw hour is early (e.g., 00:55, 02:10), it belongs to the cycle that started YESTERDAY 4PM
+    // and ends TODAY early morning.
+    // If the draw hour is late (e.g., 18:15, 21:55), it belongs to the cycle that starts TODAY 4PM.
+    
+    let openPKT = new Date(closePKT);
+    if (drawH < OPEN_HOUR_PKT) {
+        // This is an early morning draw (e.g., LS3 at 02:10 AM)
+        // It belongs to the cycle that started at 4PM the day before.
+        openPKT.setDate(openPKT.getDate() - 1);
+        openPKT.setHours(OPEN_HOUR_PKT, 0, 0, 0);
+    } else {
+        // This is an evening draw (e.g., Ali Baba at 6:15 PM)
+        // It belongs to the cycle starting at 4PM today.
+        openPKT.setHours(OPEN_HOUR_PKT, 0, 0, 0);
     }
-    const todayCycleClose = calculateCloseTime(todayOpen);
-    return { openTime: todayOpen, closeTime: todayCycleClose };
+
+    // Convert back to UTC for standard comparison
+    return {
+        openTime: new Date(openPKT.getTime() - PKT_OFFSET_MS),
+        closeTime: new Date(closePKT.getTime() - PKT_OFFSET_MS)
+    };
 }
 
 function isGameOpen(drawTime) {
@@ -56,10 +61,7 @@ const connect = () => {
         // Migration for isVisible column
         try {
             db.prepare("ALTER TABLE games ADD COLUMN isVisible INTEGER DEFAULT 1").run();
-            console.log('[DB] Migration: Added isVisible to games.');
-        } catch (e) {
-            // Already exists
-        }
+        } catch (e) {}
 
         console.log('[DB] Database connected.');
         return true;
@@ -323,7 +325,6 @@ const findUserByDealer = (uId, dId) => {
 };
 
 const createUser = (u, dId, dep = 0) => {
-    // Global ID uniqueness check
     const existing = findAccountForLogin(u.id);
     if (existing.account) throw { status: 400, message: `The ID "${u.id}" is already taken on the platform.` };
     
@@ -432,14 +433,23 @@ const placeBulkBets = (uId, gId, groups, placedBy = 'USER') => {
         if (!user || user.isRestricted) throw { status: 403, message: 'Restricted or not found.' };
         const dealer = findAccountById(user.dealerId, 'dealers');
         const game = findAccountById(gId, 'games');
+        if (!game) throw { status: 404, message: 'Market not found.' };
+        
+        // Ensure market is open
+        if (!isGameOpen(game.drawTime)) {
+            throw { status: 400, message: `Market Closed: Trading for ${game.name} is currently suspended.` };
+        }
+
         const admin = findAccountById('Guru', 'admins');
         const globalLimits = db.prepare('SELECT * FROM number_limits').all();
         const existingBets = db.prepare('SELECT * FROM bets WHERE gameId = ?').all(gId);
         const userExistingTotal = existingBets.filter(b => b.userId === uId).reduce((s, b) => s + b.totalAmount, 0);
         const requestTotal = groups.reduce((s, g) => s + g.numbers.length * g.amountPerNumber, 0);
+        
         if (user.betLimits?.perDraw > 0 && (userExistingTotal + requestTotal) > user.betLimits.perDraw) {
             throw { status: 400, message: `Limit Reached: Draw total exceeds your PKR ${user.betLimits.perDraw} limit.` };
         }
+        
         const numberStakeMap = new Map();
         existingBets.forEach(b => {
             const nums = typeof b.numbers === 'string' ? JSON.parse(b.numbers) : b.numbers;
@@ -449,6 +459,7 @@ const placeBulkBets = (uId, gId, groups, placedBy = 'USER') => {
                 numberStakeMap.set(key, (numberStakeMap.get(key) || 0) + b.amountPerNumber);
             });
         });
+
         groups.forEach(g => {
             const stake = g.amountPerNumber;
             const type = g.subGameType;
@@ -467,9 +478,12 @@ const placeBulkBets = (uId, gId, groups, placedBy = 'USER') => {
                 }
             });
         });
+
         if (user.wallet < requestTotal) throw { status: 400, message: `Insufficient funds.` };
+        
         const userComm = requestTotal * (user.commissionRate / 100);
         const dComm = requestTotal * ((dealer.commissionRate - user.commissionRate) / 100);
+        
         addLedgerEntry(user.id, 'USER', `Bet placed on ${game.name}`, requestTotal, 0);
         if (userComm > 0) addLedgerEntry(user.id, 'USER', `Comm earned`, 0, userComm);
         addLedgerEntry(admin.id, 'ADMIN', `Stake: ${user.name}`, 0, requestTotal);
@@ -478,6 +492,7 @@ const placeBulkBets = (uId, gId, groups, placedBy = 'USER') => {
             addLedgerEntry(admin.id, 'ADMIN', `Comm to dealer`, dComm, 0); 
             addLedgerEntry(dealer.id, 'DEALER', `Comm from ${user.name}`, 0, dComm); 
         }
+
         const created = [];
         groups.forEach(g => {
             const b = { 

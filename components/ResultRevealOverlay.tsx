@@ -325,6 +325,69 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({
           </div>
         </div>
 
+        {/* TOP TRANSPARENT PIPE */}
+<div
+  className="absolute z-30 pointer-events-none"
+  style={{
+    width: `${chamberPx * 0.25}px`,
+    height: `${chamberPx * 0.6}px`,
+    top: `calc(50% - ${chamberPx * 0.8}px)`,
+    left: '50%',
+    transform: 'translateX(-50%)',
+  }}
+>
+  <svg
+    viewBox="0 0 100 300"
+    className="w-full h-full"
+    preserveAspectRatio="xMidYMid meet"
+  >
+    <defs>
+      <linearGradient id="topPipeGloss" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stopColor="rgba(255,255,255,0.02)" />
+        <stop offset="50%" stopColor="rgba(255,255,255,0.18)" />
+        <stop offset="100%" stopColor="rgba(255,255,255,0.02)" />
+      </linearGradient>
+    </defs>
+
+    {/* Pipe body */}
+    <rect
+      x="20"
+      y="0"
+      width="60"
+      height="240"
+      rx="30"
+      fill="rgba(255,255,255,0.03)"
+      stroke="url(#topPipeGloss)"
+      strokeWidth="2"
+    />
+
+    {/* Dead-end outlet */}
+    <circle
+      cx="50"
+      cy="260"
+      r="28"
+      fill="rgba(2,6,23,0.9)"
+      stroke="rgba(245,158,11,0.6)"
+      strokeWidth="3"
+    />
+
+    {/* Number shown at pipe end */}
+    {phase === 'EXITING' && (
+      <text
+        x="50"
+        y="268"
+        textAnchor="middle"
+        fill="#f59e0b"
+        fontSize="20"
+        fontWeight="900"
+      >
+        {winningNumber}
+      </text>
+    )}
+  </svg>
+</div>
+
+
         {/* DELIVERY PIPE - ORIENTED UP-SIDE DOWN (Top to Bottom) */}
         <div 
            className="absolute z-10"

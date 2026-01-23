@@ -23,6 +23,26 @@
     z-index: 5;
 }
 
+.ball-mechanical-pipe-descent {
+  animation: exitUpPipe 5s ease-in-out forwards;
+}
+
+@keyframes exitUpPipe {
+  0% {
+    transform: translate(0, 0) scale(1) rotate(0deg);
+    opacity: 1;
+  }
+  60% {
+    transform: translate(0, -320px) scale(0.9) rotate(540deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(0, -380px) scale(0.85) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+
 .ball-text-3d {
     font-size: clamp(10px, 1.8vw, 18px);
     font-family: 'Inter', sans-serif;

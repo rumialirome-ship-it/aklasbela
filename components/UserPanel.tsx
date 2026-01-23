@@ -43,8 +43,10 @@ const GameCard: React.FC<{ game: Game; onPlay: (game: Game) => void; onWatch: (g
     const { status, text: countdownText } = useCountdown(game.drawTime);
     const hasFinalWinner = !!game.winningNumber && !game.winningNumber.endsWith('_');
     
-    // UI logic is now lenient, relying on robust cycle logic in useCountdown
-    const canPlay = !isRestricted && !hasFinalWinner;
+    // STRICT UI CHECK: Game is only playable if market status is OPEN, user not restricted, and no final winner declared.
+    const isMarketOpen = status === 'OPEN';
+    const canPlay = !isRestricted && !hasFinalWinner && isMarketOpen;
+    
     const logo = getDynamicLogo(game.name);
 
     return (
@@ -96,7 +98,7 @@ const GameCard: React.FC<{ game: Game; onPlay: (game: Game) => void; onWatch: (g
                             : 'bg-slate-800 text-slate-600 cursor-not-allowed border border-white/5'
                         }`}
                     >
-                        {hasFinalWinner ? 'Watch Draw' : 'Play Game'}
+                        {hasFinalWinner ? 'Watch Draw' : isMarketOpen ? 'Play Game' : 'Closed'}
                     </button>
                 </div>
             </div>
@@ -116,6 +118,10 @@ const BettingModal: React.FC<{
     const [numbers, setNumbers] = useState<string>('');
     const [amount, setAmount] = useState<number | ''>('');
     const [isProcessing, setIsProcessing] = useState(false);
+
+    // Track real-time status inside the modal
+    const { status } = useCountdown(game?.drawTime || '');
+    const isClosed = status === 'CLOSED' || status === 'LOADING';
 
     if (!game) return null;
 
@@ -154,7 +160,7 @@ const BettingModal: React.FC<{
     const totalStake = calculatedNumbers.length * (Number(amount) || 0);
 
     const handleConfirm = async () => {
-        if (!amount || calculatedNumbers.length === 0) return;
+        if (!amount || calculatedNumbers.length === 0 || isClosed) return;
         setIsProcessing(true);
         clearApiError();
 
@@ -197,7 +203,14 @@ const BettingModal: React.FC<{
                     </div>
 
                     <div className="space-y-6">
-                        <div className="flex gap-1.5 p-1 bg-slate-950/60 rounded-2xl border border-white/5 overflow-x-auto no-scrollbar">
+                        {isClosed && (
+                           <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-center">
+                               <p className="text-[10px] font-black uppercase tracking-widest">MARKET CLOSED</p>
+                               <p className="text-[9px] font-bold opacity-70 mt-1">This market is no longer accepting entries.</p>
+                           </div>
+                        )}
+
+                        <div className={`flex gap-1.5 p-1 bg-slate-950/60 rounded-2xl border border-white/5 overflow-x-auto no-scrollbar ${isClosed ? 'opacity-50 pointer-events-none' : ''}`}>
                             {(isSingleDigitGame 
                                 ? [SubGameType.OneDigitOpen, SubGameType.OneDigitClose] 
                                 : [SubGameType.TwoDigit, SubGameType.OneDigitOpen, SubGameType.OneDigitClose, SubGameType.Bulk, SubGameType.Combo]
@@ -214,29 +227,32 @@ const BettingModal: React.FC<{
                             ))}
                         </div>
 
-                        <div className="space-y-2">
+                        <div className={`space-y-2 ${isClosed ? 'opacity-50 pointer-events-none' : ''}`}>
                             <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">{modeInfo[subGameType].desc}</label>
                             {subGameType === SubGameType.Bulk ? (
                                 <textarea 
                                     rows={4} value={numbers} onChange={handleNumberInputChange}
                                     className="w-full bg-slate-950/80 p-4 rounded-2xl border border-white/10 focus:ring-2 focus:ring-amber-500/50 focus:outline-none text-white font-mono placeholder-slate-800 text-sm"
                                     placeholder="Paste many numbers (e.g. 14, 25, 88...)"
+                                    disabled={isClosed}
                                 />
                             ) : (
                                 <input 
                                     type="text" value={numbers} onChange={handleNumberInputChange}
                                     className="w-full bg-slate-950/80 p-4 rounded-2xl border border-white/10 focus:ring-2 focus:ring-amber-500/50 focus:outline-none text-white font-mono placeholder-slate-800"
                                     placeholder={subGameType === SubGameType.Combo ? "Enter digits (e.g. 123)" : "Enter number(s)"}
+                                    disabled={isClosed}
                                 />
                             )}
                         </div>
 
-                        <div className="space-y-2">
+                        <div className={`space-y-2 ${isClosed ? 'opacity-50 pointer-events-none' : ''}`}>
                             <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Stake Per Selection (PKR)</label>
                             <input 
                                 type="number" value={amount} onChange={e => setAmount(e.target.value === '' ? '' : parseFloat(e.target.value))}
                                 className="w-full bg-slate-950/80 p-4 rounded-2xl border border-white/10 focus:ring-2 focus:ring-amber-500/50 focus:outline-none text-white font-mono placeholder-slate-800"
                                 placeholder="Stake amount..."
+                                disabled={isClosed}
                             />
                         </div>
 
@@ -262,10 +278,10 @@ const BettingModal: React.FC<{
                             </div>
                             <button
                                 onClick={handleConfirm}
-                                disabled={isProcessing || !amount || calculatedNumbers.length === 0}
+                                disabled={isProcessing || !amount || calculatedNumbers.length === 0 || isClosed}
                                 className="bg-amber-500 hover:bg-amber-400 disabled:bg-slate-800 disabled:text-slate-600 text-slate-950 font-black px-8 py-3 rounded-xl transition-all uppercase tracking-widest text-[11px] shadow-lg shadow-amber-500/10"
                             >
-                                {isProcessing ? 'SUBMITTING...' : 'CONFIRM TICKET'}
+                                {isProcessing ? 'SUBMITTING...' : isClosed ? 'MARKET CLOSED' : 'CONFIRM TICKET'}
                             </button>
                         </div>
                     </div>

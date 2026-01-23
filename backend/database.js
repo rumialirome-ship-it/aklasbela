@@ -9,7 +9,7 @@ let db;
 // --- ROBUST PKT MARKET TIMING ENGINE ---
 function getGameCycle(drawTime) {
     if (!drawTime || typeof drawTime !== 'string' || !drawTime.includes(':')) {
-        return { openTime: new Date(0), closeTime: new Date(0) };
+        return { nowPKT: new Date(), cycleStartPKT: new Date(0), drawClosePKT: new Date(0) };
     }
 
     // Get current time in Pakistan Standard Time
@@ -23,7 +23,7 @@ function getGameCycle(drawTime) {
     let cycleStartPKT = new Date(nowPKT);
     cycleStartPKT.setHours(16, 0, 0, 0);
     
-    // If it's currently before 4 PM, the cycle we are in started yesterday
+    // If it's currently before 4 PM, the cycle we are in started yesterday at 4 PM
     if (nowPKT.getHours() < 16) {
         cycleStartPKT.setDate(cycleStartPKT.getDate() - 1);
     }
@@ -38,19 +38,13 @@ function getGameCycle(drawTime) {
         drawClosePKT.setDate(drawClosePKT.getDate() + 1);
     }
 
-    // Return UTC equivalents for the server to compare
-    // Note: We use the timestamp diff to adjust the original UTC 'now'
-    const offset = drawClosePKT.getTime() - cycleStartPKT.getTime();
-    const openUTC = new Date(cycleStartPKT.toLocaleString("en-US", { timeZone: "UTC" })); // Rough conversion
-    
-    // Simplest approach: compare everything in PKT context
     return { nowPKT, cycleStartPKT, drawClosePKT };
 }
 
 function isGameOpen(drawTime) {
     if (!drawTime) return false;
     const { nowPKT, cycleStartPKT, drawClosePKT } = getGameCycle(drawTime);
-    // Open if: Now is after 4 PM opening AND before the scheduled draw
+    // Market is OPEN ONLY if: Current time is >= 4 PM PKT (Cycle Start) AND < Scheduled Draw Time
     return nowPKT >= cycleStartPKT && nowPKT < drawClosePKT;
 }
 
@@ -463,7 +457,7 @@ const placeBulkBets = (uId, gId, groups, placedBy = 'USER') => {
         const game = findAccountById(gId, 'games');
         if (!game) throw { status: 404, message: 'Market node unavailable.' };
         
-        // Strictly verify the market is within its 4PM -> DrawTime window
+        // FINAL BACKEND GUARD: Strictly verify the market is within its valid open window
         if (!isGameOpen(game.drawTime)) {
             throw { status: 400, message: `Market Closed: The entry cycle for ${game.name} has concluded.` };
         }

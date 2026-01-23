@@ -15,8 +15,8 @@ const RAINBOW_COLORS = [
   '#3b82f6', '#6366f1', '#a855f7', '#ec4899',
 ];
 
-const SHUFFLE_TIME = 12000; // 12 seconds of intense mixing
-const EXIT_TIME = 4500;    // 4.5 seconds for ball to travel pipe
+const SHUFFLE_TIME = 10000; // 10 seconds of mixing
+const EXIT_TIME = 4500;    // 4.5 seconds for pipe travel
 
 class DrawAudioEngine {
   ctx: AudioContext | null = null;
@@ -37,7 +37,7 @@ class DrawAudioEngine {
     const g = this.ctx.createGain();
     osc.type = 'triangle';
     osc.frequency.setValueAtTime(40, this.ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(60, this.ctx.currentTime + SHUFFLE_TIME / 1000);
+    osc.frequency.exponentialRampToValueAtTime(65, this.ctx.currentTime + SHUFFLE_TIME / 1000);
     g.gain.setValueAtTime(0, this.ctx.currentTime);
     g.gain.linearRampToValueAtTime(0.1, this.ctx.currentTime + 2);
     osc.connect(g);
@@ -52,7 +52,7 @@ class DrawAudioEngine {
     const g = this.ctx.createGain();
     osc.type = 'sawtooth';
     osc.frequency.setValueAtTime(30, this.ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(200, this.ctx.currentTime + 0.5);
+    osc.frequency.exponentialRampToValueAtTime(250, this.ctx.currentTime + 0.5);
     g.gain.setValueAtTime(1, this.ctx.currentTime);
     g.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 1.5);
     osc.connect(g);
@@ -71,7 +71,7 @@ const Ball: React.FC<{ index: number; phase: Phase; isWinner: boolean; winningNu
   const displayNum = isWinner ? winningNumber : index.toString().padStart(2, '0');
   
   const motion = useMemo(() => {
-    const R = chamberSize / 2 - 30;
+    const R = chamberSize / 2 - 35;
     const path = Array.from({ length: 4 }).map(() => {
         const r = Math.sqrt(Math.random()) * R;
         const a = Math.random() * Math.PI * 2;
@@ -79,20 +79,25 @@ const Ball: React.FC<{ index: number; phase: Phase; isWinner: boolean; winningNu
     });
     return {
         delay: Math.random() * -15,
-        duration: 0.3 + Math.random() * 0.5,
+        duration: 0.25 + Math.random() * 0.4,
         path
     };
   }, [chamberSize]);
 
   if (isWinner && phase === 'EXITING') {
       return (
-        <div className="lottery-ball-3d ball-mechanical-pipe-descent winner-ball-3d" style={{ '--ball-color': '#f59e0b' } as any}>
+        <div 
+          className="lottery-ball-3d ball-mechanical-pipe-descent winner-ball-3d" 
+          style={{ 
+            '--ball-color': '#f59e0b',
+            '--chamber-radius': `${chamberSize / 2}px` 
+          } as any}
+        >
             <span className="ball-text-3d">{winningNumber}</span>
         </div>
       );
   }
 
-  // Hide all balls once reveal hits
   if (phase === 'REVEAL') return null;
 
   return (
@@ -116,7 +121,7 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
   const [phase, setPhase] = useState<Phase>('SHUFFLE');
   const [revealImage, setRevealImage] = useState<string | null>(null);
   const audio = useRef<DrawAudioEngine | null>(null);
-  const chamberSize = Math.min(window.innerWidth * 0.8, 500);
+  const chamberSize = Math.min(window.innerWidth * 0.85, 500);
   const ballRange = useMemo(() => Array.from({ length: 100 }, (_, i) => i), []);
 
   useEffect(() => {
@@ -129,7 +134,6 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
         audio.current?.playImpact();
     }, SHUFFLE_TIME + EXIT_TIME);
 
-    // AI Backdrop generation for the big reveal
     const gen = async () => {
         try {
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -157,52 +161,66 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
       
       {/* HUD HEADER */}
       {phase !== 'REVEAL' && (
-        <div className="absolute top-10 text-center animate-fade-in z-50">
-            <h2 className="text-white text-5xl font-black russo tracking-[0.2em] uppercase mb-2 drop-shadow-2xl">
+        <div className="absolute top-10 text-center animate-fade-in z-50 px-4">
+            <h2 className="text-white text-4xl sm:text-6xl font-black russo tracking-[0.2em] uppercase mb-2 drop-shadow-2xl">
                 {gameName} <span className="text-amber-500">LIVE</span>
             </h2>
-            <p className="text-amber-500/60 text-xs font-black uppercase tracking-[0.5em] animate-pulse">
-                {phase === 'SHUFFLE' ? 'Mixing Positions...' : 'Finalizing Draw...'}
-            </p>
+            <div className="flex items-center justify-center gap-4">
+                <div className="w-12 h-[2px] bg-amber-500/30"></div>
+                <p className="text-amber-500 text-[10px] font-black uppercase tracking-[0.6em] animate-pulse">
+                    {phase === 'SHUFFLE' ? 'SYST MIXING' : 'DRAW FINALIZING'}
+                </p>
+                <div className="w-12 h-[2px] bg-amber-500/30"></div>
+            </div>
         </div>
       )}
 
       {/* MECHANICAL CORE */}
-      <div className={`relative w-full h-full flex items-center justify-center transition-all duration-1000 ${phase === 'REVEAL' ? 'opacity-0 scale-150' : 'opacity-100'}`}>
+      <div className={`relative w-full h-full flex flex-col items-center justify-center transition-all duration-1000 ${phase === 'REVEAL' ? 'opacity-0 scale-150' : 'opacity-100'}`}>
         
-        {/* THE CHAMBER (Matching the video) */}
+        {/* THE CHAMBER */}
         <div className="relative z-20" style={{ width: chamberSize, height: chamberSize }}>
-            {/* Outer Frame */}
-            <div className="absolute -inset-10 border-[20px] border-slate-900 rounded-full shadow-[0_50px_100px_rgba(0,0,0,0.8),inset_0_2px_10px_rgba(255,255,255,0.1)]" />
+            {/* Outer Machine Frame */}
+            <div className="absolute -inset-10 border-[16px] sm:border-[24px] border-slate-900 rounded-full shadow-[0_60px_120px_rgba(0,0,0,0.9),inset_0_4px_12px_rgba(255,255,255,0.1)] bg-slate-950" />
             
-            {/* Glass Container */}
-            <div className="absolute inset-0 bg-slate-900/40 rounded-full border border-white/10 overflow-hidden backdrop-blur-sm shadow-[inset_0_20px_50px_rgba(0,0,0,0.9)]">
-                <div className="absolute inset-0 bg-radial-3d opacity-60" />
+            {/* Glass Container - Perfectly Centered Content */}
+            <div className="absolute inset-0 bg-slate-900/40 rounded-full border border-white/10 overflow-hidden backdrop-blur-sm shadow-[inset_0_20px_60px_rgba(0,0,0,0.9)]">
+                <div className="absolute inset-0 bg-radial-3d opacity-50" />
                 <div className="relative w-full h-full">
                     {ballRange.map(i => (
                         <Ball key={i} index={i} phase={phase} isWinner={false} winningNumber={winningNumber} chamberSize={chamberSize} />
                     ))}
+                    {/* The specific Winning Ball */}
                     <Ball index={999} phase={phase} isWinner winningNumber={winningNumber} chamberSize={chamberSize} />
                 </div>
             </div>
 
-            {/* Bottom Port Exit */}
-            <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 w-24 h-12 bg-slate-800 rounded-t-3xl border-x-4 border-t-4 border-slate-700 z-30 flex items-center justify-center">
-                <div className="w-12 h-6 bg-black rounded-full shadow-inner" />
+            {/* Bottom Port Exit (The "Port") */}
+            <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-32 h-16 bg-slate-800 rounded-t-[2.5rem] border-x-4 border-t-4 border-slate-700 z-30 flex items-center justify-center shadow-2xl">
+                <div className="w-16 h-8 bg-black rounded-full shadow-inner border border-white/5" />
             </div>
         </div>
 
-        {/* DELIVERY PIPE (SVG Path matching CSS animation) */}
-        <div className="absolute inset-0 pointer-events-none z-10 opacity-40">
-            <svg className="w-full h-full" viewBox="0 0 1000 1000" fill="none">
-                <path d="M 500 650 L 500 750 L 400 800 L 650 850 L 500 950" stroke="white" strokeWidth="80" strokeLinecap="round" strokeLinejoin="round" />
+        {/* LONG DELIVERY PIPE (Zig-zag path visually matching the animation) */}
+        <div className="absolute z-10 pointer-events-none opacity-40" style={{ top: `calc(50% + ${chamberSize / 2}px - 20px)`, width: '400px', height: '500px' }}>
+            <svg className="w-full h-full" viewBox="0 0 400 500" fill="none">
+                <defs>
+                   <linearGradient id="pipeGrad" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stopColor="rgba(255,255,255,0.05)" />
+                      <stop offset="50%" stopColor="rgba(255,255,255,0.2)" />
+                      <stop offset="100%" stopColor="rgba(255,255,255,0.05)" />
+                   </linearGradient>
+                </defs>
+                {/* The "Long" zig-zag pipe */}
+                <path d="M 200 0 L 200 60 L 120 120 L 320 200 L 200 300 L 200 500" stroke="url(#pipeGrad)" strokeWidth="85" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M 200 0 L 200 60 L 120 120 L 320 200 L 200 300 L 200 500" stroke="white" strokeWidth="2" opacity="0.3" strokeDasharray="10 20" />
             </svg>
         </div>
       </div>
 
-      {/* BIG REVEAL */}
+      {/* BIG REVEAL SCREEN */}
       {phase === 'REVEAL' && (
-        <div className="absolute inset-0 bg-slate-950 flex flex-col items-center justify-center animate-fade-in p-6">
+        <div className="absolute inset-0 bg-slate-950 flex flex-col items-center justify-center animate-fade-in p-6 z-[100]">
             {revealImage && (
                 <div className="absolute inset-0 z-0">
                     <img src={revealImage} className="w-full h-full object-cover opacity-30 blur-md scale-110" alt="Backdrop" />
@@ -210,17 +228,18 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
                 </div>
             )}
 
-            <div className="relative z-10 animate-result-slam-3d text-center">
-                <p className="text-amber-500 font-black russo text-4xl sm:text-6xl tracking-widest mb-10 uppercase italic drop-shadow-2xl">Official Winner</p>
+            <div className="relative z-10 animate-result-slam-3d text-center w-full max-w-4xl">
+                <p className="text-amber-500 font-black russo text-3xl sm:text-6xl tracking-[0.3em] mb-12 uppercase italic drop-shadow-[0_0_30px_rgba(245,158,11,0.5)]">Official Winner</p>
                 
-                <div className="glass-panel rounded-[5rem] px-24 py-20 sm:px-64 sm:py-48 border-[20px] border-amber-500 shadow-[0_0_200px_rgba(245,158,11,0.3)]">
-                    <span className="text-[18rem] sm:text-[40rem] font-black russo text-white leading-none drop-shadow-[0_20px_50px_rgba(0,0,0,0.8)] gold-shimmer">{winningNumber}</span>
+                <div className="glass-panel rounded-[4rem] sm:rounded-[6rem] px-16 py-20 sm:px-48 sm:py-40 border-[16px] sm:border-[30px] border-amber-500 shadow-[0_0_250px_rgba(245,158,11,0.4)] relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-30"></div>
+                    <span className="relative text-[16rem] sm:text-[36rem] font-black russo text-white leading-none drop-shadow-[0_40px_80px_rgba(0,0,0,0.9)] gold-shimmer block">{winningNumber}</span>
                 </div>
 
-                <div className="mt-20">
+                <div className="mt-24">
                     <button 
                         onClick={onClose}
-                        className="bg-amber-600 hover:bg-amber-500 text-white font-black px-24 py-10 rounded-full text-4xl uppercase tracking-[0.4em] transition-all active:scale-95 shadow-2xl border-b-8 border-amber-800"
+                        className="bg-amber-600 hover:bg-amber-500 text-white font-black px-20 py-8 sm:px-32 sm:py-10 rounded-full text-3xl sm:text-5xl uppercase tracking-[0.5em] transition-all active:scale-90 shadow-[0_30px_60px_rgba(0,0,0,0.5)] border-b-[12px] border-amber-800 hover:border-b-[8px] hover:translate-y-[4px]"
                     >
                         CONTINUE
                     </button>
@@ -229,10 +248,10 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
         </div>
       )}
 
-      {/* FOOTER VERIFICATION */}
-      <div className="absolute bottom-10 left-10 opacity-30 flex items-center gap-3">
-        <div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse" />
-        <span className="text-[10px] font-black text-white uppercase tracking-widest">Mechanical Sync: Authenticated</span>
+      {/* FOOTER STATUS */}
+      <div className="absolute bottom-10 left-10 opacity-30 flex items-center gap-4">
+        <div className="w-4 h-4 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_15px_#10b981]" />
+        <span className="text-[11px] font-black text-white uppercase tracking-[0.5em]">SYNC STATUS: ENCRYPTED & VERIFIED</span>
       </div>
     </div>
   );

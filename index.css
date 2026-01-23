@@ -6,6 +6,8 @@
 
 .lottery-ball-3d {
     position: absolute;
+    top: 50%;
+    left: 50%;
     width: clamp(24px, 5.5vw, 40px);
     height: clamp(24px, 5.5vw, 40px);
     border-radius: 50%;
@@ -49,32 +51,32 @@
         left: 50%; top: 50%; 
         opacity: 1;
     }
-    /* Exit bottom of chamber */
-    10% { 
+    /* Exit through the bottom port exactly */
+    15% { 
         transform: translate(-50%, 0) scale(0.9);
-        left: 50%; top: calc(50% + 180px);
+        left: 50%; top: calc(50% + var(--chamber-radius));
     }
-    /* Enter port/pipe */
-    20% { 
+    /* Enter zigzag pipe path */
+    30% { 
         transform: translate(-50%, 0) scale(0.85);
-        left: calc(50% - 100px); top: calc(50% + 220px);
+        left: calc(50% - 80px); top: calc(50% + var(--chamber-radius) + 60px);
     }
-    /* Mid zigzag */
-    40% { 
+    50% { 
         transform: translate(-50%, 0) scale(0.8);
-        left: calc(50% + 150px); top: calc(50% + 300px);
+        left: calc(50% + 120px); top: calc(50% + var(--chamber-radius) + 140px);
     }
-    /* Bottom Curve */
-    70% { 
+    /* Travel down the long pipe */
+    80% { 
         transform: translate(-50%, 0) scale(0.75);
-        left: 50%; top: calc(50% + 380px);
+        left: 50%; top: calc(50% + var(--chamber-radius) + 240px);
+        opacity: 1;
     }
-    /* Final position in pedestal */
+    /* Final impact exit */
     100% { 
-        transform: translate(-50%, 0) scale(3);
-        left: 50%; top: calc(50% + 450px);
+        transform: translate(-50%, 0) scale(4);
+        left: 50%; top: calc(50% + var(--chamber-radius) + 350px);
         opacity: 0;
-        filter: blur(20px);
+        filter: blur(30px);
     }
 }
 

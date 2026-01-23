@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { GoogleGenAI } from "@google/genai";
 
 /* ---------------------------------- TYPES --------------------------------- */
 
@@ -183,7 +184,6 @@ const Ball: React.FC<{
         style={{ '--ball-color': '#ec4899', zIndex: 5000 } as any}
       >
         <div className="ball-glow" />
-        {/* Show number on ball as it descends */}
         <span className="ball-text-3d">{winningNumber}</span>
       </div>
     );
@@ -221,6 +221,7 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({
 }) => {
   const [phase, setPhase] = useState<Phase>('STATIC');
   const [progress, setProgress] = useState(0);
+  const [revealImage, setRevealImage] = useState<string | null>(null);
 
   const audio = useRef<DrawAudioEngine | null>(null);
   const balls = useMemo(() => Array.from({ length: 99 }, (_, i) => i), []);
@@ -240,6 +241,33 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({
 
   const bowlRadius = chamberPx / 2;
 
+  // AI Image Generation for the Winner Backdrop
+  useEffect(() => {
+    const generateBackdrop = async () => {
+      try {
+        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        const userPrompt = `A highly detailed 3D render of a glossy spherical lottery ball resting on a softly illuminated pedestal in a futuristic high-tech set. Minimal blue-gray studio background with soft directional light, realistic reflections, and crisp shadows on a polished floor. Cinematic low-angle perspective, ambient lighting fading to black at the edges. Ultra-high detail, 8k resolution, photorealistic metallic textures. Final shot of a ball resting on a softly illuminated pedestal.`;
+        
+        const response = await ai.models.generateContent({
+          model: 'gemini-2.5-flash-image',
+          contents: { parts: [{ text: userPrompt }] },
+          config: { imageConfig: { aspectRatio: "16:9" } }
+        });
+
+        for (const part of response.candidates[0].content.parts) {
+          if (part.inlineData) {
+            setRevealImage(`data:image/png;base64,${part.inlineData.data}`);
+            break;
+          }
+        }
+      } catch (err) {
+        console.error("AI Reveal Backdrop generation failed", err);
+      }
+    };
+
+    generateBackdrop();
+  }, []);
+
   useEffect(() => {
     audio.current = new DrawAudioEngine();
     audio.current.init();
@@ -248,7 +276,6 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({
     const shuffleTimer = setTimeout(() => setPhase('SHUFFLE'), 2500);
     const exitTimer = setTimeout(() => {
       setPhase('EXITING');
-      // Mechanical clinks synchronized with ball hitting pipe bends
       setTimeout(() => audio.current?.playClink(), 1000);
       setTimeout(() => audio.current?.playClink(), 2500);
       setTimeout(() => audio.current?.playClink(), 4000);
@@ -291,24 +318,18 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({
       )}
 
       {/* MECHANICAL ENGINE - PERFECTLY CENTERED */}
-      <div className="relative flex items-center justify-center w-full h-full pointer-events-none">
+      <div className={`relative flex items-center justify-center w-full h-full transition-opacity duration-1000 ${phase === 'REVEAL' ? 'opacity-0' : 'opacity-100'}`}>
         
         {/* GIANT ROUND CHAMBER */}
         <div 
           className="relative z-20 rounded-full" 
           style={{ width: `${chamberPx}px`, height: `${chamberPx}px` }}
         >
-          {/* Industrial Heavy Bezel */}
           <div className="absolute -inset-[5%] sm:-inset-16 rounded-full border-[12px] sm:border-[30px] border-slate-900 shadow-[0_120px_240px_rgba(0,0,0,1),inset_0_4px_20px_rgba(255,255,255,0.05)]" />
           
-          {/* Glass Sphere Interior */}
           <div className="absolute inset-0 rounded-full bg-[#020617] shadow-[inset_0_100px_200px_rgba(0,0,0,1),inset_0_-80px_160px_rgba(255,255,255,0.03)] overflow-hidden border border-white/10">
             <div className="absolute inset-0 bg-radial-3d opacity-95" />
-            
-            {/* Dynamic Glass Refraction Overlay */}
             <div className="absolute top-[10%] left-[20%] w-[60%] h-[40%] bg-gradient-to-br from-white/10 to-transparent rounded-full blur-[100px] rotate-[-20deg]" />
-            
-            {/* Balls correctly distributed and centered */}
             <div className="relative w-full h-full flex items-center justify-center">
               {balls.map((i) => (
                 <Ball key={i} index={i} phase={phase} isWinner={false} winningNumber={winningNumber} bowlRadius={bowlRadius} />
@@ -317,7 +338,6 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({
             </div>
           </div>
 
-          {/* Mechanical Exit Portal (At the bottom) */}
           <div className="absolute -bottom-[2%] left-1/2 -translate-x-1/2 w-[20%] h-[20%] z-50">
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-slate-900 border-[8px] border-slate-700 rounded-3xl rotate-45 shadow-4xl flex items-center justify-center">
               <div className="w-1/2 h-1/2 bg-black rounded-full border border-white/10 shadow-inner" />
@@ -326,69 +346,33 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({
         </div>
 
         {/* TOP TRANSPARENT PIPE */}
-<div
-  className="absolute z-30 pointer-events-none"
-  style={{
-    width: `${chamberPx * 0.25}px`,
-    height: `${chamberPx * 0.6}px`,
-    top: `calc(50% - ${chamberPx * 0.8}px)`,
-    left: '50%',
-    transform: 'translateX(-50%)',
-  }}
->
-  <svg
-    viewBox="0 0 100 300"
-    className="w-full h-full"
-    preserveAspectRatio="xMidYMid meet"
-  >
-    <defs>
-      <linearGradient id="topPipeGloss" x1="0" y1="0" x2="1" y2="0">
-        <stop offset="0%" stopColor="rgba(255,255,255,0.02)" />
-        <stop offset="50%" stopColor="rgba(255,255,255,0.18)" />
-        <stop offset="100%" stopColor="rgba(255,255,255,0.02)" />
-      </linearGradient>
-    </defs>
+        <div
+          className="absolute z-30 pointer-events-none"
+          style={{
+            width: `${chamberPx * 0.25}px`,
+            height: `${chamberPx * 0.6}px`,
+            top: `calc(50% - ${chamberPx * 0.8}px)`,
+            left: '50%',
+            transform: 'translateX(-50%)',
+          }}
+        >
+          <svg viewBox="0 0 100 300" className="w-full h-full" preserveAspectRatio="xMidYMid meet">
+            <defs>
+              <linearGradient id="topPipeGloss" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="rgba(255,255,255,0.02)" />
+                <stop offset="50%" stopColor="rgba(255,255,255,0.18)" />
+                <stop offset="100%" stopColor="rgba(255,255,255,0.02)" />
+              </linearGradient>
+            </defs>
+            <rect x="20" y="0" width="60" height="240" rx="30" fill="rgba(255,255,255,0.03)" stroke="url(#topPipeGloss)" strokeWidth="2" />
+            <circle cx="50" cy="260" r="28" fill="rgba(2,6,23,0.9)" stroke="rgba(245,158,11,0.6)" strokeWidth="3" />
+            {phase === 'EXITING' && (
+              <text x="50" y="268" textAnchor="middle" fill="#f59e0b" fontSize="20" fontWeight="900">{winningNumber}</text>
+            )}
+          </svg>
+        </div>
 
-    {/* Pipe body */}
-    <rect
-      x="20"
-      y="0"
-      width="60"
-      height="240"
-      rx="30"
-      fill="rgba(255,255,255,0.03)"
-      stroke="url(#topPipeGloss)"
-      strokeWidth="2"
-    />
-
-    {/* Dead-end outlet */}
-    <circle
-      cx="50"
-      cy="260"
-      r="28"
-      fill="rgba(2,6,23,0.9)"
-      stroke="rgba(245,158,11,0.6)"
-      strokeWidth="3"
-    />
-
-    {/* Number shown at pipe end */}
-    {phase === 'EXITING' && (
-      <text
-        x="50"
-        y="268"
-        textAnchor="middle"
-        fill="#f59e0b"
-        fontSize="20"
-        fontWeight="900"
-      >
-        {winningNumber}
-      </text>
-    )}
-  </svg>
-</div>
-
-
-        {/* DELIVERY PIPE - ORIENTED UP-SIDE DOWN (Top to Bottom) */}
+        {/* DELIVERY PIPE */}
         <div 
            className="absolute z-10"
            style={{ 
@@ -406,13 +390,9 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({
               </linearGradient>
               <filter id="pipeGlow"><feGaussianBlur stdDeviation="25" result="blur" /><feComposite in="SourceGraphic" in2="blur" operator="over" /></filter>
             </defs>
-            
-            {/* The industrial downward-flowing pipe */}
             <path d="M 300 0 L 300 200 L 500 400 L 300 650" stroke="rgba(255,255,255,0.05)" strokeWidth="110" strokeLinecap="round" strokeLinejoin="round" />
             <path d="M 300 0 L 300 200 L 500 400 L 300 650" stroke="url(#pipeGloss)" strokeWidth="90" strokeLinecap="round" strokeLinejoin="round" />
             <path d="M 300 0 L 300 200 L 500 400 L 300 650" stroke="rgba(255,255,255,0.2)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" filter="url(#pipeGlow)" />
-            
-            {/* Receiving result socket */}
             <g transform="translate(300, 650)">
               <circle r="90" fill="#020617" stroke="rgba(255,255,255,0.1)" strokeWidth="16" />
               <circle r="60" fill="rgba(245,158,11,0.03)" stroke="rgba(245,158,11,0.4)" strokeWidth="2" className="animate-pulse" />
@@ -423,16 +403,26 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({
 
       {/* FINAL CINEMATIC RESULT OVERLAY */}
       {phase === 'REVEAL' && (
-        <div className="absolute inset-0 z-[6000] bg-slate-950/99 backdrop-blur-3xl flex flex-col items-center justify-center animate-fade-in px-8">
-          <div className="relative animate-result-slam-3d mb-12 sm:mb-20">
-            <div className="absolute -inset-[200px] bg-amber-500/20 blur-[350px] rounded-full animate-pulse" />
-            <div className="relative bg-white text-slate-950 rounded-[4rem] sm:rounded-[7rem] px-24 sm:px-[25rem] py-20 sm:py-64 border-[18px] sm:border-[44px] border-amber-500 shadow-[0_0_500px_rgba(245,158,11,0.9)] overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-slate-200/10 to-transparent" />
-              <span className="relative text-[18rem] sm:text-[54rem] font-black russo tracking-tighter leading-none block drop-shadow-4xl">{winningNumber}</span>
+        <div className="absolute inset-0 z-[6000] bg-slate-950 flex flex-col items-center justify-center animate-fade-in overflow-hidden">
+          
+          {/* AI Generated Winner Backdrop */}
+          {revealImage && (
+            <div className="absolute inset-0 z-0">
+               <img src={revealImage} alt="Winner Cinematic Backdrop" className="w-full h-full object-cover opacity-40 blur-sm scale-110" />
+               <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-slate-950" />
+            </div>
+          )}
+
+          <div className="relative animate-result-slam-3d mb-12 sm:mb-20 z-10">
+            <div className="absolute -inset-[200px] bg-amber-500/10 blur-[350px] rounded-full animate-pulse" />
+            <div className="relative glass-panel bg-white/5 text-white rounded-[4rem] sm:rounded-[7rem] px-24 sm:px-[25rem] py-20 sm:py-64 border-[18px] sm:border-[44px] border-amber-500/80 shadow-[0_0_500px_rgba(245,158,11,0.4)] overflow-hidden backdrop-blur-xl">
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/5 to-transparent" />
+              <span className="relative text-[18rem] sm:text-[54rem] font-black russo tracking-tighter leading-none block drop-shadow-[0_20px_50px_rgba(0,0,0,0.8)]">{winningNumber}</span>
             </div>
           </div>
-          <div className="text-center animate-fade-in" style={{ animationDelay: '0.9s' }}>
-            <h3 className="text-white text-5xl sm:text-[10rem] font-black russo tracking-tight uppercase mb-12 sm:mb-24 premium-gold-text italic text-center">WINNER DECLARED</h3>
+
+          <div className="text-center animate-fade-in z-10" style={{ animationDelay: '0.9s' }}>
+            <h3 className="text-white text-5xl sm:text-[10rem] font-black russo tracking-tight uppercase mb-12 sm:mb-24 premium-gold-text italic text-center drop-shadow-2xl">WINNER DECLARED</h3>
             <button
               onClick={onClose}
               className="bg-amber-600 hover:bg-amber-500 text-white font-black px-40 py-12 sm:px-80 sm:py-20 rounded-[4.5rem] transition-all active:scale-95 shadow-[0_60px_100px_rgba(245,158,11,0.5)] text-3xl sm:text-7xl uppercase tracking-[0.5em] border-b-[14px] sm:border-b-[30px] border-amber-800"
@@ -443,7 +433,7 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({
         </div>
       )}
 
-      <div className="absolute left-8 bottom-8 sm:left-14 sm:bottom-14 opacity-20 group">
+      <div className="absolute left-8 bottom-8 sm:left-14 sm:bottom-14 opacity-20 z-50">
         <div className="flex items-center gap-4">
           <div className="w-4 h-4 rounded-full bg-emerald-500 animate-pulse" />
           <p className="text-[10px] sm:text-[13px] font-black text-white uppercase tracking-[0.7em]">Mechanical Verification: Stable</p>

@@ -2,158 +2,138 @@
 @tailwind components;
 @tailwind utilities;
 
-/* --- VOLUMETRIC MECHANICAL DRAW ENGINE --- */
+/* --- VIDEO-ACCURATE MECHANICAL DRAW ENGINE --- */
 
-.lottery-ball-3d {
+.lottery-machine-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background-color: #000;
+    color: #fff;
+    overflow: hidden;
+    font-family: 'Inter', sans-serif;
+}
+
+.chamber-circle {
     position: absolute;
-    top: 50%;
+    top: 35%;
     left: 50%;
-    width: clamp(26px, 6vw, 42px);
-    height: clamp(26px, 6vw, 42px);
+    transform: translate(-50%, -50%);
+    width: 320px;
+    height: 320px;
+    border: 2px dashed rgba(255, 255, 255, 0.4);
+    border-radius: 50%;
+    z-index: 10;
+}
+
+.lottery-ball-2d {
+    position: absolute;
+    width: 20px;
+    height: 20px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 
-        inset -5px -5px 10px rgba(0,0,0,0.85),
-        inset 3px 3px 6px rgba(255,255,255,0.4),
-        0 6px 12px rgba(0,0,0,0.6);
-    background: radial-gradient(circle at 35% 35%, #fff 0%, var(--ball-color, #fff) 55%, #000 100%);
-    transform: translate(-50%, -50%);
-    z-index: 5;
-    will-change: transform;
-}
-
-.ball-text-3d {
-    font-size: clamp(10px, 1.8vw, 16px);
-    font-family: 'Inter', sans-serif;
+    font-size: 8px;
     font-weight: 900;
     color: #000;
-    text-shadow: 0 0.5px 0 rgba(255,255,255,0.4);
+    box-shadow: inset -2px -2px 4px rgba(0,0,0,0.4), inset 1px 1px 2px rgba(255,255,255,0.4);
+    transform: translate(-50%, -50%);
+    z-index: 15;
 }
 
-/* HIGH-INTENSITY SHUFFLING */
-@keyframes intense-shuffle {
-    0%   { transform: translate(calc(-50% + var(--x1)), calc(-50% + var(--y1))) rotate(0deg); }
-    25%  { transform: translate(calc(-50% + var(--x2)), calc(-50% + var(--y2))) rotate(90deg); }
-    50%  { transform: translate(calc(-50% + var(--x3)), calc(-50% + var(--y3))) rotate(180deg); }
-    75%  { transform: translate(calc(-50% + var(--x4)), calc(-50% + var(--y4))) rotate(270deg); }
-    100% { transform: translate(calc(-50% + var(--x1)), calc(-50% + var(--y1))) rotate(360deg); }
+/* SHUFFLING ANIMATION */
+@keyframes ball-jiggle {
+    0% { transform: translate(var(--x0), var(--y0)); }
+    25% { transform: translate(var(--x1), var(--y1)); }
+    50% { transform: translate(var(--x2), var(--y2)); }
+    75% { transform: translate(var(--x3), var(--y3)); }
+    100% { transform: translate(var(--x0), var(--y0)); }
 }
 
-.ball-shuffling {
-    animation: intense-shuffle var(--duration) infinite cubic-bezier(0.35, 0, 0.65, 1);
-    animation-delay: var(--delay);
+.ball-mixing {
+    animation: ball-jiggle var(--dur) infinite ease-in-out;
 }
 
-/* CENTERED LONG ZIG-ZAG PIPE DELIVERY */
-@keyframes ball-delivery-long-zigzag {
-    0% { 
-        transform: translate(-50%, -50%) scale(1);
-        left: 50%; top: 50%; 
-        opacity: 1;
-    }
-    /* Exit through bottom center port exactly */
-    12% { 
-        transform: translate(-50%, -50%) scale(0.9);
-        left: 50%; top: calc(50% + var(--chamber-radius));
-    }
-    /* Vertical drop into pipe */
-    20% { 
-        transform: translate(-50%, -50%) scale(0.85);
-        left: 50%; top: calc(50% + var(--chamber-radius) + 80px);
-    }
-    /* Zig Left */
-    35% { 
-        transform: translate(-50%, -50%) scale(0.85);
-        left: calc(50% - 120px); top: calc(50% + var(--chamber-radius) + 180px);
-    }
-    /* Zig Right */
-    55% { 
-        transform: translate(-50%, -50%) scale(0.85);
-        left: calc(50% + 120px); top: calc(50% + var(--chamber-radius) + 300px);
-    }
-    /* Zig Left again */
-    75% { 
-        transform: translate(-50%, -50%) scale(0.85);
-        left: calc(50% - 100px); top: calc(50% + var(--chamber-radius) + 420px);
-    }
-    /* Center alignment for final descent */
-    90% { 
-        transform: translate(-50%, -50%) scale(1.5);
-        left: 50%; top: calc(50% + var(--chamber-radius) + 520px);
-        opacity: 1;
-        filter: blur(0);
-    }
-    /* Final impact / reveal zoom */
-    100% { 
-        transform: translate(-50%, -50%) scale(6);
-        left: 50%; top: calc(50% + var(--chamber-radius) + 650px);
-        opacity: 0;
-        filter: blur(40px);
-    }
+/* PATH ANIMATION */
+.winning-ball-path {
+    position: absolute;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #fff 0%, #ef4444 55%, #000 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 900;
+    color: #000;
+    z-index: 50;
+    offset-path: path('M 160 320 C 160 380, 450 420, 450 480 C 450 540, 50 600, 50 680 L 160 750'); /* Placeholder path matching the video curve */
+    animation: follow-path 4s cubic-bezier(0.45, 0, 0.55, 1) forwards;
 }
 
-.ball-mechanical-pipe-descent {
-    animation: ball-delivery-long-zigzag 5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-    z-index: 1000 !important;
+@keyframes follow-path {
+    0% { offset-distance: 0%; opacity: 1; scale: 1; }
+    90% { offset-distance: 100%; opacity: 1; scale: 1.2; }
+    100% { offset-distance: 100%; opacity: 0; scale: 1.5; }
 }
 
-/* --- CINEMATIC REVEAL --- */
-
-.animate-result-slam-3d {
-    animation: result-slam-3d 2s cubic-bezier(0.1, 0.9, 0.2, 1) forwards;
+/* BUTTONS FROM VIDEO */
+.video-btn {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 4px solid #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Russo One', sans-serif;
+    font-size: 14px;
+    color: #fff;
+    text-transform: uppercase;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    transition: transform 0.1s;
 }
 
-@keyframes result-slam-3d {
-    0% { transform: perspective(3000px) scale(12) rotateX(60deg) translateZ(1000px); opacity: 0; filter: blur(80px); }
-    50% { transform: perspective(3000px) scale(0.8) rotateX(-20deg); opacity: 1; filter: blur(0); }
-    75% { transform: perspective(3000px) scale(1.1) rotateX(10deg); }
-    100% { transform: perspective(3000px) scale(1) rotateX(0deg); opacity: 1; }
+.video-btn-blue { background: linear-gradient(to bottom, #3b82f6, #1d4ed8); }
+.video-btn-red { background: linear-gradient(to bottom, #ef4444, #b91c1c); }
+
+.video-btn:active { transform: scale(0.9); }
+
+/* FINAL DISPLAY BOX */
+.final-result-box {
+    position: absolute;
+    bottom: 10%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 200px;
+    height: 80px;
+    border: 2px solid rgba(255,255,255,0.2);
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 64px;
+    font-weight: 900;
+    color: #fff;
+    border-radius: 12px;
 }
 
-.premium-gold-text {
-    background: linear-gradient(to bottom, #ffffff 0%, #f59e0b 50%, #78350f 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    filter: drop-shadow(0 0 40px rgba(245,158,11,0.8));
-}
-
-.glass-panel {
-    background: rgba(255, 255, 255, 0.02);
-    backdrop-filter: blur(40px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.gold-shimmer {
-    background: linear-gradient(
-        90deg, 
-        rgba(255,255,255,0) 0%, 
-        rgba(255,255,255,0.6) 50%, 
-        rgba(255,255,255,0) 100%
-    );
-    background-size: 200% 100%;
-    animation: shimmer 4s infinite linear;
-    -webkit-background-clip: text;
-    background-clip: text;
-}
-
-@keyframes shimmer {
-    0% { background-position: -200% 0; }
-    100% { background-position: 200% 0; }
+.delivery-path-svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 5;
 }
 
 .bg-mesh {
     position: fixed;
     inset: 0;
-    background-image: 
-        radial-gradient(at 0% 0%, rgba(245, 158, 11, 0.08) 0px, transparent 50%),
-        radial-gradient(at 100% 0%, rgba(59, 130, 246, 0.08) 0px, transparent 50%);
+    background-image: radial-gradient(at 50% 50%, rgba(255, 255, 255, 0.05) 0px, transparent 50%);
     pointer-events: none;
     z-index: -1;
-}
-
-.premium-glow-amber {
-    box-shadow: 0 0 100px rgba(245, 158, 11, 0.2), inset 0 0 50px rgba(245, 158, 11, 0.1);
 }

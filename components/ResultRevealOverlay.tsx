@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { GoogleGenAI } from "@google/genai";
 
 interface ResultRevealOverlayProps {
@@ -8,105 +8,63 @@ interface ResultRevealOverlayProps {
   onClose: () => void;
 }
 
-type Phase = 'SHUFFLE' | 'EXITING' | 'REVEAL';
+type Phase = 'IDLE' | 'SHUFFLE' | 'DELIVERY' | 'HOLD' | 'REVEAL';
 
 const RAINBOW_COLORS = [
   '#ef4444', '#f97316', '#fbbf24', '#22c55e', 
   '#3b82f6', '#6366f1', '#a855f7', '#ec4899',
 ];
 
-const SHUFFLE_TIME = 15000; // 15 seconds of cinematic mixing
-const EXIT_TIME = 5000;    // 5 seconds for the long pipe travel
+const SHUFFLE_TIME = 6000;  // 6 seconds mixing
+const DELIVERY_TIME = 4500; // 4.5 seconds travel (matches CSS)
+const HOLD_TIME = 5000;     // 5 seconds hold before big screen
 
-class DrawAudioEngine {
-  ctx: AudioContext | null = null;
-  masterGain: GainNode | null = null;
-
-  init() {
-    try {
-      this.ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      this.masterGain = this.ctx.createGain();
-      this.masterGain.connect(this.ctx.destination);
-      this.playMechanicalWhir();
-    } catch (e) { console.error("Audio initialization failed", e); }
-  }
-
-  playMechanicalWhir() {
-    if (!this.ctx) return;
-    const osc = this.ctx.createOscillator();
-    const g = this.ctx.createGain();
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(35, this.ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(80, this.ctx.currentTime + SHUFFLE_TIME / 1000);
-    g.gain.setValueAtTime(0, this.ctx.currentTime);
-    g.gain.linearRampToValueAtTime(0.2, this.ctx.currentTime + 3);
-    osc.connect(g);
-    g.connect(this.masterGain!);
-    osc.start();
-    osc.stop(this.ctx.currentTime + (SHUFFLE_TIME + EXIT_TIME) / 1000);
-  }
-
-  playImpact() {
-    if (!this.ctx) return;
-    const osc = this.ctx.createOscillator();
-    const g = this.ctx.createGain();
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(25, this.ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(320, this.ctx.currentTime + 0.6);
-    g.gain.setValueAtTime(1.5, this.ctx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 2.5);
-    osc.connect(g);
-    g.connect(this.masterGain!);
-    osc.start();
-    osc.stop(this.ctx.currentTime + 2.5);
-  }
-
-  stop() {
-    if (this.masterGain && this.ctx) {
-      this.masterGain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 1);
-      setTimeout(() => this.ctx?.close(), 1100);
-    }
-  }
-}
-
-const Ball: React.FC<{ index: number; phase: Phase; isWinner: boolean; winningNumber: string; chamberSize: number }> = React.memo(({ index, phase, isWinner, winningNumber, chamberSize }) => {
-  const color = useMemo(() => RAINBOW_COLORS[index % RAINBOW_COLORS.length], [index]);
-  const displayNum = isWinner ? winningNumber : index.toString().padStart(2, '0');
+const Ball: React.FC<{ 
+  id: number; 
+  number: string; 
+  phase: Phase; 
+  isWinner: boolean; 
+  winningNumber: string 
+}> = React.memo(({ id, number, phase, isWinner, winningNumber }) => {
+  const color = useMemo(() => RAINBOW_COLORS[id % RAINBOW_COLORS.length], [id]);
   
   const motion = useMemo(() => {
-    const R = (chamberSize / 2) - 45;
+    const R = 150; // Max radius within chamber
     const path = Array.from({ length: 4 }).map(() => {
         const r = Math.sqrt(Math.random()) * R;
         const a = Math.random() * Math.PI * 2;
         return { x: r * Math.cos(a), y: r * Math.sin(a) };
     });
     return {
-        delay: Math.random() * -20,
-        duration: 0.15 + Math.random() * 0.35,
+        delay: Math.random() * -10,
+        duration: 0.25 + Math.random() * 0.4,
         path
     };
-  }, [chamberSize]);
+  }, []);
 
-  if (isWinner && phase === 'EXITING') {
+  // During delivery OR hold, the actual winning ball travels and then stays
+  if (isWinner && (phase === 'DELIVERY' || phase === 'HOLD')) {
       return (
         <div 
-          className="lottery-ball-3d ball-mechanical-pipe-descent winner-ball-3d" 
-          style={{ 
-            '--ball-color': '#f59e0b',
-            '--chamber-radius': `${chamberSize / 2}px`,
-            zIndex: 1000
-          } as any}
+          className="lottery-ball-3d ball-delivering" 
+          style={{ '--ball-color': '#f59e0b' } as any}
         >
-            <span className="ball-text-3d">{winningNumber}</span>
+            <span className="ball-text-3d" style={{fontSize: '14px'}}>{winningNumber}</span>
         </div>
       );
   }
 
+  // If we are in reveal phase, everything in the machine is hidden
   if (phase === 'REVEAL') return null;
+
+  // Fix: Removed redundant check that caused TypeScript narrowing error as phase was already narrowed by previous returns.
+  // The winner ball is already handled for DELIVERY/HOLD/REVEAL phases above.
+
+  const isMixing = phase === 'SHUFFLE' || phase === 'DELIVERY' || phase === 'HOLD';
 
   return (
     <div 
-        className="lottery-ball-3d ball-shuffling"
+        className={`lottery-ball-3d ${isMixing ? 'ball-mixing' : ''}`}
         style={{
             '--ball-color': color,
             '--delay': `${motion.delay}s`,
@@ -115,161 +73,150 @@ const Ball: React.FC<{ index: number; phase: Phase; isWinner: boolean; winningNu
             '--x2': `${motion.path[1].x}px`, '--y2': `${motion.path[1].y}px`,
             '--x3': `${motion.path[2].x}px`, '--y3': `${motion.path[2].y}px`,
             '--x4': `${motion.path[3].x}px`, '--y4': `${motion.path[3].y}px`,
+            // If not mixing, they settle at the bottom
+            transform: !isMixing ? `translate(${(id % 20 - 10) * 14}px, ${140 + (Math.floor(id/20) * -16)}px)` : undefined
         } as any}
     >
-        <span className="ball-text-3d">{displayNum}</span>
+        <span className="ball-text-3d">{number}</span>
     </div>
   );
 });
 
 const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, winningNumber, onClose }) => {
-  const [phase, setPhase] = useState<Phase>('SHUFFLE');
-  const [revealImage, setRevealImage] = useState<string | null>(null);
-  const audio = useRef<DrawAudioEngine | null>(null);
-  const chamberSize = Math.min(window.innerWidth * 0.95, 540);
-  const ballRange = useMemo(() => Array.from({ length: 100 }, (_, i) => i), []);
+  const [phase, setPhase] = useState<Phase>('IDLE');
+  const [aiBackdrop, setAiBackdrop] = useState<string | null>(null);
+  
+  const balls = useMemo(() => Array.from({ length: 100 }, (_, i) => ({
+    id: i,
+    number: i.toString().padStart(2, '0')
+  })), []);
 
   useEffect(() => {
-    audio.current = new DrawAudioEngine();
-    audio.current.init();
-
-    const exitTimer = setTimeout(() => setPhase('EXITING'), SHUFFLE_TIME);
-    const revealTimer = setTimeout(() => {
-        setPhase('REVEAL');
-        audio.current?.playImpact();
-    }, SHUFFLE_TIME + EXIT_TIME);
-
-    // AI Backdrop generation using user's specific high-detail 3D prompts
-    const generateBackdrop = async () => {
+    // Atmosphere generation
+    const gen = async () => {
         try {
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-            const prompt = `A highly detailed 3D render of a glossy spherical ball materializing in a minimal blue-gray studio. Soft directional light creates realistic reflections and subtle shadows on a polished floor. Final shot of a ball resting on a softly illuminated pedestal, ambient lighting fading to black, high-detail reflections and a minimalist background. Cinematic low-angle, 8k resolution, photorealistic.`;
-            
             const resp = await ai.models.generateContent({
                 model: 'gemini-2.5-flash-image',
-                contents: { parts: [{ text: prompt }] },
-                config: { imageConfig: { aspectRatio: "16:9" } }
+                contents: { parts: [{ text: "A high-end cinematic 3D lottery studio with neon accents and metallic textures, minimal blue-gray lighting, 8k resolution." }] },
+                config: { imageConfig: { aspectRatio: "9:16" } }
             });
             for (const p of resp.candidates[0].content.parts) {
-                if (p.inlineData) setRevealImage(`data:image/png;base64,${p.inlineData.data}`);
+                if (p.inlineData) setAiBackdrop(`data:image/png;base64,${p.inlineData.data}`);
             }
-        } catch (e) {
-            console.error("Backdrop generation failed", e);
-        }
+        } catch (e) {}
     };
-    generateBackdrop();
+    gen();
+
+    // Sequence timing
+    const startTimer = setTimeout(() => setPhase('SHUFFLE'), 800);
+    const deliveryTimer = setTimeout(() => setPhase('DELIVERY'), 800 + SHUFFLE_TIME);
+    const holdTimer = setTimeout(() => setPhase('HOLD'), 800 + SHUFFLE_TIME + DELIVERY_TIME);
+    const revealTimer = setTimeout(() => setPhase('REVEAL'), 800 + SHUFFLE_TIME + DELIVERY_TIME + HOLD_TIME);
 
     return () => {
-        clearTimeout(exitTimer);
+        clearTimeout(startTimer);
+        clearTimeout(deliveryTimer);
+        clearTimeout(holdTimer);
         clearTimeout(revealTimer);
-        audio.current?.stop();
     };
   }, []);
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-black overflow-hidden flex flex-col items-center justify-center select-none">
+    <div className="fixed inset-0 z-[9999] lottery-machine-viewport select-none bg-black">
       
-      {/* HUD HEADER */}
+      {/* AI Atmosphere Backdrop */}
+      {aiBackdrop && (
+        <div className="absolute inset-0 z-0">
+          <img src={aiBackdrop} className="w-full h-full object-cover opacity-30 blur-md" alt="Backdrop" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
+        </div>
+      )}
+
+      {/* HEADER HUD */}
       {phase !== 'REVEAL' && (
-        <div className="absolute top-10 text-center animate-fade-in z-50 px-4 w-full">
-            <h2 className="text-white text-5xl sm:text-8xl font-black russo tracking-[0.25em] uppercase mb-4 drop-shadow-[0_10px_30px_rgba(0,0,0,1)]">
+        <div className="absolute top-10 text-center z-50 animate-fade-in">
+            <h2 className="text-white text-5xl font-black russo tracking-[0.3em] uppercase mb-2 drop-shadow-2xl">
                 {gameName} <span className="text-amber-500">LIVE</span>
             </h2>
-            <div className="flex items-center justify-center gap-10">
-                <div className="w-24 h-[2px] bg-amber-500/50"></div>
-                <p className="text-amber-500 text-[12px] font-black uppercase tracking-[1em] animate-pulse">
-                    {phase === 'SHUFFLE' ? 'CORE STABILIZATION' : 'REVEALING OUTCOME'}
+            <div className="flex items-center justify-center gap-4">
+                <div className={`w-3 h-3 rounded-full ${phase === 'SHUFFLE' ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'}`} />
+                <p className="text-xs font-black text-slate-400 uppercase tracking-widest">
+                    {phase === 'SHUFFLE' ? 'STABILIZING NODES...' : phase === 'DELIVERY' ? 'NODE EXTRACTION...' : 'DRAW VERIFIED'}
                 </p>
-                <div className="w-24 h-[2px] bg-amber-500/50"></div>
             </div>
         </div>
       )}
 
-      {/* MECHANICAL ENGINE CORE */}
-      <div className={`relative w-full h-full flex flex-col items-center justify-center transition-all duration-1500 ${phase === 'REVEAL' ? 'opacity-0 scale-150 blur-xl' : 'opacity-100'}`}>
+      {/* MECHANICAL CORE */}
+      <div className={`relative w-full h-full flex flex-col items-center justify-center transition-all duration-1000 ${phase === 'REVEAL' ? 'opacity-0 scale-150 blur-3xl' : 'opacity-100'}`}>
         
-        {/* THE MAIN CHAMBER */}
-        <div className="relative z-20" style={{ width: chamberSize, height: chamberSize }}>
-            {/* Industrial Exterior Housing */}
-            <div className="absolute -inset-14 border-[32px] border-slate-900 rounded-full shadow-[0_120px_240px_rgba(0,0,0,1),inset_0_4px_24px_rgba(255,255,255,0.1)] bg-slate-950/90" />
+        {/* THE CHAMBER */}
+        <div className="machine-chamber">
+            {balls.map((b) => (
+                <Ball 
+                    key={b.id} 
+                    id={b.id} 
+                    number={b.number} 
+                    phase={phase} 
+                    isWinner={b.number === winningNumber} 
+                    winningNumber={winningNumber} 
+                />
+            ))}
             
-            {/* Primary Glass Vessel - Perfectly Centered */}
-            <div className="absolute inset-0 bg-slate-900/30 rounded-full border-2 border-white/10 overflow-hidden backdrop-blur-xl shadow-[inset_0_40px_100px_rgba(0,0,0,1)]">
-                <div className="absolute inset-0 bg-radial-3d opacity-30" />
-                <div className="relative w-full h-full">
-                    {ballRange.map(i => (
-                        <Ball key={i} index={i} phase={phase} isWinner={false} winningNumber={winningNumber} chamberSize={chamberSize} />
-                    ))}
-                    {/* The specific Winning Ball to descent from center port */}
-                    <Ball index={777} phase={phase} isWinner winningNumber={winningNumber} chamberSize={chamberSize} />
-                </div>
-            </div>
-
-            {/* Bottom Port Housing (The Exit) */}
-            <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 w-48 h-24 bg-slate-800 rounded-t-[4rem] border-x-[12px] border-t-[12px] border-slate-700 z-30 flex items-center justify-center shadow-[0_40px_80px_rgba(0,0,0,1)]">
-                <div className="w-32 h-16 bg-black rounded-full shadow-inner border-2 border-white/10" />
+            {/* PORT HOUSING */}
+            <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 w-32 h-16 bg-slate-900 rounded-t-3xl border-x-4 border-t-4 border-slate-800 z-30 flex items-center justify-center shadow-inner">
+                <div className="w-16 h-8 bg-black rounded-full shadow-inner border border-white/5" />
             </div>
         </div>
 
-        {/* THE LONG CENTERED ZIG-ZAG PIPE VISUAL */}
-        <div className="absolute z-10 pointer-events-none opacity-60" style={{ top: `calc(50% + ${chamberSize / 2}px - 20px)`, width: '450px', height: '800px' }}>
-            <svg className="w-full h-full" viewBox="0 0 450 800" fill="none" preserveAspectRatio="xMidYMid meet">
-                <defs>
-                   <linearGradient id="mechanicalPipeGrad" x1="0" y1="0" x2="1" y2="0">
-                      <stop offset="0%" stopColor="rgba(255,255,255,0.01)" />
-                      <stop offset="50%" stopColor="rgba(255,255,255,0.3)" />
-                      <stop offset="100%" stopColor="rgba(255,255,255,0.01)" />
-                   </linearGradient>
-                   <filter id="mechanicalPipeGlow"><feGaussianBlur stdDeviation="20" result="blur" /><feComposite in="SourceGraphic" in2="blur" operator="over" /></filter>
-                </defs>
-                {/* Visual rendering of the "Long" zig-zag descent pipe */}
+        {/* DELIVERY PATH (Zig-Zag visual) */}
+        <div className="absolute z-10 pointer-events-none opacity-40">
+            <svg width="400" height="800" viewBox="0 0 400 800" fill="none">
                 <path 
-                    d="M 225 0 L 225 100 L 105 200 L 345 320 L 125 440 L 225 540 L 225 800" 
-                    stroke="url(#mechanicalPipeGrad)" 
-                    strokeWidth="110" 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
-                    filter="url(#mechanicalPipeGlow)"
+                    d="M 200 350 L 200 450 L 80 520 L 320 620 L 200 700 L 200 800" 
+                    stroke="white" strokeWidth="2" strokeDasharray="15 20" 
                 />
-                <path 
-                    d="M 225 0 L 225 100 L 105 200 L 345 320 L 125 440 L 225 540 L 225 800" 
-                    stroke="white" 
-                    strokeWidth="2" 
-                    opacity="0.2" 
-                    strokeDasharray="30 60" 
-                />
-                <g transform="translate(225, 750)">
-                   <circle r="120" fill="rgba(2,6,23,0.9)" stroke="rgba(255,255,255,0.05)" strokeWidth="4" />
-                   <circle r="80" fill="none" stroke="rgba(245,158,11,0.2)" strokeWidth="2" className="animate-pulse" />
-                </g>
             </svg>
+        </div>
+
+        {/* SIDE BUTTON DECORATION */}
+        <div className="side-buttons">
+            <div className="mech-btn btn-blue">Reset</div>
+            <div className="mech-btn btn-red">Draw</div>
+        </div>
+
+        {/* RESULT BOX AT BOTTOM */}
+        <div className="result-display-box">
+            {(phase === 'HOLD' || phase === 'REVEAL') ? (
+                <span className="result-glow-text">{winningNumber}</span>
+            ) : (
+                <span className="opacity-20 text-3xl font-black">??</span>
+            )}
         </div>
       </div>
 
-      {/* FINAL CINEMATIC REVEAL SCREEN */}
+      {/* THE BIG SCREEN REVEAL */}
       {phase === 'REVEAL' && (
-        <div className="absolute inset-0 bg-slate-950 flex flex-col items-center justify-center animate-fade-in p-6 z-[100] overflow-hidden">
-            {/* AI Background based on User prompts */}
-            {revealImage && (
-                <div className="absolute inset-0 z-0">
-                    <img src={revealImage} className="w-full h-full object-cover opacity-35 blur-sm scale-105" alt="Cinematic Winner Backdrop" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-slate-950" />
-                    <div className="absolute inset-0 bg-black/50" />
-                </div>
+        <div className="absolute inset-0 z-[200] bg-slate-950 flex flex-col items-center justify-center p-6 animate-fade-in overflow-hidden">
+            {aiBackdrop && (
+                <img src={aiBackdrop} className="absolute inset-0 w-full h-full object-cover opacity-20 blur-sm scale-110" alt="" />
             )}
-
-            <div className="relative z-10 animate-result-slam-3d text-center w-full max-w-6xl">
-                <p className="text-amber-500 font-black russo text-4xl sm:text-9xl tracking-[0.5em] mb-20 uppercase italic drop-shadow-[0_0_60px_rgba(245,158,11,0.8)] premium-gold-text">AUTHENTIC WINNER</p>
+            
+            <div className="relative z-10 animate-result-slam-3d text-center">
+                <p className="text-amber-500 font-black russo text-4xl sm:text-6xl tracking-[0.4em] mb-12 uppercase italic drop-shadow-[0_0_30px_rgba(245,158,11,0.5)]">AUTHENTIC WINNER</p>
                 
-                <div className="glass-panel rounded-[8rem] sm:rounded-[12rem] px-24 py-28 sm:px-72 sm:py-64 border-[24px] sm:border-[54px] border-amber-500 shadow-[0_0_400px_rgba(245,158,11,0.6)] relative overflow-hidden backdrop-blur-3xl premium-glow-amber">
-                    <div className="absolute inset-0 bg-gradient-to-br from-white/15 to-transparent opacity-50"></div>
-                    <span className="relative text-[20rem] sm:text-[48rem] font-black russo text-white leading-none drop-shadow-[0_60px_120px_rgba(0,0,0,1)] gold-shimmer block">{winningNumber}</span>
+                <div className="glass-panel rounded-[5rem] sm:rounded-[8rem] px-20 py-24 sm:px-64 sm:py-56 border-[24px] sm:border-[40px] border-amber-500 shadow-[0_0_200px_rgba(245,158,11,0.3)] relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-40"></div>
+                    <span className="relative text-[18rem] sm:text-[36rem] font-black russo text-white leading-none drop-shadow-[0_30px_60px_rgba(0,0,0,1)] gold-shimmer block">
+                        {winningNumber}
+                    </span>
                 </div>
 
-                <div className="mt-32">
+                <div className="mt-24">
                     <button 
                         onClick={onClose}
-                        className="bg-amber-600 hover:bg-amber-500 text-white font-black px-28 py-12 sm:px-52 sm:py-16 rounded-full text-5xl sm:text-8xl uppercase tracking-[0.7em] transition-all active:scale-95 shadow-[0_50px_100px_rgba(0,0,0,1)] border-b-[20px] border-amber-800 hover:border-b-[10px] hover:translate-y-[10px] russo"
+                        className="bg-amber-600 hover:bg-amber-500 text-white font-black px-24 py-10 rounded-full text-3xl sm:text-5xl uppercase tracking-[0.5em] transition-all active:scale-90 shadow-2xl border-b-[12px] border-amber-800 hover:translate-y-2 hover:border-b-[8px]"
                     >
                         CONTINUE
                     </button>
@@ -278,10 +225,10 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
         </div>
       )}
 
-      {/* SYSTEM STATUS BAR */}
-      <div className="absolute bottom-12 left-12 opacity-40 flex items-center gap-6">
-        <div className="w-6 h-6 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_30px_#10b981]" />
-        <span className="text-[14px] font-black text-white uppercase tracking-[0.8em]">MECHANICAL PIPELINE: SECURE & VERIFIED</span>
+      {/* FOOTER SYNC STATUS */}
+      <div className="absolute bottom-8 left-8 opacity-40 flex items-center gap-4">
+          <div className="w-5 h-5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_20px_#10b981]" />
+          <span className="text-[12px] font-black text-white uppercase tracking-[0.6em]">MECHANICAL PIPELINE: SECURE & VERIFIED</span>
       </div>
     </div>
   );

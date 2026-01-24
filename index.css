@@ -2,114 +2,135 @@
 @tailwind components;
 @tailwind utilities;
 
-/* --- VOLUMETRIC MECHANICAL DRAW ENGINE --- */
+/* --- VIDEO-ACCURATE MECHANICAL DRAW ENGINE --- */
 
+.lottery-machine-viewport {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background-color: #000;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* THE CHAMBER */
+.machine-chamber {
+    position: relative;
+    margin-top: 15vh;
+    width: 340px;
+    height: 340px;
+    border: 2px dashed rgba(255, 255, 255, 0.4);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 20;
+    background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.02) 0%, transparent 70%);
+}
+
+/* THE BALLS */
 .lottery-ball-3d {
     position: absolute;
-    top: 50%;
-    left: 50%;
-    width: clamp(26px, 6vw, 42px);
-    height: clamp(26px, 6vw, 42px);
+    width: 26px;
+    height: 26px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     box-shadow: 
-        inset -5px -5px 10px rgba(0,0,0,0.85),
-        inset 3px 3px 6px rgba(255,255,255,0.4),
-        0 6px 12px rgba(0,0,0,0.6);
-    background: radial-gradient(circle at 35% 35%, #fff 0%, var(--ball-color, #fff) 55%, #000 100%);
-    transform: translate(-50%, -50%);
-    z-index: 5;
-    will-change: transform;
+        inset -4px -4px 8px rgba(0,0,0,0.8),
+        inset 2px 2px 4px rgba(255,255,255,0.4),
+        0 4px 8px rgba(0,0,0,0.6);
+    background: radial-gradient(circle at 35% 35%, #fff 0%, var(--ball-color, #fff) 60%, #000 100%);
+    z-index: 25;
 }
 
 .ball-text-3d {
-    font-size: clamp(10px, 1.8vw, 16px);
+    font-size: 11px;
     font-family: 'Inter', sans-serif;
-    font-weight: 900;
+    font-weight: 950;
     color: #000;
-    text-shadow: 0 0.5px 0 rgba(255,255,255,0.4);
+    line-height: 1;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.2);
 }
 
-/* HIGH-INTENSITY SHUFFLING */
-@keyframes intense-shuffle {
-    0%   { transform: translate(calc(-50% + var(--x1)), calc(-50% + var(--y1))) rotate(0deg); }
-    25%  { transform: translate(calc(-50% + var(--x2)), calc(-50% + var(--y2))) rotate(90deg); }
-    50%  { transform: translate(calc(-50% + var(--x3)), calc(-50% + var(--y3))) rotate(180deg); }
-    75%  { transform: translate(calc(-50% + var(--x4)), calc(-50% + var(--y4))) rotate(270deg); }
-    100% { transform: translate(calc(-50% + var(--x1)), calc(-50% + var(--y1))) rotate(360deg); }
+/* INTENSE SHUFFLE */
+@keyframes mechanical-mix {
+    0%   { transform: translate(var(--x1), var(--y1)) rotate(0deg); }
+    25%  { transform: translate(var(--x2), var(--y2)) rotate(90deg); }
+    50%  { transform: translate(var(--x3), var(--y3)) rotate(180deg); }
+    75%  { transform: translate(var(--x4), var(--y4)) rotate(270deg); }
+    100% { transform: translate(var(--x1), var(--y1)) rotate(360deg); }
 }
 
-.ball-shuffling {
-    animation: intense-shuffle var(--duration) infinite cubic-bezier(0.35, 0, 0.65, 1);
+.ball-mixing {
+    animation: mechanical-mix var(--duration) infinite ease-in-out;
     animation-delay: var(--delay);
 }
 
-/* CENTERED LONG ZIG-ZAG PIPE DELIVERY */
-@keyframes ball-delivery-long-zigzag {
-    0% { 
-        transform: translate(-50%, -50%) scale(1);
-        left: 50%; top: 50%; 
-        opacity: 1;
-    }
-    /* Exit through bottom center port exactly */
-    12% { 
-        transform: translate(-50%, -50%) scale(0.9);
-        left: 50%; top: calc(50% + var(--chamber-radius));
-    }
-    /* Vertical drop into pipe */
-    20% { 
-        transform: translate(-50%, -50%) scale(0.85);
-        left: 50%; top: calc(50% + var(--chamber-radius) + 80px);
-    }
-    /* Zig Left */
-    35% { 
-        transform: translate(-50%, -50%) scale(0.85);
-        left: calc(50% - 120px); top: calc(50% + var(--chamber-radius) + 180px);
-    }
-    /* Zig Right */
-    55% { 
-        transform: translate(-50%, -50%) scale(0.85);
-        left: calc(50% + 120px); top: calc(50% + var(--chamber-radius) + 300px);
-    }
-    /* Zig Left again */
-    75% { 
-        transform: translate(-50%, -50%) scale(0.85);
-        left: calc(50% - 100px); top: calc(50% + var(--chamber-radius) + 420px);
-    }
-    /* Center alignment for final descent */
-    90% { 
-        transform: translate(-50%, -50%) scale(1.5);
-        left: 50%; top: calc(50% + var(--chamber-radius) + 520px);
-        opacity: 1;
-        filter: blur(0);
-    }
-    /* Final impact / reveal zoom */
-    100% { 
-        transform: translate(-50%, -50%) scale(6);
-        left: 50%; top: calc(50% + var(--chamber-radius) + 650px);
-        opacity: 0;
-        filter: blur(40px);
-    }
+/* ZIG-ZAG PATH */
+.ball-delivering {
+    z-index: 100 !important;
+    animation: follow-video-path 4.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
-.ball-mechanical-pipe-descent {
-    animation: ball-delivery-long-zigzag 5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-    z-index: 1000 !important;
+@keyframes follow-video-path {
+    0% { transform: translate(0, 0) scale(1); opacity: 1; }
+    /* Drop from center bottom of chamber */
+    12% { transform: translate(0, 180px) scale(1.1); }
+    /* First bend left */
+    30% { transform: translate(-150px, 240px) scale(1.05); }
+    /* Second bend right */
+    55% { transform: translate(180px, 340px) scale(1); }
+    /* Final approach into result box */
+    85% { transform: translate(0, 480px) scale(1.1); opacity: 1; }
+    /* Hold at bottom destination */
+    100% { transform: translate(0, 520px) scale(3.5); opacity: 1; filter: drop-shadow(0 0 20px rgba(245,158,11,0.5)); }
 }
 
-/* --- CINEMATIC REVEAL --- */
+/* RESULT BOX AT BOTTOM */
+.result-display-box {
+    position: absolute;
+    bottom: 8vh;
+    width: 240px;
+    height: 90px;
+    background: #000;
+    border: 3px solid #3b82f6;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Inter', sans-serif;
+    font-weight: 900;
+    font-size: 60px;
+    color: #fff;
+    box-shadow: 0 0 50px rgba(59, 130, 246, 0.5), inset 0 0 20px rgba(59, 130, 246, 0.3);
+    z-index: 50;
+}
 
+.result-glow-text {
+    animation: result-pop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    background: linear-gradient(to bottom, #fff, #3b82f6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+@keyframes result-pop {
+    0% { transform: scale(0.3); opacity: 0; filter: blur(10px); }
+    100% { transform: scale(1); opacity: 1; filter: blur(0); }
+}
+
+/* BIG SCREEN REVEAL */
 .animate-result-slam-3d {
-    animation: result-slam-3d 2s cubic-bezier(0.1, 0.9, 0.2, 1) forwards;
+    animation: result-slam-3d 1.5s cubic-bezier(0.1, 0.9, 0.2, 1) forwards;
 }
 
 @keyframes result-slam-3d {
-    0% { transform: perspective(3000px) scale(12) rotateX(60deg) translateZ(1000px); opacity: 0; filter: blur(80px); }
-    50% { transform: perspective(3000px) scale(0.8) rotateX(-20deg); opacity: 1; filter: blur(0); }
-    75% { transform: perspective(3000px) scale(1.1) rotateX(10deg); }
-    100% { transform: perspective(3000px) scale(1) rotateX(0deg); opacity: 1; }
+    0% { transform: perspective(2000px) scale(10) rotateX(60deg); opacity: 0; filter: blur(50px); }
+    100% { transform: perspective(2000px) scale(1) rotateX(0deg); opacity: 1; filter: blur(0); }
 }
 
 .premium-gold-text {
@@ -117,20 +138,14 @@
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
-    filter: drop-shadow(0 0 40px rgba(245,158,11,0.8));
-}
-
-.glass-panel {
-    background: rgba(255, 255, 255, 0.02);
-    backdrop-filter: blur(40px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    filter: drop-shadow(0 0 30px rgba(245,158,11,0.6));
 }
 
 .gold-shimmer {
     background: linear-gradient(
         90deg, 
         rgba(255,255,255,0) 0%, 
-        rgba(255,255,255,0.6) 50%, 
+        rgba(255,255,255,0.7) 50%, 
         rgba(255,255,255,0) 100%
     );
     background-size: 200% 100%;
@@ -144,16 +159,47 @@
     100% { background-position: 200% 0; }
 }
 
+/* DECORATIVE BUTTONS */
+.side-buttons {
+    position: absolute;
+    right: 30px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+    z-index: 60;
+}
+
+.mech-btn {
+    width: 85px;
+    height: 85px;
+    border-radius: 50%;
+    border: 4px solid #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Russo One', sans-serif;
+    font-size: 13px;
+    color: #fff;
+    text-transform: uppercase;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+    cursor: default;
+}
+
+.btn-blue { background: radial-gradient(circle at 30% 30%, #60a5fa, #1d4ed8); }
+.btn-red { background: radial-gradient(circle at 30% 30%, #f87171, #b91c1c); }
+
+.glass-panel {
+    background: rgba(255, 255, 255, 0.02);
+    backdrop-filter: blur(50px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 .bg-mesh {
     position: fixed;
     inset: 0;
-    background-image: 
-        radial-gradient(at 0% 0%, rgba(245, 158, 11, 0.08) 0px, transparent 50%),
-        radial-gradient(at 100% 0%, rgba(59, 130, 246, 0.08) 0px, transparent 50%);
+    background-image: radial-gradient(at 50% 50%, rgba(255, 255, 255, 0.05) 0px, transparent 50%);
     pointer-events: none;
     z-index: -1;
-}
-
-.premium-glow-amber {
-    box-shadow: 0 0 100px rgba(245, 158, 11, 0.2), inset 0 0 50px rgba(245, 158, 11, 0.1);
 }

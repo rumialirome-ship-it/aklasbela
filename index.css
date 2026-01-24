@@ -5,29 +5,32 @@
 /* --- VIDEO-ACCURATE MECHANICAL DRAW ENGINE --- */
 
 .lottery-machine-viewport {
-    position: relative;
-    width: 100%;
-    height: 100%;
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
     background-color: #000;
     overflow: hidden;
     display: flex;
     flex-direction: column;
     align-items: center;
+    z-index: 10000;
 }
 
 /* THE CHAMBER */
 .machine-chamber {
     position: relative;
-    margin-top: 12vh;
+    margin-top: 10vh;
     width: 320px;
     height: 320px;
-    border: 3px dashed rgba(255, 255, 255, 0.3);
+    border: 3px dashed rgba(255, 255, 255, 0.2);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 20;
     background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.03) 0%, transparent 80%);
+    box-shadow: inset 0 0 50px rgba(255,255,255,0.05);
 }
 
 /* THE BALLS */
@@ -59,8 +62,9 @@
 /* INTENSE SHUFFLE */
 @keyframes mechanical-mix {
     0%   { transform: translate(var(--x1), var(--y1)) rotate(0deg); }
-    33%  { transform: translate(var(--x2), var(--y2)) rotate(120deg); }
-    66%  { transform: translate(var(--x3), var(--y3)) rotate(240deg); }
+    25%  { transform: translate(var(--x2), var(--y2)) rotate(90deg); }
+    50%  { transform: translate(var(--x3), var(--y3)) rotate(180deg); }
+    75%  { transform: translate(var(--x4), var(--y4)) rotate(270deg); }
     100% { transform: translate(var(--x1), var(--y1)) rotate(360deg); }
 }
 
@@ -70,68 +74,69 @@
 }
 
 /* ZIG-ZAG PATH - DROPPING FROM PORT */
+/* Values are optimized to land near the display box centered at the bottom */
 .ball-delivering {
-    z-index: 100 !important;
-    animation: follow-video-path 4.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    z-index: 1000 !important;
+    animation: follow-video-path 4.5s cubic-bezier(0.5, 0, 0.3, 1) forwards;
 }
 
 @keyframes follow-video-path {
     0% { transform: translate(0, 160px) scale(0.5); opacity: 0; }
     5% { transform: translate(0, 160px) scale(1.1); opacity: 1; }
-    /* Exit through port at bottom */
+    /* Exit through port at bottom of chamber */
     15% { transform: translate(0, 200px) scale(1.1); }
-    /* First bend left */
-    35% { transform: translate(-140px, 260px) scale(1); }
-    /* Second bend right */
-    60% { transform: translate(160px, 360px) scale(1); }
-    /* Final approach into display box */
-    90% { transform: translate(0, 500px) scale(1.2); opacity: 1; }
-    /* Destination */
-    100% { transform: translate(0, 520px) scale(4); opacity: 1; }
+    /* Zig-zag movement */
+    35% { transform: translate(-120px, 280px) scale(1.1); }
+    55% { transform: translate(140px, 380px) scale(1.1); }
+    75% { transform: translate(-40px, 480px) scale(1.2); }
+    /* Final approach into display box at the bottom center */
+    95% { transform: translate(0, 520px) scale(1.5); opacity: 1; }
+    /* Destination landing in box center */
+    100% { transform: translate(0, 540px) scale(4); opacity: 1; }
 }
 
 /* HOLD PHASE PULSE */
 .ball-held {
-    z-index: 110 !important;
-    transform: translate(0, 520px) scale(4);
+    z-index: 1001 !important;
+    transform: translate(0, 540px) scale(4);
     animation: result-pulse 1.2s infinite ease-in-out;
-    box-shadow: 0 0 40px rgba(245, 158, 11, 0.6), inset -5px -5px 10px rgba(0,0,0,0.8);
+    box-shadow: 0 0 50px rgba(245, 158, 11, 0.6), inset -5px -5px 12px rgba(0,0,0,0.8);
 }
 
 @keyframes result-pulse {
-    0%, 100% { transform: translate(0, 520px) scale(4); filter: brightness(1); }
-    50% { transform: translate(0, 520px) scale(4.4); filter: brightness(1.3); }
+    0%, 100% { transform: translate(0, 540px) scale(4); filter: brightness(1); }
+    50% { transform: translate(0, 540px) scale(4.3); filter: brightness(1.3); }
 }
 
 /* RESULT BOX AT BOTTOM */
 .result-display-box {
     position: absolute;
-    bottom: 8vh;
-    width: 260px;
-    height: 100px;
-    background: rgba(0, 0, 0, 0.9);
-    border: 3px solid #3b82f6;
-    border-radius: 12px;
+    bottom: 5vh;
+    width: 280px;
+    height: 110px;
+    background: rgba(0, 0, 0, 0.95);
+    border: 3px solid #f59e0b;
+    border-radius: 16px;
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 50;
-    box-shadow: 0 0 60px rgba(59, 130, 246, 0.4), inset 0 0 20px rgba(59, 130, 246, 0.2);
+    box-shadow: 0 0 80px rgba(245, 158, 11, 0.3), inset 0 0 30px rgba(245, 158, 11, 0.15);
 }
 
 .result-glow-text {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Russo One', sans-serif;
     font-weight: 900;
     font-size: 70px;
-    background: linear-gradient(to bottom, #fff, #3b82f6);
+    background: linear-gradient(to bottom, #fff, #f59e0b);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
-    animation: result-pop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    animation: result-pop 0.8s cubic-bezier(0.17, 0.89, 0.32, 1.27) forwards;
 }
 
 @keyframes result-pop {
-    0% { transform: scale(0.4); opacity: 0; filter: blur(10px); }
+    0% { transform: scale(0.2); opacity: 0; filter: blur(20px); }
     100% { transform: scale(1); opacity: 1; filter: blur(0); }
 }
 
@@ -141,7 +146,7 @@
 }
 
 @keyframes result-slam-3d {
-    0% { transform: perspective(2000px) scale(12) rotateX(45deg); opacity: 0; filter: blur(60px); }
+    0% { transform: perspective(2000px) scale(8) rotateX(45deg); opacity: 0; filter: blur(40px); }
     100% { transform: perspective(2000px) scale(1) rotateX(0deg); opacity: 1; filter: blur(0); }
 }
 
@@ -150,7 +155,7 @@
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
-    filter: drop-shadow(0 0 40px rgba(245,158,11,0.7));
+    filter: drop-shadow(0 0 30px rgba(245,158,11,0.6));
 }
 
 .gold-shimmer {
@@ -173,36 +178,37 @@
 
 .side-buttons {
     position: absolute;
-    right: 25px;
+    right: 4vw;
     top: 50%;
     transform: translateY(-50%);
     display: flex;
     flex-direction: column;
-    gap: 30px;
+    gap: 40px;
     z-index: 60;
 }
 
 .mech-btn {
-    width: 80px;
-    height: 80px;
+    width: 70px;
+    height: 70px;
     border-radius: 50%;
-    border: 3px solid rgba(255,255,255,0.8);
+    border: 3px solid rgba(255,255,255,0.2);
     display: flex;
     align-items: center;
     justify-content: center;
     font-family: 'Russo One', sans-serif;
-    font-size: 11px;
-    color: #fff;
+    font-size: 10px;
+    color: rgba(255,255,255,0.4);
     text-transform: uppercase;
     box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+    pointer-events: none;
 }
 
-.btn-blue { background: radial-gradient(circle at 30% 30%, #3b82f6, #1d4ed8); }
-.btn-red { background: radial-gradient(circle at 30% 30%, #ef4444, #991b1b); }
+.btn-blue { background: radial-gradient(circle at 30% 30%, #3b82f640, #1d4ed840); }
+.btn-red { background: radial-gradient(circle at 30% 30%, #ef444440, #991b1b40); }
 
 .glass-panel {
-    background: rgba(255, 255, 255, 0.02);
-    backdrop-filter: blur(60px);
+    background: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(40px);
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -212,4 +218,15 @@
     background-image: radial-gradient(at 50% 50%, rgba(255, 255, 255, 0.05) 0px, transparent 50%);
     pointer-events: none;
     z-index: -1;
+}
+
+.animate-shake {
+    animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+@keyframes shake {
+  10%, 90% { transform: translate3d(-1px, 0, 0); }
+  20%, 80% { transform: translate3d(2px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+  40%, 60% { transform: translate3d(4px, 0, 0); }
 }

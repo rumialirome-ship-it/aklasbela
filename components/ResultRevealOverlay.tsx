@@ -101,7 +101,7 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
             const resp = await ai.models.generateContent({
                 model: 'gemini-2.5-flash-image',
-                contents: { parts: [{ text: "A futuristic high-stakes lottery hall with neon lighting and complex glass extraction tubes, luxury tech aesthetic, 8k resolution." }] },
+                contents: { parts: [{ text: "A futuristic 3D lottery station, close-up on glass pipes and metallic extraction ports, high-tech industrial aesthetic, neon cyan and amber lighting, 8k resolution." }] },
                 config: { imageConfig: { aspectRatio: "9:16" } }
             });
             for (const p of resp.candidates[0].content.parts) {
@@ -139,7 +139,7 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
     <div className="fixed inset-0 z-[10000] lottery-machine-viewport select-none bg-black overflow-hidden flex flex-col items-center justify-center">
       {aiBackdrop && (
         <div className="absolute inset-0 z-0">
-          <img src={aiBackdrop} className="w-full h-full object-cover opacity-30 blur-sm" alt="" />
+          <img src={aiBackdrop} className="w-full h-full object-cover opacity-25 blur-sm" alt="" />
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
         </div>
       )}
@@ -153,12 +153,12 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
                 <div className="flex items-center gap-3">
                     <div className={`w-2 h-2 rounded-full ${phase === 'SHUFFLE' ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500 shadow-[0_0_10px_#10b981]'}`} />
                     <p className="text-[10px] sm:text-xs font-black text-slate-400 uppercase tracking-widest">
-                        {phase === 'SHUFFLE' ? 'STABILIZING NODES' : phase === 'DELIVERY' ? 'TUBE EXTRACTION' : phase === 'HOLD' ? 'VERIFICATION' : 'PROCESSING'}
+                        {phase === 'SHUFFLE' ? 'MIXING PAYLOAD' : phase === 'DELIVERY' ? 'PIPELINE TRANSPORT' : phase === 'HOLD' ? 'VERIFICATION' : 'PROCESSING'}
                     </p>
                 </div>
                 {phase === 'SHUFFLE' && (
                   <div className="bg-slate-900/80 border border-white/10 px-4 py-1.5 rounded-full shadow-lg">
-                    <span className="text-amber-500 font-mono font-bold text-xs">EXTRACTION: {timeLeft}s</span>
+                    <span className="text-amber-500 font-mono font-bold text-xs uppercase">Ejecting in: {timeLeft}s</span>
                   </div>
                 )}
             </div>
@@ -167,26 +167,30 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
 
       <div className={`relative w-full h-full flex flex-col items-center justify-center transition-all duration-1000 ${phase === 'REVEAL' ? 'opacity-0 scale-150 blur-3xl' : 'opacity-100'}`}>
         
-        {/* THE TRANSPARENT GLASS PIPE SYSTEM */}
+        {/* THE EXTRACTION PIPE - Starts from port, ends in box */}
         <div className="absolute inset-0 z-[35] pointer-events-none overflow-visible">
             <svg className="w-full h-full" preserveAspectRatio="none" viewBox="0 0 400 800">
                 <defs>
-                    <linearGradient id="glassGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor="rgba(255,255,255,0.02)" />
-                        <stop offset="20%" stopColor="rgba(255,255,255,0.15)" />
-                        <stop offset="50%" stopColor="rgba(255,255,255,0.05)" />
-                        <stop offset="80%" stopColor="rgba(255,255,255,0.15)" />
-                        <stop offset="100%" stopColor="rgba(255,255,255,0.02)" />
+                    <linearGradient id="pipeShine" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="rgba(255,255,255,0)" />
+                        <stop offset="25%" stopColor="rgba(255,255,255,0.1)" />
+                        <stop offset="50%" stopColor="rgba(255,255,255,0.2)" />
+                        <stop offset="75%" stopColor="rgba(255,255,255,0.1)" />
+                        <stop offset="100%" stopColor="rgba(255,255,255,0)" />
                     </linearGradient>
-                    <filter id="glassBlur">
-                        <feGaussianBlur in="SourceGraphic" stdDeviation="2" />
-                    </filter>
                 </defs>
-                {/* Back of the tube */}
+                {/* Main Glass Pipe structure */}
                 <path 
-                    d="M 200 450 L 200 480 Q 200 520, 150 540 L 50 580 Q 20 590, 50 620 L 350 720 Q 380 730, 350 760 L 200 800" 
-                    stroke="rgba(255,255,255,0.05)" 
-                    strokeWidth="42" 
+                    d="M 200 450 L 200 480 Q 200 520, 150 540 L 50 580 Q 20 600, 50 630 L 350 720 Q 380 730, 350 760 L 200 800" 
+                    stroke="rgba(255,255,255,0.08)" 
+                    strokeWidth="44" 
+                    fill="none" 
+                    strokeLinecap="round"
+                />
+                <path 
+                    d="M 200 450 L 200 480 Q 200 520, 150 540 L 50 580 Q 20 600, 50 630 L 350 720 Q 380 730, 350 760 L 200 800" 
+                    stroke="url(#pipeShine)" 
+                    strokeWidth="40" 
                     fill="none" 
                     strokeLinecap="round"
                 />
@@ -205,39 +209,26 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
                 />
             ))}
             
-            {/* EXTRACTION PORT - Integrated into pipe entrance */}
-            <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-24 sm:w-32 h-12 sm:h-16 bg-slate-900 rounded-t-full border-x-2 border-t-2 border-slate-700 z-30 shadow-[0_-10px_20px_rgba(0,0,0,1)]">
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-slate-800 opacity-50" />
+            {/* MECHANICAL PORT AT CHAMBER BOTTOM */}
+            <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-24 sm:w-32 h-14 sm:h-20 bg-slate-900 rounded-t-[2rem] border-x-4 border-t-4 border-slate-700 z-30 shadow-[0_-10px_20px_rgba(0,0,0,0.8)] overflow-hidden">
+                <div className="absolute inset-x-0 top-0 h-4 bg-gradient-to-b from-black to-transparent opacity-50" />
+                <div className="mt-4 w-12 sm:w-16 h-8 sm:h-10 mx-auto bg-black rounded-full border border-white/5 shadow-[inset_0_0_15px_rgba(0,0,0,1)]" />
             </div>
         </div>
 
-        {/* FRONT HIGHLIGHT OF GLASS PIPE - Rendered above the ball */}
-        <div className="absolute inset-0 z-[45] pointer-events-none">
-            <svg className="w-full h-full" preserveAspectRatio="none" viewBox="0 0 400 800">
-                <path 
-                    d="M 200 450 L 200 480 Q 200 520, 150 540 L 50 580 Q 20 590, 50 620 L 350 720 Q 380 730, 350 760 L 200 800" 
-                    stroke="url(#glassGrad)" 
-                    strokeWidth="40" 
-                    fill="none" 
-                    strokeLinecap="round"
-                    filter="url(#glassBlur)"
-                    className="opacity-60"
-                />
-            </svg>
-        </div>
-
-        {/* COLLECTION BOX AT END OF PIPE */}
+        {/* COLLECTION BOX AT VIEWPORT BOTTOM */}
         <div className={`result-display-box transition-all duration-700 ${phase === 'SHUFFLE' ? 'opacity-0 translate-y-20' : 'opacity-100 translate-y-0'}`}>
-            <div className="absolute -top-12 sm:-top-16 left-1/2 -translate-x-1/2 text-amber-500 text-[10px] sm:text-[12px] font-black uppercase tracking-[0.5em] animate-pulse whitespace-nowrap bg-black/40 px-6 py-1.5 rounded-full border border-amber-500/20 backdrop-blur-md">
-                PIPE TERMINUS
+            <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-slate-950/80 border border-white/10 px-4 py-1 rounded-full">
+                <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest whitespace-nowrap">RECEIVER UNIT</p>
             </div>
+            
             {(phase === 'HOLD' || phase === 'REVEAL') ? (
                 <span className="result-glow-text">{winningNumber.padStart(2, '0')}</span>
             ) : (
-                <div className="flex gap-2">
-                   <div className="w-2 h-2 rounded-full bg-amber-500 animate-bounce delay-0" />
-                   <div className="w-2 h-2 rounded-full bg-amber-500 animate-bounce delay-100" />
-                   <div className="w-2 h-2 rounded-full bg-amber-500 animate-bounce delay-200" />
+                <div className="flex items-center gap-1.5">
+                   <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse delay-0" />
+                   <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse delay-75" />
+                   <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse delay-150" />
                 </div>
             )}
         </div>

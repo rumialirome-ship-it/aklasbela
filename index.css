@@ -24,16 +24,15 @@
     margin-top: 5vh;
     width: clamp(280px, 85vw, 480px);
     height: clamp(280px, 85vw, 480px);
-    border: 4px solid rgba(255, 255, 255, 0.08);
+    border: 4px solid rgba(255, 255, 255, 0.06);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 20;
-    background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.03) 0%, transparent 85%);
+    background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.02) 0%, transparent 85%);
     box-shadow: 
-        inset 0 0 100px rgba(0,0,0,0.8),
-        inset 0 0 40px rgba(255,255,255,0.05),
+        inset 0 0 120px rgba(0,0,0,1),
         0 0 40px rgba(0,0,0,0.5);
 }
 
@@ -52,7 +51,7 @@
         0 4px 10px rgba(0,0,0,0.7);
     background: radial-gradient(circle at 35% 35%, #fff 0%, var(--ball-color, #fff) 60%, #000 100%);
     z-index: 25;
-    transition: transform 1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: transform 1.2s cubic-bezier(0.19, 1, 0.22, 1);
 }
 
 .ball-text-3d {
@@ -78,30 +77,32 @@
     animation-delay: var(--delay);
 }
 
-/* BALLS RESTING AT BOTTOM */
+/* BALLS SETTLING AFTER SHUFFLE */
 .ball-resting {
-    transform: translate(var(--rest-x), var(--rest-y)) rotate(0deg);
+    transform: translate(var(--rest-x), var(--rest-y)) rotate(15deg);
 }
 
-/* ZIG-ZAG PATH - DROPPING THROUGH PIPE */
+/* BALL TRAVELING THROUGH EXTRACTION PIPE */
 .ball-delivering {
-    z-index: 40 !important; /* Positioned between pipe back and pipe front highlight */
-    animation: follow-pipe-path 5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    z-index: 1000 !important;
+    animation: follow-extraction-path 5s cubic-bezier(0.45, 0, 0.15, 1) forwards;
 }
 
-@keyframes follow-pipe-path {
-    0% { transform: translate(0, 160px) scale(0.5); opacity: 0; }
-    /* Exit from port into glass tube */
-    8% { transform: translate(0, 200px) scale(1.1); opacity: 1; }
-    /* Curved motion matching the SVG path precisely */
-    30% { transform: translate(-35vw, 42vh) scale(1.3) rotate(-45deg); }
-    60% { transform: translate(35vw, 62vh) scale(1.6) rotate(45deg); }
-    88% { transform: translate(0vw, 75vh) scale(2.2) rotate(0deg); }
-    /* Final destination: Landing inside the transparent box at viewport bottom */
+@keyframes follow-extraction-path {
+    0% { transform: translate(0, 160px) scale(0.6); opacity: 0; }
+    /* Exit from port into tube */
+    5% { transform: translate(0, 210px) scale(1.1); opacity: 1; }
+    /* First bend (Left) */
+    25% { transform: translate(-30vw, 36vh) scale(1.3) rotate(-30deg); }
+    /* Horizontal sweep (Right) */
+    50% { transform: translate(30vw, 56vh) scale(1.6) rotate(30deg); }
+    /* Final curve down */
+    80% { transform: translate(0vw, 75vh) scale(2.2) rotate(0deg); }
+    /* Final seat in Receiver Unit */
     100% { transform: translate(0, 80vh) scale(3.5); opacity: 1; }
 }
 
-/* HOLD PHASE PULSE */
+/* HOLD PHASE PULSE - DOCKING COMPLETE */
 .ball-held {
     z-index: 1001 !important;
     transform: translate(0, 80vh) scale(3.5);
@@ -111,32 +112,32 @@
 
 @keyframes result-pulse {
     0%, 100% { transform: translate(0, 80vh) scale(3.5); filter: brightness(1); }
-    50% { transform: translate(0, 80vh) scale(3.8); filter: brightness(1.4); }
+    50% { transform: translate(0, 80vh) scale(3.7); filter: brightness(1.3); }
 }
 
-/* RESULT BOX AT BOTTOM - SLEEK TRANSPARENT GLASS */
+/* RECEIVER UNIT AT VIEWPORT BOTTOM */
 .result-display-box {
     position: absolute;
     bottom: 5vh;
     width: clamp(260px, 80vw, 400px);
-    height: clamp(120px, 18vh, 180px);
-    background: rgba(255, 255, 255, 0.05); 
-    backdrop-filter: blur(25px);
-    border: 4px solid rgba(245, 158, 11, 0.6);
+    height: clamp(110px, 17vh, 160px);
+    background: rgba(255, 255, 255, 0.04); 
+    backdrop-filter: blur(30px);
+    border: 3px solid rgba(245, 158, 11, 0.5);
     border-radius: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 50;
     box-shadow: 
-        0 25px 50px rgba(0,0,0,0.9), 
-        inset 0 0 50px rgba(245, 158, 11, 0.05);
+        0 30px 60px rgba(0,0,0,1), 
+        inset 0 0 40px rgba(245, 158, 11, 0.1);
 }
 
 .result-glow-text {
     font-family: 'Russo One', sans-serif;
     font-weight: 900;
-    font-size: clamp(70px, 16vw, 120px);
+    font-size: clamp(60px, 15vw, 110px);
     background: linear-gradient(to bottom, #fff, #f59e0b);
     -webkit-background-clip: text;
     background-clip: text;

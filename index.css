@@ -4,131 +4,147 @@
 
 /* --- VIDEO-ACCURATE MECHANICAL DRAW ENGINE --- */
 
-.lottery-machine-container {
+.lottery-machine-viewport {
     position: relative;
     width: 100%;
     height: 100%;
     background-color: #000;
-    color: #fff;
     overflow: hidden;
-    font-family: 'Inter', sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
-.chamber-circle {
-    position: absolute;
-    top: 35%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+/* THE CHAMBER */
+.machine-chamber {
+    position: relative;
+    margin-top: 15vh;
     width: 320px;
     height: 320px;
     border: 2px dashed rgba(255, 255, 255, 0.4);
     border-radius: 50%;
-    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 20;
 }
 
-.lottery-ball-2d {
+/* THE BALLS */
+.lottery-ball-3d {
     position: absolute;
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 8px;
-    font-weight: 900;
-    color: #000;
-    box-shadow: inset -2px -2px 4px rgba(0,0,0,0.4), inset 1px 1px 2px rgba(255,255,255,0.4);
-    transform: translate(-50%, -50%);
-    z-index: 15;
+    box-shadow: 
+        inset -3px -3px 6px rgba(0,0,0,0.7),
+        inset 2px 2px 3px rgba(255,255,255,0.4),
+        0 2px 5px rgba(0,0,0,0.5);
+    background: radial-gradient(circle at 35% 35%, #fff 0%, var(--ball-color, #fff) 60%, #000 100%);
+    z-index: 25;
 }
 
-/* SHUFFLING ANIMATION */
-@keyframes ball-jiggle {
-    0% { transform: translate(var(--x0), var(--y0)); }
-    25% { transform: translate(var(--x1), var(--y1)); }
-    50% { transform: translate(var(--x2), var(--y2)); }
-    75% { transform: translate(var(--x3), var(--y3)); }
-    100% { transform: translate(var(--x0), var(--y0)); }
+.ball-text-3d {
+    font-size: 10px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 900;
+    color: #000;
+    line-height: 1;
+}
+
+/* INTENSE SHUFFLE */
+@keyframes mechanical-mix {
+    0%   { transform: translate(var(--x1), var(--y1)) rotate(0deg); }
+    33%  { transform: translate(var(--x2), var(--y2)) rotate(120deg); }
+    66%  { transform: translate(var(--x3), var(--y3)) rotate(240deg); }
+    100% { transform: translate(var(--x1), var(--y1)) rotate(360deg); }
 }
 
 .ball-mixing {
-    animation: ball-jiggle var(--dur) infinite ease-in-out;
+    animation: mechanical-mix var(--duration) infinite ease-in-out;
+    animation-delay: var(--delay);
 }
 
-/* PATH ANIMATION */
-.winning-ball-path {
+/* ZIG-ZAG PATH */
+.ball-delivering {
+    z-index: 100 !important;
+    animation: follow-video-path 4.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes follow-video-path {
+    0% { transform: translate(0, 0) scale(1); opacity: 1; }
+    /* Drop from center bottom of chamber */
+    10% { transform: translate(0, 160px) scale(1); }
+    /* First bend left */
+    25% { transform: translate(-140px, 200px) scale(0.95); }
+    /* Second bend right */
+    50% { transform: translate(160px, 280px) scale(0.9); }
+    /* Final approach */
+    80% { transform: translate(0, 420px) scale(1); opacity: 1; }
+    /* Slam into result box */
+    100% { transform: translate(0, 480px) scale(3); opacity: 0; filter: blur(20px); }
+}
+
+/* RESULT BOX AT BOTTOM */
+.result-display-box {
     position: absolute;
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    background: radial-gradient(circle at 35% 35%, #fff 0%, #ef4444 55%, #000 100%);
+    bottom: 8vh;
+    width: 200px;
+    height: 80px;
+    background: #000;
+    border: 2px solid #3b82f6;
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 12px;
+    font-family: 'Inter', sans-serif;
     font-weight: 900;
-    color: #000;
+    font-size: 50px;
+    color: #fff;
+    box-shadow: 0 0 30px rgba(59, 130, 246, 0.4);
     z-index: 50;
-    offset-path: path('M 160 320 C 160 380, 450 420, 450 480 C 450 540, 50 600, 50 680 L 160 750'); /* Placeholder path matching the video curve */
-    animation: follow-path 4s cubic-bezier(0.45, 0, 0.55, 1) forwards;
 }
 
-@keyframes follow-path {
-    0% { offset-distance: 0%; opacity: 1; scale: 1; }
-    90% { offset-distance: 100%; opacity: 1; scale: 1.2; }
-    100% { offset-distance: 100%; opacity: 0; scale: 1.5; }
+.result-glow-text {
+    animation: result-pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 
-/* BUTTONS FROM VIDEO */
-.video-btn {
-    width: 80px;
-    height: 80px;
+@keyframes result-pop {
+    0% { transform: scale(0.5); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* DECORATIVE BUTTONS */
+.side-buttons {
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    z-index: 60;
+}
+
+.mech-btn {
+    width: 70px;
+    height: 70px;
     border-radius: 50%;
-    border: 4px solid #fff;
+    border: 3px solid #fff;
     display: flex;
     align-items: center;
     justify-content: center;
     font-family: 'Russo One', sans-serif;
-    font-size: 14px;
+    font-size: 11px;
     color: #fff;
     text-transform: uppercase;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-    transition: transform 0.1s;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
 }
 
-.video-btn-blue { background: linear-gradient(to bottom, #3b82f6, #1d4ed8); }
-.video-btn-red { background: linear-gradient(to bottom, #ef4444, #b91c1c); }
-
-.video-btn:active { transform: scale(0.9); }
-
-/* FINAL DISPLAY BOX */
-.final-result-box {
-    position: absolute;
-    bottom: 10%;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 200px;
-    height: 80px;
-    border: 2px solid rgba(255,255,255,0.2);
-    background: #000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 64px;
-    font-weight: 900;
-    color: #fff;
-    border-radius: 12px;
-}
-
-.delivery-path-svg {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    z-index: 5;
-}
+.btn-blue { background: radial-gradient(circle at 30% 30%, #60a5fa, #1d4ed8); }
+.btn-red { background: radial-gradient(circle at 30% 30%, #f87171, #b91c1c); }
 
 .bg-mesh {
     position: fixed;

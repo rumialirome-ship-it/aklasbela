@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { GoogleGenAI } from "@google/genai";
 
 interface ResultRevealOverlayProps {
   gameName: string;
@@ -7,174 +8,189 @@ interface ResultRevealOverlayProps {
   onClose: () => void;
 }
 
-type Phase = 'IDLE' | 'SHUFFLE' | 'DRAW' | 'REVEAL';
+type Phase = 'IDLE' | 'SHUFFLE' | 'DELIVERY' | 'REVEAL';
 
 const RAINBOW_COLORS = [
   '#ef4444', '#f97316', '#fbbf24', '#22c55e', 
   '#3b82f6', '#6366f1', '#a855f7', '#ec4899',
 ];
 
-const BALL_COLORS_MAP = Array.from({ length: 100 }, (_, i) => {
-  if (i < 14) return '#ef4444'; // Red
-  if (i < 28) return '#f97316'; // Orange
-  if (i < 42) return '#fbbf24'; // Yellow
-  if (i < 56) return '#22c55e'; // Green
-  if (i < 70) return '#3b82f6'; // Blue
-  if (i < 84) return '#a855f7'; // Purple
-  return '#ec4899'; // Pink
-});
+const SHUFFLE_TIME = 8000; // 8 seconds mixing
+const DELIVERY_TIME = 4500; // 4.5 seconds travel
 
-const SHUFFLE_DURATION = 5000; // 5 seconds of mixing
-const DRAW_DURATION = 4000;    // 4 seconds for ball to follow path
-
-const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, winningNumber, onClose }) => {
-  const [phase, setPhase] = useState<Phase>('IDLE');
-  const [showFinalNumber, setShowFinalNumber] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  // Generate 100 balls with random movement parameters
-  const balls = useMemo(() => {
-    return Array.from({ length: 100 }, (_, i) => {
-      const angle = Math.random() * Math.PI * 2;
-      const dist = Math.random() * 120;
-      return {
-        id: i,
-        number: (i + 1).toString().padStart(2, '0'),
-        color: BALL_COLORS_MAP[i],
-        // Random drift points for mixing animation
-        x0: Math.cos(angle) * dist,
-        y0: Math.sin(angle) * dist,
-        x1: Math.cos(angle + 1) * (dist + 20),
-        y1: Math.sin(angle + 1) * (dist - 10),
-        x2: Math.cos(angle - 1) * (dist - 15),
-        y2: Math.sin(angle - 1) * (dist + 15),
-        x3: Math.cos(angle + 0.5) * dist,
-        y3: Math.sin(angle + 0.5) * dist,
-        dur: 0.4 + Math.random() * 0.4
-      };
+const Ball: React.FC<{ 
+  id: number; 
+  number: string; 
+  phase: Phase; 
+  isWinner: boolean; 
+  winningNumber: string 
+}> = React.memo(({ id, number, phase, isWinner, winningNumber }) => {
+  const color = useMemo(() => RAINBOW_COLORS[id % RAINBOW_COLORS.length], [id]);
+  
+  const motion = useMemo(() => {
+    const R = 140; // Max radius within chamber
+    const path = Array.from({ length: 4 }).map(() => {
+        const r = Math.sqrt(Math.random()) * R;
+        const a = Math.random() * Math.PI * 2;
+        return { x: r * Math.cos(a), y: r * Math.sin(a) };
     });
-  }, []);
-
-  useEffect(() => {
-    // Auto-start sequence
-    const startTimer = setTimeout(() => setPhase('SHUFFLE'), 1000);
-    const drawTimer = setTimeout(() => setPhase('DRAW'), 1000 + SHUFFLE_DURATION);
-    const revealTimer = setTimeout(() => {
-      setPhase('REVEAL');
-      setShowFinalNumber(true);
-    }, 1000 + SHUFFLE_DURATION + DRAW_DURATION);
-
-    return () => {
-      clearTimeout(startTimer);
-      clearTimeout(drawTimer);
-      clearTimeout(revealTimer);
+    return {
+        delay: Math.random() * -10,
+        duration: 0.3 + Math.random() * 0.4,
+        path
     };
   }, []);
 
-  // Calculate coordinates relative to screen center
-  const centerX = window.innerWidth / 2;
-  const centerY = window.innerHeight * 0.35;
+  // During delivery, the actual winning ball from the chamber is "pulled"
+  if (isWinner && phase === 'DELIVERY') {
+      return (
+        <div 
+          className="lottery-ball-3d ball-delivering" 
+          style={{ '--ball-color': color } as any}
+        >
+            <span className="ball-text-3d">{winningNumber}</span>
+        </div>
+      );
+  }
 
-  // Path from video: starts from chamber exit, zig-zags down
-  // Chamber exit is roughly at (centerX, centerY + 160)
-  const pathD = `M ${centerX} ${centerY + 160} 
-                C ${centerX} ${centerY + 220}, ${centerX + 180} ${centerY + 260}, ${centerX + 180} ${centerY + 320}
-                C ${centerX + 180} ${centerY + 380}, ${centerX - 180} ${centerY + 440}, ${centerX - 180} ${centerY + 520}
-                L ${centerX} ${centerY + 580}`;
+  // If this ball is the one being delivered, hide the static/shuffling one
+  if (isWinner && (phase === 'DELIVERY' || phase === 'REVEAL')) return null;
+
+  const isMixing = phase === 'SHUFFLE' || phase === 'DELIVERY';
 
   return (
-    <div className="fixed inset-0 z-[9999] lottery-machine-container flex flex-col items-center">
+    <div 
+        className={`lottery-ball-3d ${isMixing ? 'ball-mixing' : ''}`}
+        style={{
+            '--ball-color': color,
+            '--delay': `${motion.delay}s`,
+            '--duration': `${motion.duration}s`,
+            '--x1': `${motion.path[0].x}px`, '--y1': `${motion.path[0].y}px`,
+            '--x2': `${motion.path[1].x}px`, '--y2': `${motion.path[1].y}px`,
+            '--x3': `${motion.path[2].x}px`, '--y3': `${motion.path[2].y}px`,
+            // If not mixing, they settle at the bottom
+            transform: !isMixing ? `translate(${(id % 20 - 10) * 12}px, ${130 + (Math.floor(id/20) * -15)}px)` : undefined
+        } as any}
+    >
+        <span className="ball-text-3d">{number}</span>
+    </div>
+  );
+});
+
+const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, winningNumber, onClose }) => {
+  const [phase, setPhase] = useState<Phase>('IDLE');
+  const [aiBackdrop, setAiBackdrop] = useState<string | null>(null);
+  
+  const balls = useMemo(() => Array.from({ length: 100 }, (_, i) => ({
+    id: i,
+    number: i.toString().padStart(2, '0')
+  })), []);
+
+  useEffect(() => {
+    // Generate cinematic background
+    const gen = async () => {
+        try {
+            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+            const resp = await ai.models.generateContent({
+                model: 'gemini-2.5-flash-image',
+                contents: { parts: [{ text: "A premium 3D mechanical lottery machine set in a dark, high-end studio. Minimalist and elegant with soft blue accent lighting and realistic metallic textures. Photorealistic 8k render." }] },
+                config: { imageConfig: { aspectRatio: "9:16" } }
+            });
+            for (const p of resp.candidates[0].content.parts) {
+                if (p.inlineData) setAiBackdrop(`data:image/png;base64,${p.inlineData.data}`);
+            }
+        } catch (e) {}
+    };
+    gen();
+
+    // Sequence
+    const startTimer = setTimeout(() => setPhase('SHUFFLE'), 500);
+    const deliveryTimer = setTimeout(() => setPhase('DELIVERY'), 500 + SHUFFLE_TIME);
+    const revealTimer = setTimeout(() => setPhase('REVEAL'), 500 + SHUFFLE_TIME + DELIVERY_TIME);
+
+    return () => {
+        clearTimeout(startTimer);
+        clearTimeout(deliveryTimer);
+        clearTimeout(revealTimer);
+    };
+  }, []);
+
+  return (
+    <div className="fixed inset-0 z-[9999] lottery-machine-viewport select-none">
       
-      {/* Header Info */}
-      <div className="absolute top-6 left-6 text-left opacity-60">
-        <h2 className="text-white text-xl font-black uppercase tracking-widest russo">{gameName}</h2>
-        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Mechanical Draw Session</p>
-      </div>
-
-      {/* SVG Path Background */}
-      <svg className="delivery-path-svg" viewBox={`0 0 ${window.innerWidth} ${window.innerHeight}`}>
-        <path 
-          d={pathD} 
-          fill="none" 
-          stroke="rgba(255,255,255,0.2)" 
-          strokeWidth="2" 
-          strokeDasharray="8 8" 
-        />
-      </svg>
-
-      {/* Chamber */}
-      <div className="chamber-circle">
-        <div className="relative w-full h-full flex items-center justify-center">
-          {balls.map((ball) => {
-            // If it's the winning ball and we are in DRAW phase, hide it from the chamber
-            if (ball.number === winningNumber && phase === 'DRAW') return null;
-            // If we are in REVEAL phase, hide all balls to match video end state? 
-            // Video actually keeps them at bottom.
-            const isMixing = phase === 'SHUFFLE' || phase === 'DRAW';
-            return (
-              <div 
-                key={ball.id}
-                className={`lottery-ball-2d ${isMixing ? 'ball-mixing' : ''}`}
-                style={{
-                  backgroundColor: ball.color,
-                  '--x0': `${ball.x0}px`, '--y0': `${ball.y0}px`,
-                  '--x1': `${ball.x1}px`, '--y1': `${ball.y1}px`,
-                  '--x2': `${ball.x2}px`, '--y2': `${ball.y2}px`,
-                  '--x3': `${ball.x3}px`, '--y3': `${ball.y3}px`,
-                  '--dur': `${ball.dur}s`,
-                  // Static position when not mixing (at the bottom of the circle)
-                  left: isMixing ? '50%' : `calc(50% + ${ball.x0 * 0.5}px)`,
-                  top: isMixing ? '50%' : `calc(85% + ${ball.y0 * 0.15}px)`
-                } as any}
-              >
-                {ball.number}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Buttons (Decorative to match video) */}
-      <div className="absolute right-10 top-1/2 -translate-y-1/2 flex flex-col gap-6">
-        <div className="video-btn video-btn-blue">Reset</div>
-        <div className="video-btn video-btn-red">Draw</div>
-      </div>
-
-      {/* Winning Ball Animation */}
-      {phase === 'DRAW' && (
-        <div 
-          className="winning-ball-path"
-          style={{ 
-            offsetPath: `path('${pathD}')`,
-            backgroundColor: BALL_COLORS_MAP[parseInt(winningNumber) - 1] || '#ef4444'
-          } as any}
-        >
-          {winningNumber}
+      {/* AI Atmosphere */}
+      {aiBackdrop && (
+        <div className="absolute inset-0 z-0">
+          <img src={aiBackdrop} className="w-full h-full object-cover opacity-20 blur-sm" alt="Backdrop" />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/40 to-black" />
         </div>
       )}
 
-      {/* Final Reveal Box */}
-      <div className="absolute bottom-[10%] w-full flex flex-col items-center">
-        <div className="final-result-box">
-          {showFinalNumber ? winningNumber : ''}
+      {/* HEADER HUD */}
+      <div className="absolute top-8 left-8 text-left z-50 opacity-80">
+        <h2 className="text-white text-2xl font-black russo tracking-[0.2em] uppercase">{gameName}</h2>
+        <div className="flex items-center gap-2 mt-1">
+            <div className={`w-2 h-2 rounded-full ${phase === 'SHUFFLE' ? 'bg-amber-500 animate-pulse' : 'bg-blue-500'}`} />
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                {phase === 'SHUFFLE' ? 'Mixing Mechanism Active' : phase === 'DELIVERY' ? 'Extracting Final Node' : 'Verification Complete'}
+            </p>
         </div>
-        
-        {showFinalNumber && (
-          <button 
-            onClick={onClose}
-            className="mt-8 bg-white text-black font-black px-12 py-3 rounded-full hover:bg-amber-500 transition-colors uppercase tracking-widest text-sm"
-          >
-            Continue
-          </button>
-        )}
       </div>
 
-      {/* Video UI Artifacts */}
-      <div className="absolute bottom-4 left-4 flex gap-4 opacity-30 scale-75 origin-bottom-left">
-          <div className="w-8 h-8 rounded bg-white/10" />
-          <div className="w-24 h-8 rounded bg-white/10" />
+      {/* MECHANICAL CHAMBER */}
+      <div className="machine-chamber">
+          {balls.map((b) => (
+            <Ball 
+              key={b.id} 
+              id={b.id} 
+              number={b.number} 
+              phase={phase} 
+              isWinner={b.number === winningNumber} 
+              winningNumber={winningNumber} 
+            />
+          ))}
       </div>
 
+      {/* DECORATIVE VIDEO UI */}
+      <div className="side-buttons">
+          <div className="mech-btn btn-blue">Reset</div>
+          <div className="mech-btn btn-red">Draw</div>
+      </div>
+
+      {/* DELIVERY PATH OVERLAY (Visual only) */}
+      <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-20" viewBox="0 0 400 800" preserveAspectRatio="xMidYMid slice">
+          <path 
+            d="M 200 350 L 200 450 L 80 520 L 320 620 L 200 700 L 200 800" 
+            stroke="white" strokeWidth="2" fill="none" strokeDasharray="10 10" 
+          />
+      </svg>
+
+      {/* THE RESULT BOX */}
+      <div className="result-display-box">
+          {phase === 'REVEAL' ? (
+              <span className="result-glow-text">{winningNumber}</span>
+          ) : (
+              <span className="opacity-10 text-3xl">--</span>
+          )}
+      </div>
+
+      {/* CONTINUE BUTTON */}
+      {phase === 'REVEAL' && (
+        <div className="absolute bottom-4 animate-fade-in z-[100]">
+            <button 
+                onClick={onClose}
+                className="bg-white text-black font-black px-10 py-3 rounded-full hover:bg-amber-500 transition-all uppercase tracking-[0.3em] text-[10px] shadow-2xl"
+            >
+                Confirm & Continue
+            </button>
+        </div>
+      )}
+
+      {/* STATUS FOOTER */}
+      <div className="absolute bottom-4 left-4 opacity-30 flex items-center gap-2">
+          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="text-[8px] font-black text-white uppercase tracking-[0.5em]">Auth Stream: Encrypted</span>
+      </div>
     </div>
   );
 };

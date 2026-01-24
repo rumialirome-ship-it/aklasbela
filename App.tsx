@@ -165,16 +165,21 @@ const AppContent: React.FC = () => {
     }, [role, fetchPrivateData]);
 
     useEffect(() => {
-        if (games.length > 0 && lastGamesRef.current.length > 0) {
+        if (games.length > 0) {
             games.forEach(newGame => {
                 const oldGame = lastGamesRef.current.find(g => g.id === newGame.id);
-                // Hardened check for reveal: must have a non-empty winner and have transitioned state
-                if (newGame.winningNumber && newGame.winningNumber.trim().length > 0 && !newGame.winningNumber.endsWith('_') && (!oldGame?.winningNumber || oldGame.winningNumber.endsWith('_'))) {
-                    setActiveReveal({ name: newGame.name, number: newGame.winningNumber });
+                // Hardened check for reveal: trigger if winner exists now and didn't before
+                const isNewlyDeclared = newGame.winningNumber && 
+                                       newGame.winningNumber.trim().length > 0 && 
+                                       !newGame.winningNumber.endsWith('_') && 
+                                       (!oldGame?.winningNumber || oldGame.winningNumber.endsWith('_'));
+                
+                if (isNewlyDeclared) {
+                    setActiveReveal({ name: newGame.name, number: newGame.winningNumber! });
                 }
             });
+            lastGamesRef.current = games;
         }
-        lastGamesRef.current = games;
     }, [games]);
 
     const handleWatchDraw = (game: Game) => {
@@ -263,7 +268,12 @@ const AppContent: React.FC = () => {
                                 admin={account as Admin} dealers={dealers} 
                                 onSaveDealer={async (d, o) => { const url = o ? `/api/admin/dealers/${o}` : '/api/admin/dealers'; await fetchWithAuth(url, { method: o ? 'PUT' : 'POST', body: JSON.stringify(d) }); fetchPrivateData(); }} 
                                 users={users} setUsers={setUsers} games={games} bets={bets} 
-                                declareWinner={async (id, num) => { await fetchWithAuth(`/api/admin/games/${id}/declare-winner`, { method: 'POST', body: JSON.stringify({ winningNumber: num }) }); fetchPrivateData(); }}
+                                declareWinner={async (id, num) => { 
+                                    await fetchWithAuth(`/api/admin/games/${id}/declare-winner`, { method: 'POST', body: JSON.stringify({ winningNumber: num }) }); 
+                                    const g = games.find(game => game.id === id);
+                                    if (g) setActiveReveal({ name: g.name, number: num });
+                                    fetchPrivateData(); 
+                                }}
                                 updateWinner={async (id, num) => { await fetchWithAuth(`/api/admin/games/${id}/update-winner`, { method: 'PUT', body: JSON.stringify({ newWinningNumber: num }) }); fetchPrivateData(); }}
                                 approvePayouts={async (id) => { await fetchWithAuth(`/api/admin/games/${id}/approve-payouts`, { method: 'POST' }); fetchPrivateData(); }}
                                 toggleGameVisibility={async (id) => { await fetchWithAuth(`/api/admin/games/${id}/toggle-visibility`, { method: 'PUT' }); fetchPublicData(); }}

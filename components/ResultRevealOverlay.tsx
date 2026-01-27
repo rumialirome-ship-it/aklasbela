@@ -16,8 +16,8 @@ const RAINBOW_COLORS = [
 ];
 
 const SHUFFLE_TIME = 45000; // 45 seconds shuffle
-const DELIVERY_TIME = 5000; // 5 seconds travel through pipe
-const HOLD_TIME = 5000;    // 5 seconds hold in display box
+const DELIVERY_TIME = 6000; // 6 seconds travel through complex pipe
+const HOLD_TIME = 5000;    // 5 seconds hold in transparent unit
 
 const Ball: React.FC<{ 
   id: number; 
@@ -29,7 +29,7 @@ const Ball: React.FC<{
   const color = useMemo(() => RAINBOW_COLORS[id % RAINBOW_COLORS.length], [id]);
   
   const motion = useMemo(() => {
-    const R = 140; 
+    const R = 130; 
     const path = Array.from({ length: 4 }).map(() => {
         const r = Math.sqrt(Math.random()) * R;
         const a = Math.random() * Math.PI * 2;
@@ -37,7 +37,7 @@ const Ball: React.FC<{
     });
     return {
         delay: Math.random() * -10,
-        duration: 0.25 + Math.random() * 0.25,
+        duration: 0.2 + Math.random() * 0.3,
         path
     };
   }, []);
@@ -49,9 +49,9 @@ const Ball: React.FC<{
       return (
         <div 
           className={`lottery-ball-3d ${phase === 'DELIVERY' ? 'ball-delivering' : 'ball-held'}`} 
-          style={{ '--ball-color': '#f59e0b' } as any}
+          style={{ '--ball-color': '#f59e0b', zIndex: 1000 } as any}
         >
-            <span className="ball-text-3d" style={{ fontSize: phase === 'HOLD' ? '14px' : '11px' }}>
+            <span className="ball-text-3d" style={{ fontSize: phase === 'HOLD' ? '15px' : '11px' }}>
                 {winningNumber.padStart(2, '0')}
             </span>
         </div>
@@ -60,7 +60,6 @@ const Ball: React.FC<{
 
   if (phase === 'REVEAL') return null;
   
-  // Non-winners stop mixing after SHUFFLE phase
   const isMixing = phase === 'SHUFFLE';
   const hasStopped = phase === 'DELIVERY' || phase === 'HOLD';
 
@@ -75,9 +74,10 @@ const Ball: React.FC<{
             '--x2': `${motion.path[1].x}px`, '--y2': `${motion.path[1].y}px`,
             '--x3': `${motion.path[2].x}px`, '--y3': `${motion.path[2].y}px`,
             '--x4': `${motion.path[3].x}px`, '--y4': `${motion.path[3].y}px`,
-            '--rest-x': `${(id % 12 - 6) * 18}px`,
-            '--rest-y': `${110 + (Math.floor(id/12) * -14)}px`,
-            transform: !isMixing && !hasStopped ? `translate(${(id % 20 - 10) * 14}px, ${140 + (Math.floor(id/20) * -16)}px)` : undefined
+            // Rest logic for "settling" at the bottom of the jar
+            '--rest-x': `${(id % 10 - 5) * 20}px`,
+            '--rest-y': `${100 + (Math.floor(id/10) * -16)}px`,
+            transform: !isMixing && !hasStopped ? `translate(${(id % 20 - 10) * 12}px, ${120 + (Math.floor(id/20) * -14)}px)` : undefined
         } as any}
     >
         <span className="ball-text-3d">{number}</span>
@@ -101,7 +101,7 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
             const resp = await ai.models.generateContent({
                 model: 'gemini-2.5-flash-image',
-                contents: { parts: [{ text: "A futuristic 3D lottery station, close-up on glass pipes and metallic extraction ports, high-tech industrial aesthetic, neon cyan and amber lighting, 8k resolution." }] },
+                contents: { parts: [{ text: "High-end cinematic 3D lottery studio, dark moody lighting, futuristic neon accents, minimal tech, 8k resolution." }] },
                 config: { imageConfig: { aspectRatio: "9:16" } }
             });
             for (const p of resp.candidates[0].content.parts) {
@@ -139,26 +139,26 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
     <div className="fixed inset-0 z-[10000] lottery-machine-viewport select-none bg-black overflow-hidden flex flex-col items-center justify-center">
       {aiBackdrop && (
         <div className="absolute inset-0 z-0">
-          <img src={aiBackdrop} className="w-full h-full object-cover opacity-25 blur-sm" alt="" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
+          <img src={aiBackdrop} className="w-full h-full object-cover opacity-15 blur-lg" alt="" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent" />
         </div>
       )}
 
       {phase !== 'REVEAL' && (
-        <div className="absolute top-8 sm:top-12 text-center z-[10010] w-full px-4 animate-fade-in">
-            <h2 className="text-white text-3xl sm:text-5xl font-black russo tracking-[0.2em] uppercase mb-1 drop-shadow-[0_0_20px_rgba(255,255,255,0.4)]">
+        <div className="absolute top-10 text-center z-[10010] w-full px-4 animate-fade-in">
+            <h2 className="text-white text-3xl sm:text-5xl font-black russo tracking-[0.2em] uppercase mb-2 drop-shadow-2xl">
                 {gameName} <span className="text-amber-500">LIVE</span>
             </h2>
-            <div className="flex flex-col items-center justify-center gap-2">
+            <div className="flex flex-col items-center gap-2">
                 <div className="flex items-center gap-3">
                     <div className={`w-2 h-2 rounded-full ${phase === 'SHUFFLE' ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500 shadow-[0_0_10px_#10b981]'}`} />
-                    <p className="text-[10px] sm:text-xs font-black text-slate-400 uppercase tracking-widest">
-                        {phase === 'SHUFFLE' ? 'MIXING PAYLOAD' : phase === 'DELIVERY' ? 'PIPELINE TRANSPORT' : phase === 'HOLD' ? 'VERIFICATION' : 'PROCESSING'}
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                        {phase === 'SHUFFLE' ? 'ENTROPY STABILIZATION' : 'EXTRACTION COMPLETE'}
                     </p>
                 </div>
                 {phase === 'SHUFFLE' && (
-                  <div className="bg-slate-900/80 border border-white/10 px-4 py-1.5 rounded-full shadow-lg">
-                    <span className="text-amber-500 font-mono font-bold text-xs uppercase">Ejecting in: {timeLeft}s</span>
+                  <div className="bg-slate-900/80 border border-white/10 px-6 py-2 rounded-2xl shadow-xl">
+                    <span className="text-amber-500 font-mono font-bold text-sm tracking-tighter">BALL EJECTION IN {timeLeft}S</span>
                   </div>
                 )}
             </div>
@@ -167,91 +167,94 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
 
       <div className={`relative w-full h-full flex flex-col items-center justify-center transition-all duration-1000 ${phase === 'REVEAL' ? 'opacity-0 scale-150 blur-3xl' : 'opacity-100'}`}>
         
-        {/* THE EXTRACTION PIPE - Starts from port, ends in box */}
-        <div className="absolute inset-0 z-[35] pointer-events-none overflow-visible">
-            <svg className="w-full h-full" preserveAspectRatio="none" viewBox="0 0 400 800">
+        {/* THE ZIG-ZAG PIPE (From Image) */}
+        <div className="absolute inset-0 z-[40] pointer-events-none">
+            <svg className="w-full h-full" viewBox="0 0 400 800" preserveAspectRatio="none">
                 <defs>
-                    <linearGradient id="pipeShine" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor="rgba(255,255,255,0)" />
-                        <stop offset="25%" stopColor="rgba(255,255,255,0.1)" />
-                        <stop offset="50%" stopColor="rgba(255,255,255,0.2)" />
-                        <stop offset="75%" stopColor="rgba(255,255,255,0.1)" />
-                        <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+                    <linearGradient id="pipeGloss" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="rgba(255,255,255,0.02)" />
+                        <stop offset="50%" stopColor="rgba(255,255,255,0.15)" />
+                        <stop offset="100%" stopColor="rgba(255,255,255,0.02)" />
                     </linearGradient>
                 </defs>
-                {/* Main Glass Pipe structure */}
+                {/* Stepped Zig-Zag Path */}
                 <path 
-                    d="M 200 450 L 200 480 Q 200 520, 150 540 L 50 580 Q 20 600, 50 630 L 350 720 Q 380 730, 350 760 L 200 800" 
-                    stroke="rgba(255,255,255,0.08)" 
-                    strokeWidth="44" 
+                    d="M 200 250 L 200 200 L 260 200 L 260 160 L 140 160 L 140 210 L 80 210 L 80 350 L 320 350 L 320 480 L 150 480 L 150 620 L 300 620 L 300 780 L 200 800"
+                    stroke="rgba(255,255,255,0.12)" 
+                    strokeWidth="34" 
                     fill="none" 
+                    strokeLinejoin="round"
                     strokeLinecap="round"
                 />
                 <path 
-                    d="M 200 450 L 200 480 Q 200 520, 150 540 L 50 580 Q 20 600, 50 630 L 350 720 Q 380 730, 350 760 L 200 800" 
-                    stroke="url(#pipeShine)" 
-                    strokeWidth="40" 
+                    d="M 200 250 L 200 200 L 260 200 L 260 160 L 140 160 L 140 210 L 80 210 L 80 350 L 320 350 L 320 480 L 150 480 L 150 620 L 300 620 L 300 780 L 200 800"
+                    stroke="url(#pipeGloss)" 
+                    strokeWidth="28" 
                     fill="none" 
+                    strokeLinejoin="round"
                     strokeLinecap="round"
                 />
             </svg>
         </div>
 
-        <div className="machine-chamber">
-            {balls.map((b) => (
-                <Ball 
-                    key={b.id} 
-                    id={b.id} 
-                    number={b.number} 
-                    phase={phase} 
-                    isWinner={parseInt(b.number) === parseInt(winningNumber)} 
-                    winningNumber={winningNumber} 
-                />
-            ))}
-            
-            {/* MECHANICAL PORT AT CHAMBER BOTTOM */}
-            <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-24 sm:w-32 h-14 sm:h-20 bg-slate-900 rounded-t-[2rem] border-x-4 border-t-4 border-slate-700 z-30 shadow-[0_-10px_20px_rgba(0,0,0,0.8)] overflow-hidden">
-                <div className="absolute inset-x-0 top-0 h-4 bg-gradient-to-b from-black to-transparent opacity-50" />
-                <div className="mt-4 w-12 sm:w-16 h-8 sm:h-10 mx-auto bg-black rounded-full border border-white/5 shadow-[inset_0_0_15px_rgba(0,0,0,1)]" />
+        {/* THE GLASS JAR (From Image) */}
+        <div className="machine-jar">
+            <div className="jar-neck" />
+            <div className="jar-body">
+                {balls.map((b) => (
+                    <Ball 
+                        key={b.id} 
+                        id={b.id} 
+                        number={b.number} 
+                        phase={phase} 
+                        isWinner={parseInt(b.number) === parseInt(winningNumber)} 
+                        winningNumber={winningNumber} 
+                    />
+                ))}
+            </div>
+            {/* The Port where pipe enters neck */}
+            <div className="absolute top-[-30px] left-1/2 -translate-x-1/2 w-20 h-10 bg-slate-800 rounded-t-xl border-t-2 border-white/10 z-50 flex items-center justify-center">
+                <div className="w-12 h-6 bg-black rounded-full shadow-inner" />
             </div>
         </div>
 
-        {/* COLLECTION BOX AT VIEWPORT BOTTOM */}
-        <div className={`result-display-box transition-all duration-700 ${phase === 'SHUFFLE' ? 'opacity-0 translate-y-20' : 'opacity-100 translate-y-0'}`}>
-            <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-slate-950/80 border border-white/10 px-4 py-1 rounded-full">
-                <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest whitespace-nowrap">RECEIVER UNIT</p>
-            </div>
-            
+        {/* TRANSPARENT RECEIVER BOX */}
+        <div className={`result-display-box transition-all duration-1000 ${phase === 'SHUFFLE' ? 'opacity-0 translate-y-20' : 'opacity-100 translate-y-0'}`}>
+            {phase === 'HOLD' && (
+                <div className="absolute -top-14 left-1/2 -translate-x-1/2 text-emerald-400 text-[11px] font-black uppercase tracking-[0.5em] animate-pulse bg-black/80 px-6 py-2 rounded-full border border-emerald-500/30 shadow-2xl">
+                    LOCKED RESULT
+                </div>
+            )}
             {(phase === 'HOLD' || phase === 'REVEAL') ? (
                 <span className="result-glow-text">{winningNumber.padStart(2, '0')}</span>
             ) : (
-                <div className="flex items-center gap-1.5">
-                   <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse delay-0" />
-                   <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse delay-75" />
-                   <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse delay-150" />
+                <div className="flex gap-2">
+                    <div className="w-2 h-2 rounded-full bg-slate-700 animate-pulse" />
+                    <div className="w-2 h-2 rounded-full bg-slate-700 animate-pulse delay-75" />
+                    <div className="w-2 h-2 rounded-full bg-slate-700 animate-pulse delay-150" />
                 </div>
             )}
         </div>
       </div>
 
       {phase === 'REVEAL' && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/98 z-[10020] animate-fade-in p-6 overflow-hidden">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_#f59e0b15_0%,_transparent_75%)] opacity-60" />
-            <div className="relative text-center space-y-8 sm:space-y-12 max-w-2xl animate-result-slam-3d">
-                <div className="space-y-3 sm:space-y-5">
-                    <p className="text-amber-500 font-black text-[10px] sm:text-sm uppercase tracking-[0.8em] animate-pulse drop-shadow-[0_0_15px_rgba(245,158,11,0.6)]">OFFICIAL WINNER</p>
-                    <h2 className="text-white text-4xl sm:text-7xl font-black russo tracking-tighter uppercase drop-shadow-2xl">{gameName}</h2>
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/98 z-[10020] animate-fade-in p-6">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_#f59e0b10_0%,_transparent_75%)] opacity-70" />
+            <div className="relative text-center space-y-12 max-w-2xl animate-result-slam-3d">
+                <div className="space-y-4">
+                    <p className="text-amber-500 font-black text-sm uppercase tracking-[0.8em] animate-pulse">OFFICIAL UNIT EXTRACTED</p>
+                    <h2 className="text-white text-5xl sm:text-7xl font-black russo tracking-tighter uppercase drop-shadow-2xl">{gameName}</h2>
                 </div>
-                <div className="relative inline-block px-14 py-10 sm:px-28 sm:py-24 bg-white/[0.02] rounded-[3.5rem] sm:rounded-[7rem] border-2 border-amber-500/50 shadow-[0_0_120px_rgba(245,158,11,0.25)] group backdrop-blur-[60px] overflow-hidden">
+                <div className="relative inline-block px-16 py-12 sm:px-32 sm:py-24 bg-white/[0.02] rounded-[4rem] sm:rounded-[8rem] border-2 border-amber-500/50 shadow-[0_0_150px_rgba(245,158,11,0.2)] group backdrop-blur-[60px] overflow-hidden">
                     <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 via-transparent to-amber-500/5" />
-                    <span className="relative text-[9rem] sm:text-[20rem] font-black russo text-white gold-shimmer tracking-tighter leading-none block drop-shadow-[0_20px_50px_rgba(0,0,0,1)]">
+                    <span className="relative text-[10rem] sm:text-[20rem] font-black russo text-white gold-shimmer tracking-tighter leading-none block drop-shadow-[0_20px_60px_rgba(0,0,0,1)]">
                         {winningNumber.padStart(2, '0')}
                     </span>
                 </div>
-                <div className="pt-8 sm:pt-14">
+                <div className="pt-12">
                     <button 
                         onClick={onClose}
-                        className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black px-14 py-4.5 sm:px-20 sm:py-6 rounded-2xl uppercase tracking-[0.4em] text-[10px] sm:text-xs transition-all transform active:scale-95 shadow-[0_0_40px_rgba(245,158,11,0.4)] border-b-4 border-amber-700"
+                        className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black px-20 py-6 rounded-3xl uppercase tracking-[0.4em] text-xs transition-all transform active:scale-95 shadow-[0_0_50px_rgba(245,158,11,0.5)]"
                     >
                         CONTINUE
                     </button>

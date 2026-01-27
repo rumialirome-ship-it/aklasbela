@@ -3,7 +3,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* --- VIDEO-ACCURATE MECHANICAL DRAW ENGINE (IMAGE INSPIRED) --- */
+/* --- THE FISHBOWL MECHANICAL ENGINE --- */
 
 .lottery-machine-viewport {
     position: fixed;
@@ -18,56 +18,57 @@
     z-index: 10000;
 }
 
-/* THE GLASS JAR SYSTEM */
+/* THE SPHERICAL JAR */
 .machine-jar {
     position: relative;
-    margin-top: 15vh;
-    width: clamp(280px, 80vw, 420px);
+    margin-top: 18vh;
+    width: clamp(300px, 85vw, 450px);
     display: flex;
     flex-direction: column;
     align-items: center;
     z-index: 20;
 }
 
-.jar-neck {
-    width: 100px;
-    height: 60px;
+.jar-neck-mechanical {
+    width: 90px;
+    height: 40px;
     background: rgba(255, 255, 255, 0.05);
-    border: 3px solid rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.1);
     border-bottom: none;
     border-radius: 12px 12px 0 0;
-    box-shadow: inset 0 10px 20px rgba(0,0,0,0.5);
+    box-shadow: inset 0 8px 15px rgba(0,0,0,0.4);
 }
 
-.jar-body {
+.jar-body-sphere {
     position: relative;
     width: 100%;
     aspect-ratio: 1/1;
-    background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.02) 0%, transparent 80%);
-    border: 4px solid rgba(255, 255, 255, 0.08);
-    border-radius: 40% 40% 50% 50%;
+    background: radial-gradient(circle at 40% 30%, rgba(255,255,255,0.06) 0%, transparent 70%);
+    border: 4px solid rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     box-shadow: 
-        inset 0 0 100px rgba(0,0,0,0.8),
-        0 0 40px rgba(0,0,0,0.5);
+        inset 0 0 120px rgba(0,0,0,1),
+        inset 0 0 40px rgba(255,255,255,0.02),
+        0 20px 50px rgba(0,0,0,0.8);
     overflow: hidden;
 }
 
 /* THE BALLS */
 .lottery-ball-3d {
     position: absolute;
-    width: clamp(22px, 5vw, 32px);
-    height: clamp(22px, 5vw, 32px);
+    width: clamp(22px, 5.2vw, 34px);
+    height: clamp(22px, 5.2vw, 34px);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     box-shadow: 
-        inset -3px -3px 6px rgba(0,0,0,1),
-        inset 2px 2px 4px rgba(255,255,255,0.5),
-        0 4px 10px rgba(0,0,0,0.8);
+        inset -4px -4px 8px rgba(0,0,0,1),
+        inset 2px 2px 5px rgba(255,255,255,0.4),
+        0 5px 12px rgba(0,0,0,0.8);
     background: radial-gradient(circle at 35% 35%, #fff 0%, var(--ball-color, #fff) 60%, #000 100%);
     z-index: 25;
     transition: transform 1.2s cubic-bezier(0.19, 1, 0.22, 1);
@@ -79,7 +80,7 @@
     font-weight: 950;
     color: #000;
     line-height: 1;
-    text-shadow: 0 0.5px 0 rgba(255,255,255,0.3);
+    text-shadow: 0 0.5px 0 rgba(255,255,255,0.2);
 }
 
 /* INTENSE SHUFFLE */
@@ -101,65 +102,63 @@
     transform: translate(var(--rest-x), var(--rest-y)) rotate(15deg);
 }
 
-/* BALL TRAVELING THROUGH STEPPED ZIG-ZAG PIPE (From Image) */
+/* BALL TRAVELING THROUGH COMPLEX ZIG-ZAG PIPE */
 .ball-delivering {
     z-index: 1000 !important;
-    animation: follow-image-path 6s cubic-bezier(0.45, 0, 0.15, 1) forwards;
+    animation: follow-complex-path 8s cubic-bezier(0.45, 0, 0.15, 1) forwards;
 }
 
-@keyframes follow-image-path {
-    /* M 200 250 (Inside Neck) */
-    0% { transform: translate(0, -180px) scale(0.6); opacity: 0; }
-    5% { transform: translate(0, -180px) scale(1.1); opacity: 1; }
-    /* L 200 200 (Up) */
-    10% { transform: translate(0, -230px) scale(1.2); }
-    /* L 260 200 (Right) */
-    15% { transform: translate(15vw, -230px) scale(1.3); }
-    /* L 260 160 (Up) */
-    20% { transform: translate(15vw, -280px) scale(1.4); }
-    /* L 140 160 (Left Across Top) */
-    30% { transform: translate(-15vw, -280px) scale(1.5); }
-    /* L 140 210 (Down) */
-    35% { transform: translate(-15vw, -230px) scale(1.6); }
-    /* L 80 210 (Left) */
-    40% { transform: translate(-30vw, -230px) scale(1.7); }
-    /* L 80 350 (Down) */
-    50% { transform: translate(-30vw, -100px) scale(1.8); }
-    /* L 320 350 (Right Across Middle) */
-    65% { transform: translate(30vw, -100px) scale(2.0); }
-    /* L 320 480 (Down) */
-    75% { transform: translate(30vw, 50px) scale(2.2); }
-    /* L 150 480 (Left) */
-    82% { transform: translate(-10vw, 50px) scale(2.5); }
-    /* L 150 620 (Down) */
-    88% { transform: translate(-10vw, 200px) scale(2.8); }
-    /* L 300 620 (Right) */
-    92% { transform: translate(25vw, 200px) scale(3.2); }
-    /* L 300 780 (Down Final) */
-    /* L 200 800 (Center Final) */
-    100% { transform: translate(0, 36vh) scale(4); opacity: 1; }
+@keyframes follow-complex-path {
+    /* 1X = 0.25vw, 1Y = 0.125vh approx from SVG 400x800 */
+    /* Start M 200 420 (Inside Neck) */
+    0% { transform: translate(0, -22vh) scale(0.6); opacity: 0; }
+    3% { transform: translate(0, -22vh) scale(1.1); opacity: 1; }
+    /* L 200 350 (Straight Up) */
+    7% { transform: translate(0, -32vh) scale(1.2); }
+    /* L 140 320 (Zig Left) */
+    12% { transform: translate(-15vw, -36vh) scale(1.3); }
+    /* L 260 280 (Zig Right) */
+    18% { transform: translate(15vw, -42vh) scale(1.4); }
+    /* L 140 240 (Zig Left) */
+    24% { transform: translate(-15vw, -48vh) scale(1.5); }
+    /* L 260 200 (Zig Right) */
+    30% { transform: translate(15vw, -54vh) scale(1.6); }
+    /* L 330 200 (Move to column) */
+    35% { transform: translate(32vw, -54vh) scale(1.7); }
+    /* L 330 250 (Drop in column) */
+    40% { transform: translate(32vw, -46vh) scale(1.8); }
+    /* Helix Drops (L 280 320, L 330 390, etc.) */
+    48% { transform: translate(20vw, -36vh) scale(1.9); }
+    56% { transform: translate(32vw, -25vh) scale(2.0); }
+    64% { transform: translate(20vw, -15vh) scale(2.2); }
+    72% { transform: translate(32vw, -5vh) scale(2.5); }
+    80% { transform: translate(20vw, 5vh) scale(2.8); }
+    88% { transform: translate(32vw, 15vh) scale(3.2); }
+    /* Final stretch L 330 750 -> L 200 780 */
+    95% { transform: translate(32vw, 35vh) scale(3.5); }
+    100% { transform: translate(0, 42vh) scale(4); opacity: 1; }
 }
 
-/* HOLD PHASE PULSE - DOCKING COMPLETE */
+/* HOLD PHASE PULSE */
 .ball-held {
     z-index: 1001 !important;
-    transform: translate(0, 36vh) scale(4);
+    transform: translate(0, 42vh) scale(4);
     animation: result-pulse 1.5s infinite ease-in-out;
     box-shadow: 0 0 60px rgba(245, 158, 11, 0.7), inset -5px -5px 15px rgba(0,0,0,0.8);
 }
 
 @keyframes result-pulse {
-    0%, 100% { transform: translate(0, 36vh) scale(4); filter: brightness(1); }
-    50% { transform: translate(0, 36vh) scale(4.3); filter: brightness(1.4); }
+    0%, 100% { transform: translate(0, 42vh) scale(4); filter: brightness(1); }
+    50% { transform: translate(0, 42vh) scale(4.3); filter: brightness(1.3); }
 }
 
-/* RECEIVER UNIT AT VIEWPORT BOTTOM (IMAGE STYLE) */
+/* RECEIVER UNIT */
 .result-display-box {
     position: absolute;
     bottom: 8vh;
-    width: clamp(260px, 80vw, 420px);
+    width: clamp(280px, 80vw, 420px);
     height: clamp(120px, 18vh, 180px);
-    background: rgba(255, 255, 255, 0.04); 
+    background: rgba(255, 255, 255, 0.05); 
     backdrop-filter: blur(40px);
     border: 3px solid rgba(245, 158, 11, 0.6);
     border-radius: 40px;
@@ -168,14 +167,14 @@
     justify-content: center;
     z-index: 50;
     box-shadow: 
-        0 30px 60px rgba(0,0,0,1), 
-        inset 0 0 40px rgba(245, 158, 11, 0.1);
+        0 40px 80px rgba(0,0,0,1), 
+        inset 0 0 50px rgba(245, 158, 11, 0.1);
 }
 
 .result-glow-text {
     font-family: 'Russo One', sans-serif;
     font-weight: 900;
-    font-size: clamp(60px, 15vw, 110px);
+    font-size: clamp(70px, 16vw, 120px);
     background: linear-gradient(to bottom, #fff, #f59e0b);
     -webkit-background-clip: text;
     background-clip: text;

@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* --- CINEMATIC MECHANICAL DRAW ENGINE (VIDEO INSPIRED) --- */
+/* --- CINEMATIC MECHANICAL DRAW ENGINE (REFINED GLASSY VERSION) --- */
 
 .lottery-machine-viewport {
     position: fixed;
@@ -67,19 +67,8 @@
         inset 0 0 140px rgba(0,0,0,1),
         inset 0 0 60px rgba(245, 158, 11, 0.08),
         0 60px 100px rgba(0,0,0,1);
-    /* IMPORTANT: Remove overflow: hidden to allow ball to exit sphere if not rendered separately */
-    /* Instead, we handle clipping via rendering logic */
     overflow: visible; 
     backdrop-filter: blur(2px);
-}
-
-.chamber-vortex-glow {
-    animation: vortex-flicker 1.2s infinite ease-in-out;
-}
-
-@keyframes vortex-flicker {
-    0%, 100% { box-shadow: inset 0 0 140px rgba(0,0,0,1); }
-    50% { box-shadow: inset 0 0 200px rgba(245, 158, 11, 0.12); }
 }
 
 @keyframes neon-pulse {
@@ -87,7 +76,7 @@
     100% { opacity: 1; transform: scaleX(1.1); }
 }
 
-/* THE BALLS - REFINED 3D PLASTIC LOOK */
+/* THE BALLS - 3D PLASTIC LOOK */
 .lottery-ball-3d {
     position: absolute;
     width: clamp(30px, 6.5vw, 46px);
@@ -129,50 +118,44 @@
     animation-delay: var(--delay);
 }
 
-/* MECHANICAL EXTRACTION PATHING - COORDINATED WITH SVG PATH */
-/* The extraction path is absolute relative to viewport for perfect coordination */
+/* SLOW EXTRACTION PATHING - STRETCHED TO 16 SECONDS */
 .ball-delivering {
     position: fixed;
     top: 0;
     left: 0;
-    z-index: 2000 !important; /* Higher than pipeline (40) */
-    animation: follow-extraction-path 9s cubic-bezier(0.45, 0.05, 0.55, 0.95) forwards;
+    z-index: 45 !important; /* Above pipeline back, below pipeline glass front if applicable, but currently just above all */
+    animation: follow-extraction-path-slow 16s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
-@keyframes follow-extraction-path {
-    /* SVG Coordinates (400x800): M 200 420 L 200 320 L 120 280 L 280 230 L 120 180 L 280 130 L 340 130 L 340 250 L 280 320 L 340 390 L 280 460 L 340 530 L 280 600 L 340 670 L 340 750 L 200 780 */
-    /* Note: Coordinates are translated to vw/vh. 200 = 50vw, 420 = 52.5vh (approx) */
-    
+@keyframes follow-extraction-path-slow {
+    /* 0-100% across 16 seconds makes each movement feel heavy and real */
     0% { transform: translate(50vw, 52.5vh) scale(0.6); opacity: 0; }
     2% { transform: translate(50vw, 52.5vh) scale(1.0); opacity: 1; }
     
     /* 1. Neck Rise */
-    8% { transform: translate(50vw, 40vh) scale(1.2); }
+    10% { transform: translate(50vw, 40vh) scale(1.2); }
     
-    /* 2. Zig Zag Banking (Extraction) */
-    14% { transform: translate(30vw, 35vh) scale(1.3) rotate(-20deg); }
-    20% { transform: translate(70vw, 28.75vh) scale(1.4) rotate(20deg); }
-    26% { transform: translate(30vw, 22.5vh) scale(1.5) rotate(-20deg); }
-    32% { transform: translate(70vw, 16.25vh) scale(1.6) rotate(20deg); }
+    /* 2. Zig Zag Banking (Slow Travel) */
+    18% { transform: translate(30vw, 35vh) scale(1.3) rotate(-20deg); }
+    26% { transform: translate(70vw, 28.75vh) scale(1.4) rotate(20deg); }
+    34% { transform: translate(30vw, 22.5vh) scale(1.5) rotate(-20deg); }
+    42% { transform: translate(70vw, 16.25vh) scale(1.6) rotate(20deg); }
     
     /* 3. Helix Entry Point */
-    38% { transform: translate(85vw, 16.25vh) scale(1.7) rotate(0deg); }
+    50% { transform: translate(85vw, 16.25vh) scale(1.7) rotate(0deg); }
     
-    /* 4. The Long Vertical Drop (Helix Track) */
-    45% { transform: translate(85vw, 31.25vh) scale(1.8) rotate(360deg); }
-    52% { transform: translate(70vw, 40vh) scale(2.0) rotate(720deg); }
-    59% { transform: translate(85vw, 48.75vh) scale(2.2) rotate(1080deg); }
-    66% { transform: translate(70vw, 57.5vh) scale(2.4) rotate(1440deg); }
-    73% { transform: translate(85vw, 66.25vh) scale(2.6) rotate(1800deg); }
-    80% { transform: translate(70vw, 75vh) scale(2.8) rotate(2160deg); }
-    87% { transform: translate(85vw, 83.75vh) scale(3.0) rotate(2520deg); }
-    94% { transform: translate(85vw, 93.75vh) scale(3.2) rotate(2880deg); }
+    /* 4. The Long Vertical Helix Drop (Slow descending crawl) */
+    58% { transform: translate(85vw, 31.25vh) scale(1.8) rotate(360deg); }
+    66% { transform: translate(70vw, 40vh) scale(2.0) rotate(720deg); }
+    74% { transform: translate(85vw, 48.75vh) scale(2.2) rotate(1080deg); }
+    82% { transform: translate(70vw, 57.5vh) scale(2.4) rotate(1440deg); }
+    90% { transform: translate(85vw, 66.25vh) scale(2.6) rotate(1800deg); }
+    94% { transform: translate(85vw, 83.75vh) scale(3.0) rotate(2160deg); }
     
-    /* 5. Drop into Display Box */
-    100% { transform: translate(50vw, 92vh) scale(5.5) rotate(3240deg); opacity: 1; }
+    /* 5. Final Slow Roll into Box */
+    100% { transform: translate(50vw, 92vh) scale(5.5) rotate(2520deg); opacity: 1; }
 }
 
-/* HOLD PHASE - DISPLAYING THE WINNER */
 .ball-held {
     position: fixed;
     top: 0;
@@ -194,7 +177,7 @@
     }
 }
 
-/* THE REVEAL DISPLAY BOX (MECHANICAL TRAY) */
+/* THE REVEAL DISPLAY BOX */
 .result-display-box {
     position: absolute;
     bottom: 8vh;
@@ -212,15 +195,6 @@
         0 40px 100px rgba(0,0,0,1), 
         0 0 50px rgba(245, 158, 11, 0.15),
         inset 0 0 60px rgba(0,0,0,0.8);
-}
-
-.result-display-glass {
-    position: absolute;
-    inset: 8px;
-    border-radius: 32px;
-    background: linear-gradient(165deg, rgba(255,255,255,0.08) 0%, transparent 40%, rgba(255,255,255,0.02) 100%);
-    pointer-events: none;
-    border: 1px solid rgba(255,255,255,0.05);
 }
 
 .result-glow-text {

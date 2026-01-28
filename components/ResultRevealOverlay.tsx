@@ -15,9 +15,9 @@ const RAINBOW_COLORS = [
 ];
 
 // Refined timings for cinematic feel
-const SHUFFLE_TIME = 12000; // 12 seconds shuffle - optimized for tension vs patience
-const DELIVERY_TIME = 9000;  // 9 seconds for the mechanical journey
-const HOLD_TIME = 4000;      // 4 seconds hold in display area
+const SHUFFLE_TIME = 12000; // 12 seconds shuffle
+const DELIVERY_TIME = 16000; // Increased to 16 seconds for "slowly" through the pipe
+const HOLD_TIME = 4500;      // 4.5 seconds hold in display area
 
 const Ball: React.FC<{ 
   id: number; 
@@ -28,7 +28,6 @@ const Ball: React.FC<{
 }> = React.memo(({ id, number, phase, isActuallyWinner, winningNumber }) => {
   const color = useMemo(() => RAINBOW_COLORS[id % RAINBOW_COLORS.length], [id]);
   
-  // High-velocity vortex motion within the sphere
   const motion = useMemo(() => {
     const radius = 60 + Math.random() * 120;
     const speed = 0.2 + Math.random() * 0.3;
@@ -36,13 +35,10 @@ const Ball: React.FC<{
     return { radius, speed, delay };
   }, []);
 
-  // During Extraction/Delivery/Hold, the winner ball is rendered outside the jar separately 
-  // to avoid container clipping (overflow:hidden). 
   if (isActuallyWinner && (phase === 'DELIVERY' || phase === 'HOLD')) {
       return null;
   }
 
-  // Hide non-winners if we've moved past shuffling to clear the viewport for the delivery sequence
   if (phase === 'REVEAL' || ((phase === 'DELIVERY' || phase === 'HOLD') && !isActuallyWinner)) return null;
   
   const isMixing = phase === 'SHUFFLE';
@@ -74,7 +70,6 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
   })), []);
 
   useEffect(() => {
-    // Generate an immersive mechanical room background
     const gen = async () => {
         try {
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -114,6 +109,8 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
     };
   }, []);
 
+  const pipelinePath = "M 200 420 L 200 320 L 120 280 L 280 230 L 120 180 L 280 130 L 340 130 L 340 250 L 280 320 L 340 390 L 280 460 L 340 530 L 280 600 L 340 670 L 340 750 L 200 780";
+
   return (
     <div className="fixed inset-0 z-[10000] lottery-machine-viewport select-none bg-black overflow-hidden flex flex-col items-center justify-center font-inter">
       {aiBackdrop && (
@@ -131,7 +128,7 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
             </h2>
             <div className="flex flex-col items-center gap-4">
                 <div className="flex items-center gap-5">
-                    <div className={`w-4 h-4 rounded-full ${phase === 'SHUFFLE' ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500 shadow-[0_0_20px_#10b981]'}`} />
+                    <div className={`w-4 h-4 rounded-full ${phase === 'SHUFFLE' ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500 shadow-[0_0_200px_#10b981]'}`} />
                     <p className="text-[12px] font-black text-slate-300 uppercase tracking-[0.4em]">
                         {phase === 'SHUFFLE' ? 'AERODYNAMIC MIXING: ENGAGED' : 'UNIT ISOLATION: VERIFIED'}
                     </p>
@@ -147,50 +144,49 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
 
       <div className={`relative w-full h-full flex flex-col items-center justify-center transition-all duration-1000 ${phase === 'REVEAL' ? 'opacity-0 scale-150 blur-3xl' : 'opacity-100'}`}>
         
-        {/* CINEMATIC GLASS PIPELINE SVG (Matching the Video Track) */}
+        {/* 3D GLASSY PIPELINE SVG */}
         <div className="absolute inset-0 z-[40] pointer-events-none">
             <svg className="w-full h-full" viewBox="0 0 400 800" preserveAspectRatio="none">
                 <defs>
-                    <linearGradient id="pipeGlass" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor="rgba(255,255,255,0.02)" />
-                        <stop offset="40%" stopColor="rgba(255,255,255,0.25)" />
-                        <stop offset="60%" stopColor="rgba(255,255,255,0.25)" />
-                        <stop offset="100%" stopColor="rgba(255,255,255,0.02)" />
+                    <linearGradient id="glassBody" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="rgba(255,255,255,0.05)" />
+                        <stop offset="20%" stopColor="rgba(255,255,255,0.15)" />
+                        <stop offset="50%" stopColor="rgba(255,255,255,0.2)" />
+                        <stop offset="80%" stopColor="rgba(255,255,255,0.15)" />
+                        <stop offset="100%" stopColor="rgba(255,255,255,0.05)" />
                     </linearGradient>
-                    <filter id="pipeGlow">
-                        <feGaussianBlur stdDeviation="3" result="blur" />
-                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                    </filter>
+                    <linearGradient id="glassReflection" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="45%" stopColor="rgba(255,255,255,0)" />
+                        <stop offset="50%" stopColor="rgba(255,255,255,0.4)" />
+                        <stop offset="55%" stopColor="rgba(255,255,255,0)" />
+                    </linearGradient>
                 </defs>
-                {/* Complex Mechanical Path: Neck -> ZigZag -> Right Column Helix -> Collection Tray */}
-                <path 
-                    d="M 200 420 L 200 320 L 120 280 L 280 230 L 120 180 L 280 130 L 340 130 L 340 250 L 280 320 L 340 390 L 280 460 L 340 530 L 280 600 L 340 670 L 340 750 L 200 780"
-                    stroke="rgba(255,255,255,0.12)" 
-                    strokeWidth="52" 
-                    fill="none" 
-                    strokeLinejoin="round"
-                    strokeLinecap="round"
-                />
-                <path 
-                    d="M 200 420 L 200 320 L 120 280 L 280 230 L 120 180 L 280 130 L 340 130 L 340 250 L 280 320 L 340 390 L 280 460 L 340 530 L 280 600 L 340 670 L 340 750 L 200 780"
-                    stroke="url(#pipeGlass)" 
-                    strokeWidth="44" 
-                    fill="none" 
-                    strokeLinejoin="round"
-                    strokeLinecap="round"
-                    filter="url(#pipeGlow)"
-                />
-                {/* Neck Ring Accents */}
-                <circle cx="200" cy="400" r="30" fill="none" stroke="rgba(245,158,11,0.4)" strokeWidth="3" />
+                
+                {/* 1. Pipe Background Shadow (Inner pipe look) */}
+                <path d={pipelinePath} stroke="rgba(0,0,0,0.5)" strokeWidth="60" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+                
+                {/* 2. Glass Tube Body */}
+                <path d={pipelinePath} stroke="url(#glassBody)" strokeWidth="52" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+                
+                {/* 3. Outer Edge Refractions */}
+                <path d={pipelinePath} stroke="rgba(255,255,255,0.1)" strokeWidth="54" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+                
+                {/* 4. Central 3D Highlight Line */}
+                <path d={pipelinePath} stroke="url(#glassReflection)" strokeWidth="8" fill="none" strokeLinejoin="round" strokeLinecap="round" opacity="0.6" />
+
+                {/* Neck Connector */}
+                <circle cx="200" cy="400" r="32" fill="none" stroke="rgba(245,158,11,0.4)" strokeWidth="4" />
+                <circle cx="200" cy="400" r="28" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="1" />
             </svg>
         </div>
 
-        {/* WINNING BALL (EXTRACTION LAYER) - Rendered outside jar for track travel */}
+        {/* WINNING BALL (EXTRACTION LAYER) - Moves over the pipeline */}
         {(phase === 'DELIVERY' || phase === 'HOLD') && (
             <div 
                 className={`lottery-ball-3d ${phase === 'DELIVERY' ? 'ball-delivering' : 'ball-held'}`} 
                 style={{ '--ball-color': '#f59e0b' } as any}
             >
+                <div className="absolute inset-0 bg-white/20 blur-sm rounded-full pointer-events-none" />
                 <span className="ball-text-3d" style={{ fontSize: phase === 'HOLD' ? '22px' : '12px' }}>
                     {winningNumber.padStart(2, '0')}
                 </span>
@@ -218,9 +214,6 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
 
         {/* MECHANICAL COLLECTION TRAY */}
         <div className={`result-display-box transition-all duration-1000 ${phase === 'SHUFFLE' ? 'opacity-0 translate-y-48 scale-90' : 'opacity-100 translate-y-0 scale-100'}`}>
-            <div className="result-display-glass" />
-            
-            {/* Display Badge */}
             <div className="absolute -top-16 left-1/2 -translate-x-1/2 flex flex-col items-center">
                 <div className="bg-slate-900 border-2 border-amber-500/60 px-8 py-2 rounded-full shadow-2xl">
                     <p className="text-[11px] font-black text-amber-500 uppercase tracking-[0.6em] whitespace-nowrap">EXTRACTED UNIT</p>

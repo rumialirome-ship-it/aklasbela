@@ -14,8 +14,9 @@ const RAINBOW_COLORS = [
   '#3b82f6', '#6366f1', '#a855f7', '#ec4899',
 ];
 
+// Precision Timings for Cinematic Immersion
 const SHUFFLE_TIME = 12000;
-const DELIVERY_TIME = 16000; 
+const DELIVERY_TIME = 16000; // Realistic slow gravity crawl
 const HOLD_TIME = 4500;
 
 const Ball: React.FC<{ 
@@ -34,10 +35,12 @@ const Ball: React.FC<{
     return { radius, speed, delay };
   }, []);
 
+  // During Extraction, the winner ball is rendered outside the jar separately to handle layering
   if (isActuallyWinner && (phase === 'DELIVERY' || phase === 'HOLD')) {
       return null;
   }
 
+  // Clear non-winners after extraction begins to focus on the reveal
   if (phase === 'REVEAL' || ((phase === 'DELIVERY' || phase === 'HOLD') && !isActuallyWinner)) return null;
   
   const isMixing = phase === 'SHUFFLE';
@@ -69,12 +72,13 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
   })), []);
 
   useEffect(() => {
+    // Generate an immersive high-tech lottery environment
     const gen = async () => {
         try {
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
             const resp = await ai.models.generateContent({
                 model: 'gemini-2.5-flash-image',
-                contents: { parts: [{ text: "Hyper-realistic close shot of a sophisticated glass mechanical lottery machine in a high-tech dark vault, cinematic amber rim lighting, 8k resolution, photorealistic." }] },
+                contents: { parts: [{ text: "Photorealistic macro shot of a sophisticated transparent glass lottery pipe system, cinematic lighting, laboratory background, dark polished surfaces, 8k resolution." }] },
                 config: { imageConfig: { aspectRatio: "9:16" } }
             });
             for (const p of resp.candidates[0].content.parts) {
@@ -94,6 +98,7 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
         if (remaining <= 0) clearInterval(tickInterval);
     }, 1000);
 
+    // Sequence Phasing
     const t1 = setTimeout(() => setPhase('SHUFFLE'), 500);
     const t2 = setTimeout(() => setPhase('DELIVERY'), 500 + SHUFFLE_TIME);
     const t3 = setTimeout(() => setPhase('HOLD'), 500 + SHUFFLE_TIME + DELIVERY_TIME);
@@ -108,14 +113,15 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
     };
   }, []);
 
+  // Industrial Axis Path for the 3D Pipe
   const pipelinePath = "M 200 420 L 200 320 L 120 280 L 280 230 L 120 180 L 280 130 L 340 130 L 340 250 L 280 320 L 340 390 L 280 460 L 340 530 L 280 600 L 340 670 L 340 750 L 200 780";
 
   return (
     <div className="fixed inset-0 z-[10000] lottery-machine-viewport select-none bg-black overflow-hidden flex flex-col items-center justify-center font-inter">
       {aiBackdrop && (
         <div className="absolute inset-0 z-0">
-          <img src={aiBackdrop} className="w-full h-full object-cover opacity-25 blur-lg" alt="" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent" />
+          <img src={aiBackdrop} className="w-full h-full object-cover opacity-30 blur-xl scale-110" alt="" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/85 to-transparent" />
         </div>
       )}
 
@@ -127,14 +133,14 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
             </h2>
             <div className="flex flex-col items-center gap-4">
                 <div className="flex items-center gap-5">
-                    <div className={`w-4 h-4 rounded-full ${phase === 'SHUFFLE' ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500 shadow-[0_0_200px_#10b981]'}`} />
+                    <div className={`w-4 h-4 rounded-full ${phase === 'SHUFFLE' ? 'bg-amber-500 animate-pulse shadow-[0_0_15px_#f59e0b]' : 'bg-emerald-500 shadow-[0_0_200px_#10b981]'}`} />
                     <p className="text-[12px] font-black text-slate-300 uppercase tracking-[0.4em]">
-                        {phase === 'SHUFFLE' ? 'AERODYNAMIC MIXING: ENGAGED' : 'UNIT ISOLATION: VERIFIED'}
+                        {phase === 'SHUFFLE' ? 'AERODYNAMIC TURBULENCE: ACTIVE' : 'UNIT ISOLATION: CONFIRMED'}
                     </p>
                 </div>
                 {phase === 'SHUFFLE' && (
                   <div className="bg-slate-900/90 border border-white/10 px-10 py-3 rounded-2xl shadow-2xl flex items-center gap-6 backdrop-blur-xl">
-                    <span className="text-amber-500 font-mono font-black text-xl tracking-tighter">EXTRACTION T-MINUS {timeLeft}S</span>
+                    <span className="text-amber-500 font-mono font-black text-xl tracking-tighter uppercase">EXTRACTION IN {timeLeft}S</span>
                   </div>
                 )}
             </div>
@@ -143,100 +149,101 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
 
       <div className={`relative w-full h-full flex flex-col items-center justify-center transition-all duration-1000 ${phase === 'REVEAL' ? 'opacity-0 scale-150 blur-3xl' : 'opacity-100'}`}>
         
-        {/* HYPER-REALISTIC GLASS SVG DEFS */}
+        {/* SHARED SVG PIPELINE DEFS */}
         <svg className="hidden">
             <defs>
-                {/* Back Wall of the pipe (Inside shadows) */}
-                <linearGradient id="glassPipeBack" x1="0%" y1="0%" x2="100%" y2="0%">
+                {/* 1. Inside Back Wall Gradient (Depth) */}
+                <linearGradient id="pipeBackGradient" x1="0%" y1="0%" x2="100%" y2="0%">
                     <stop offset="0%" stopColor="rgba(0,0,0,0.9)" />
-                    <stop offset="15%" stopColor="rgba(0,0,0,0.4)" />
-                    <stop offset="50%" stopColor="rgba(25,35,45,0.2)" />
-                    <stop offset="85%" stopColor="rgba(0,0,0,0.4)" />
+                    <stop offset="20%" stopColor="rgba(0,0,0,0.4)" />
+                    <stop offset="50%" stopColor="rgba(15,25,35,0.2)" />
+                    <stop offset="80%" stopColor="rgba(0,0,0,0.4)" />
                     <stop offset="100%" stopColor="rgba(0,0,0,0.9)" />
                 </linearGradient>
 
-                {/* Volumetric Thickness (The glass "meat") */}
-                <linearGradient id="glassVolume" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="rgba(100,220,255,0.25)" />
-                    <stop offset="8%" stopColor="rgba(100,220,255,0.05)" />
-                    <stop offset="92%" stopColor="rgba(100,220,255,0.05)" />
-                    <stop offset="100%" stopColor="rgba(100,220,255,0.25)" />
+                {/* 2. Glass Thickness / Volumetric Tint */}
+                <linearGradient id="pipeGlassVolume" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="rgba(140,230,255,0.2)" />
+                    <stop offset="10%" stopColor="rgba(140,230,255,0.02)" />
+                    <stop offset="90%" stopColor="rgba(140,230,255,0.02)" />
+                    <stop offset="100%" stopColor="rgba(140,230,255,0.2)" />
                 </linearGradient>
 
-                {/* Sharp Exterior Specular rim */}
-                <linearGradient id="specularRim" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="white" stopOpacity="0.8" />
-                    <stop offset="3%" stopColor="white" stopOpacity="0.1" />
-                    <stop offset="97%" stopColor="white" stopOpacity="0.1" />
-                    <stop offset="100%" stopColor="white" stopOpacity="0.8" />
+                {/* 3. Outer Specular Edge Rim */}
+                <linearGradient id="pipeSpecularRim" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="white" stopOpacity="0.7" />
+                    <stop offset="4%" stopColor="white" stopOpacity="0.08" />
+                    <stop offset="96%" stopColor="white" stopOpacity="0.08" />
+                    <stop offset="100%" stopColor="white" stopOpacity="0.7" />
                 </linearGradient>
 
-                {/* Central lens highlight (Simulates curved light refraction) */}
-                <linearGradient id="refractiveLens" x1="0%" y1="0%" x2="100%" y2="0%">
+                {/* 4. Central Light Refraction Beam */}
+                <linearGradient id="pipeCenterBeam" x1="0%" y1="0%" x2="100%" y2="0%">
                     <stop offset="0%" stopColor="transparent" />
                     <stop offset="47%" stopColor="transparent" />
-                    <stop offset="50%" stopColor="rgba(255,255,255,0.65)" />
+                    <stop offset="50%" stopColor="rgba(255,255,255,0.7)" />
                     <stop offset="53%" stopColor="transparent" />
                     <stop offset="100%" stopColor="transparent" />
                 </linearGradient>
 
-                {/* Environment soft-box reflection */}
-                <linearGradient id="softBoxReflect" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="30%" stopColor="rgba(255,255,255,0)" />
-                    <stop offset="35%" stopColor="rgba(255,255,255,0.2)" />
-                    <stop offset="40%" stopColor="rgba(255,255,255,0)" />
-                </linearGradient>
+                {/* 5. Industrial Flange Connector Metal */}
+                <radialGradient id="metalConnector" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stopColor="#475569" />
+                    <stop offset="100%" stopColor="#0f172a" />
+                </radialGradient>
             </defs>
         </svg>
 
-        {/* 1. PIPELINE BACK (Inner surface) */}
-        <div className="absolute inset-0 glass-back-layer pointer-events-none">
+        {/* 1. PIPELINE BACK LAYER (Physical Occlusion - Back wall of tube) */}
+        <div className="absolute inset-0 glass-back-wall pointer-events-none">
             <svg className="w-full h-full" viewBox="0 0 400 800" preserveAspectRatio="none">
-                {/* Dark depth stroke */}
-                <path d={pipelinePath} stroke="url(#glassPipeBack)" strokeWidth="60" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+                {/* Outer shadow stroke for depth */}
+                <path d={pipelinePath} stroke="rgba(0,0,0,0.6)" strokeWidth="62" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+                {/* Inner back-wall depth gradient */}
+                <path d={pipelinePath} stroke="url(#pipeBackGradient)" strokeWidth="60" fill="none" strokeLinejoin="round" strokeLinecap="round" />
             </svg>
         </div>
 
-        {/* 2. BALL (Inside the glass volume) */}
+        {/* 2. WINNING BALL (EXTRACTION LAYER) - Sandwiched between back and front glass */}
         {(phase === 'DELIVERY' || phase === 'HOLD') && (
             <div 
                 className={`lottery-ball-3d ${phase === 'DELIVERY' ? 'ball-delivering' : 'ball-held'}`} 
                 style={{ '--ball-color': '#f59e0b' } as any}
             >
-                {/* Subtle internal glare/distortion overlay on the ball itself */}
-                <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent blur-[1px] rounded-full pointer-events-none" />
-                <span className="ball-text-3d" style={{ fontSize: phase === 'HOLD' ? '22px' : '12px' }}>
+                {/* Optical Refraction Glare (Moves with ball) */}
+                <div className="absolute inset-0 bg-gradient-to-tr from-white/15 via-white/5 to-transparent blur-[1.5px] rounded-full pointer-events-none" />
+                {/* Subtle chromatic aberration feel */}
+                <div className="absolute inset-0 border-[1.5px] border-cyan-500/10 rounded-full blur-[2px] pointer-events-none" />
+                
+                <span className="ball-text-3d" style={{ fontSize: phase === 'HOLD' ? '22px' : '13px' }}>
                     {winningNumber.padStart(2, '0')}
                 </span>
             </div>
         )}
 
-        {/* 3. PIPELINE FRONT (Outer surface + Reflections) */}
-        <div className="absolute inset-0 glass-front-layer pointer-events-none">
+        {/* 3. PIPELINE FRONT LAYER (Surface Physics - Glass shell + Highlights) */}
+        <div className="absolute inset-0 glass-front-highlights pointer-events-none">
             <svg className="w-full h-full" viewBox="0 0 400 800" preserveAspectRatio="none">
-                {/* Volumetric tinted shell */}
-                <path d={pipelinePath} stroke="url(#glassVolume)" strokeWidth="58" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+                {/* A. Thick Glass Side Edges (Volumetric feel) */}
+                <path d={pipelinePath} stroke="url(#pipeGlassVolume)" strokeWidth="58" fill="none" strokeLinejoin="round" strokeLinecap="round" />
                 
-                {/* Refractive blur paths (simulated with semi-opaque strokes) */}
-                <path d={pipelinePath} stroke="rgba(255,255,255,0.03)" strokeWidth="54" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+                {/* B. Glass Caustic Overlay (Subtle noise/texture) */}
+                <path d={pipelinePath} className="caustic-texture" stroke="rgba(255,255,255,0.05)" strokeWidth="54" fill="none" strokeLinejoin="round" strokeLinecap="round" />
                 
-                {/* Hard Specular Edges */}
-                <path d={pipelinePath} stroke="url(#specularRim)" strokeWidth="59" fill="none" strokeLinejoin="round" strokeLinecap="round" opacity="0.6" />
+                {/* C. Specular Rim Highlight (Defines curved silhouette) */}
+                <path d={pipelinePath} stroke="url(#pipeSpecularRim)" strokeWidth="59.5" fill="none" strokeLinejoin="round" strokeLinecap="round" opacity="0.6" />
                 
-                {/* Central Caustic Glare */}
-                <path d={pipelinePath} className="glass-pipe-specular" stroke="url(#refractiveLens)" strokeWidth="10" fill="none" strokeLinejoin="round" strokeLinecap="round" />
-                
-                {/* Soft Environment Reflection */}
-                <path d={pipelinePath} className="refraction-overlay" stroke="url(#softBoxReflect)" strokeWidth="18" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+                {/* D. Central Reflection Beam (Dynamic shine) */}
+                <path d={pipelinePath} className="glass-specular-beam" stroke="url(#pipeCenterBeam)" strokeWidth="12" fill="none" strokeLinejoin="round" strokeLinecap="round" />
 
-                {/* Mechanical Connectors (Refined) */}
-                <circle cx="200" cy="400" r="35" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="3" />
-                <circle cx="200" cy="400" r="31" fill="none" stroke="rgba(245,158,11,0.6)" strokeWidth="2" />
-                <circle cx="200" cy="400" r="28" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="1" />
+                {/* E. Mechanical Connector Accents (Industrial joints) */}
+                <circle cx="200" cy="400" r="38" fill="none" stroke="url(#metalConnector)" strokeWidth="6" />
+                <circle cx="200" cy="400" r="34" fill="none" stroke="rgba(245,158,11,0.5)" strokeWidth="2" />
+                <circle cx="200" cy="400" r="32" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="1" />
             </svg>
         </div>
 
-        {/* THE SPHERICAL MIXING JAR */}
+        {/* THE SPHERICAL MIXING CHAMBER */}
         <div className="machine-jar">
             <div className="jar-neck-mechanical">
                 <div className="jar-neck-glow" />
@@ -259,7 +266,7 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
         <div className={`result-display-box transition-all duration-1000 ${phase === 'SHUFFLE' ? 'opacity-0 translate-y-48 scale-90' : 'opacity-100 translate-y-0 scale-100'}`}>
             <div className="absolute -top-16 left-1/2 -translate-x-1/2 flex flex-col items-center">
                 <div className="bg-slate-900 border-2 border-amber-500/60 px-8 py-2 rounded-full shadow-2xl">
-                    <p className="text-[11px] font-black text-amber-500 uppercase tracking-[0.6em] whitespace-nowrap">EXTRACTED UNIT</p>
+                    <p className="text-[11px] font-black text-amber-500 uppercase tracking-[0.6em] whitespace-nowrap">UNIT CAPTURED</p>
                 </div>
                 <div className="w-1 h-10 bg-gradient-to-b from-amber-500 to-transparent"></div>
             </div>
@@ -268,7 +275,7 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
                 <span className="result-glow-text">{winningNumber.padStart(2, '0')}</span>
             ) : (
                 <div className="flex gap-4">
-                    <div className="w-4 h-4 rounded-full bg-slate-800 animate-bounce" />
+                    <div className="w-4 h-4 rounded-full bg-slate-800 animate-bounce shadow-[0_0_10px_rgba(255,255,255,0.1)]" />
                     <div className="w-4 h-4 rounded-full bg-slate-800 animate-bounce delay-150" />
                     <div className="w-4 h-4 rounded-full bg-slate-800 animate-bounce delay-300" />
                 </div>
@@ -282,7 +289,7 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
             <div className="relative text-center space-y-20 max-w-5xl animate-result-slam-3d">
                 <div className="space-y-8">
                     <div className="inline-block bg-amber-500/10 border border-amber-500/40 px-8 py-3 rounded-full mb-3">
-                        <p className="text-amber-500 font-black text-[12px] uppercase tracking-[1em] animate-pulse">OFFICIAL CERTIFICATION</p>
+                        <p className="text-amber-500 font-black text-[12px] uppercase tracking-[1.2em] animate-pulse">OFFICIAL AUTHENTICATION</p>
                     </div>
                     <h2 className="text-white text-6xl sm:text-9xl font-black russo tracking-tighter uppercase drop-shadow-[0_0_60px_rgba(245,158,11,0.4)]">{gameName}</h2>
                 </div>
@@ -299,7 +306,7 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
                         onClick={onClose}
                         className="group bg-amber-500 hover:bg-amber-400 text-slate-950 font-black px-24 py-8 sm:px-40 sm:py-10 rounded-[3rem] uppercase tracking-[0.8em] text-[12px] sm:text-base transition-all transform active:scale-95 shadow-[0_0_80px_rgba(245,158,11,0.5)] border-b-8 border-amber-700 overflow-hidden relative"
                     >
-                        <span className="relative z-10">ACCEPT RESULT</span>
+                        <span className="relative z-10">ACCEPT VERIFIED OUTCOME</span>
                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
                     </button>
                 </div>

@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* --- HYPER-REALISTIC 3D GLASS PHYSICS ENGINE --- */
+/* --- AKLASBELA-TV: HYPER-REALISTIC MECHANICAL DRAW ENGINE --- */
 
 .lottery-machine-viewport {
     position: fixed;
@@ -117,33 +117,44 @@
     100% { transform: rotate(360deg) translate(var(--radius)) rotate(-360deg) scale(0.8); opacity: 0.6; }
 }
 
-/* THE EXTRACTION BALL - "INSIDE GLASS" STYLING */
+/* THE EXTRACTION BALL - TRAVELING "INSIDE" THE PHYSICS-DRIVEN GLASS PIPE */
 .ball-delivering {
     position: fixed;
     top: 0;
     left: 0;
     z-index: 43 !important; 
-    /* The filter below adds a "refracted" look by slightly softening edges and adjusting contrast */
-    filter: blur(0.4px) brightness(0.9) contrast(1.15) saturate(1.2);
-    animation: follow-extraction-path-slow 16s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    /* Magnification and Refraction Filters */
+    filter: blur(0.3px) brightness(0.95) contrast(1.1);
+    animation: extraction-physics 16s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    pointer-events: none;
 }
 
-@keyframes follow-extraction-path-slow {
-    0% { transform: translate(50vw, 52.5vh) scale(0.6); opacity: 0; }
-    2% { transform: translate(50vw, 52.5vh) scale(1.0); opacity: 1; }
+@keyframes extraction-physics {
+    /* Precise coordinate mapping to match the 400x800 SVG pipe path */
+    0% { transform: translate(50vw, 52.5vh) scale(0.65); opacity: 0; }
+    2% { transform: translate(50vw, 52.5vh) scale(1.1); opacity: 1; }
     
-    10% { transform: translate(50vw, 40vh) scale(1.15); }
-    18% { transform: translate(30vw, 35vh) scale(1.2) rotate(-20deg); }
-    26% { transform: translate(70vw, 28.75vh) scale(1.25) rotate(20deg); }
-    34% { transform: translate(30vw, 22.5vh) scale(1.3) rotate(-20deg); }
-    42% { transform: translate(70vw, 16.25vh) scale(1.35) rotate(20deg); }
-    50% { transform: translate(85vw, 16.25vh) scale(1.4) rotate(0deg); }
-    58% { transform: translate(85vw, 31.25vh) scale(1.5) rotate(360deg); }
-    66% { transform: translate(70vw, 40vh) scale(1.6) rotate(720deg); }
-    74% { transform: translate(85vw, 48.75vh) scale(1.7) rotate(1080deg); }
-    82% { transform: translate(70vw, 57.5vh) scale(1.8) rotate(1440deg); }
-    90% { transform: translate(85vw, 66.25vh) scale(1.9) rotate(1800deg); }
-    94% { transform: translate(85vw, 83.75vh) scale(2.2) rotate(2160deg); }
+    /* 1. Neck Rise (Into the first glass joint) */
+    10% { transform: translate(50vw, 40vh) scale(1.2); }
+    
+    /* 2. Zig Zag Navigation (Visualizing refraction magnification at banks) */
+    18% { transform: translate(30vw, 35vh) scale(1.3) rotate(-30deg); }
+    26% { transform: translate(70vw, 28.75vh) scale(1.35) rotate(30deg); }
+    34% { transform: translate(30vw, 22.5vh) scale(1.4) rotate(-30deg); }
+    42% { transform: translate(70vw, 16.25vh) scale(1.45) rotate(30deg); }
+    
+    /* 3. Helix Entry Transition */
+    50% { transform: translate(85vw, 16.25vh) scale(1.5) rotate(0deg); }
+    
+    /* 4. Slow Descent through the Vertical Glass Helix (Continuous Rotation) */
+    58% { transform: translate(85vw, 31.25vh) scale(1.55) rotate(360deg); }
+    66% { transform: translate(70vw, 40vh) scale(1.65) rotate(720deg); }
+    74% { transform: translate(85vw, 48.75vh) scale(1.75) rotate(1080deg); }
+    82% { transform: translate(70vw, 57.5vh) scale(1.85) rotate(1440deg); }
+    90% { transform: translate(85vw, 66.25vh) scale(1.95) rotate(1800deg); }
+    
+    /* 5. Terminal Velocity Adjustment (Exit from pipe into display tray) */
+    94% { transform: translate(85vw, 83.75vh) scale(2.5) rotate(2160deg); }
     100% { transform: translate(50vw, 92vh) scale(5.5) rotate(2520deg); opacity: 1; filter: none; }
 }
 
@@ -246,27 +257,27 @@
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* GLASS PIPE REALISM LAYERS */
-.glass-back-layer {
-    z-index: 42;
+/* VOLUMETRIC GLASS LAYERING (Z-ORDERING) */
+.glass-back-wall {
+    z-index: 42; /* Behind the ball */
 }
 
-.glass-front-layer {
-    z-index: 44;
+.glass-front-highlights {
+    z-index: 44; /* Over the ball */
     pointer-events: none;
 }
 
-.glass-pipe-specular {
+.glass-specular-beam {
     mix-blend-mode: screen;
-    animation: pipe-glow-pulse 5s infinite alternate ease-in-out;
+    animation: beam-sweep 6s infinite alternate ease-in-out;
 }
 
-@keyframes pipe-glow-pulse {
-    0% { opacity: 0.5; filter: blur(1px); }
-    100% { opacity: 0.9; filter: blur(2px); }
+@keyframes beam-sweep {
+    0% { opacity: 0.3; filter: blur(1px); }
+    100% { opacity: 0.8; filter: blur(2.5px); }
 }
 
-.refraction-overlay {
+.caustic-texture {
     mix-blend-mode: overlay;
-    opacity: 0.4;
+    opacity: 0.15;
 }

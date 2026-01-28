@@ -143,72 +143,77 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
 
       <div className={`relative w-full h-full flex flex-col items-center justify-center transition-all duration-1000 ${phase === 'REVEAL' ? 'opacity-0 scale-150 blur-3xl' : 'opacity-100'}`}>
         
-        {/* SHARED SVG PIPELINE DEFS (Nested inside main SVGs for reliability) */}
+        {/* SHARED SVG PIPELINE DEFS - BOOSTED CONTRAST */}
         <svg style={{ position: 'absolute', width: 0, height: 0 }}>
             <defs>
                 <linearGradient id="pipeBackGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="rgba(0,0,0,0.95)" />
-                    <stop offset="20%" stopColor="rgba(20,30,40,0.6)" />
-                    <stop offset="50%" stopColor="rgba(30,40,50,0.4)" />
-                    <stop offset="80%" stopColor="rgba(20,30,40,0.6)" />
-                    <stop offset="100%" stopColor="rgba(0,0,0,0.95)" />
+                    <stop offset="0%" stopColor="rgba(30,40,50,1)" />
+                    <stop offset="15%" stopColor="rgba(60,80,100,0.6)" />
+                    <stop offset="50%" stopColor="rgba(80,100,120,0.3)" />
+                    <stop offset="85%" stopColor="rgba(60,80,100,0.6)" />
+                    <stop offset="100%" stopColor="rgba(30,40,50,1)" />
                 </linearGradient>
                 <linearGradient id="pipeGlassVolume" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="rgba(140,230,255,0.4)" />
-                    <stop offset="10%" stopColor="rgba(140,230,255,0.1)" />
-                    <stop offset="90%" stopColor="rgba(140,230,255,0.1)" />
-                    <stop offset="100%" stopColor="rgba(140,230,255,0.4)" />
+                    <stop offset="0%" stopColor="rgba(200,240,255,0.6)" />
+                    <stop offset="10%" stopColor="rgba(200,240,255,0.15)" />
+                    <stop offset="90%" stopColor="rgba(200,240,255,0.15)" />
+                    <stop offset="100%" stopColor="rgba(200,240,255,0.6)" />
                 </linearGradient>
                 <linearGradient id="pipeSpecularRim" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="white" stopOpacity="0.9" />
-                    <stop offset="3%" stopColor="white" stopOpacity="0.15" />
-                    <stop offset="97%" stopColor="white" stopOpacity="0.15" />
-                    <stop offset="100%" stopColor="white" stopOpacity="0.9" />
+                    <stop offset="0%" stopColor="white" stopOpacity="1" />
+                    <stop offset="2%" stopColor="white" stopOpacity="0.2" />
+                    <stop offset="98%" stopColor="white" stopOpacity="0.2" />
+                    <stop offset="100%" stopColor="white" stopOpacity="1" />
                 </linearGradient>
                 <linearGradient id="pipeCenterBeam" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="47%" stopColor="transparent" />
-                    <stop offset="50%" stopColor="rgba(255,255,255,0.85)" />
-                    <stop offset="53%" stopColor="transparent" />
+                    <stop offset="48%" stopColor="transparent" />
+                    <stop offset="50%" stopColor="rgba(255,255,255,0.95)" />
+                    <stop offset="52%" stopColor="transparent" />
                 </linearGradient>
             </defs>
         </svg>
 
-        {/* 1. PIPELINE BACK LAYER */}
-        <div className="absolute inset-0 glass-back-wall">
-            <svg viewBox="0 0 400 800" preserveAspectRatio="none">
-                <path d={pipelinePath} stroke="rgba(0,0,0,0.8)" strokeWidth="64" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+        {/* 1. PIPELINE BACK LAYER (Physical Occlusion + High Contrast Inner Wall) */}
+        <div className="absolute inset-0 glass-back-wall pipeline-container">
+            <svg viewBox="0 0 400 800" preserveAspectRatio="none" className="pipeline-svg">
+                {/* Structural Outer Silhouette (Light color to separate from BG) */}
+                <path d={pipelinePath} stroke="rgba(255,255,255,0.15)" strokeWidth="66" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+                {/* Dark Depth Stroke */}
+                <path d={pipelinePath} stroke="rgba(0,0,0,1)" strokeWidth="62" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+                {/* Inner Gradient Wall */}
                 <path d={pipelinePath} stroke="url(#pipeBackGradient)" strokeWidth="60" fill="none" strokeLinejoin="round" strokeLinecap="round" />
             </svg>
         </div>
 
-        {/* 2. WINNING BALL (EXTRACTION LAYER) */}
+        {/* 2. WINNING BALL (EXTRACTION LAYER) - Sandwiched between back and front glass */}
         {(phase === 'DELIVERY' || phase === 'HOLD') && (
             <div 
                 className={`lottery-ball-3d ${phase === 'DELIVERY' ? 'ball-delivering' : 'ball-held'}`} 
                 style={{ '--ball-color': '#f59e0b' } as any}
             >
-                <div className="absolute inset-0 bg-gradient-to-tr from-white/20 via-white/5 to-transparent blur-[1px] rounded-full pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-tr from-white/25 via-white/5 to-transparent blur-[1px] rounded-full pointer-events-none" />
                 <span className="ball-text-3d" style={{ fontSize: phase === 'HOLD' ? '22px' : '13px' }}>
                     {winningNumber.padStart(2, '0')}
                 </span>
             </div>
         )}
 
-        {/* 3. PIPELINE FRONT LAYER (HIGHLIGHTS) */}
-        <div className="absolute inset-0 glass-front-highlights">
-            <svg viewBox="0 0 400 800" preserveAspectRatio="none">
-                {/* Thick Volume */}
-                <path d={pipelinePath} stroke="url(#pipeGlassVolume)" strokeWidth="58" fill="none" strokeLinejoin="round" strokeLinecap="round" opacity="0.6" />
-                {/* Surface Shine */}
-                <path d={pipelinePath} stroke="rgba(255,255,255,0.08)" strokeWidth="54" fill="none" strokeLinejoin="round" strokeLinecap="round" />
-                {/* Silhouette Specular */}
-                <path d={pipelinePath} stroke="url(#pipeSpecularRim)" strokeWidth="59.5" fill="none" strokeLinejoin="round" strokeLinecap="round" opacity="0.8" />
-                {/* Center Caustic Beam */}
-                <path d={pipelinePath} className="glass-specular-beam" stroke="url(#pipeCenterBeam)" strokeWidth="12" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+        {/* 3. PIPELINE FRONT LAYER (Surface Physics + High Contrast Highlights) */}
+        <div className="absolute inset-0 glass-front-highlights pipeline-container">
+            <svg viewBox="0 0 400 800" preserveAspectRatio="none" className="pipeline-svg">
+                {/* Volumetric Glass Material (Prominent tint) */}
+                <path d={pipelinePath} stroke="url(#pipeGlassVolume)" strokeWidth="58" fill="none" strokeLinejoin="round" strokeLinecap="round" opacity="0.8" />
+                {/* Hard Surface Specular Rim (Very Visible Edge) */}
+                <path d={pipelinePath} stroke="url(#pipeSpecularRim)" strokeWidth="59.5" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+                {/* Dynamic Glossy Shine (The "Front" highlight) */}
+                <path d={pipelinePath} className="glass-specular-beam" stroke="url(#pipeCenterBeam)" strokeWidth="16" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+                {/* Subtle Refractive Texture */}
+                <path d={pipelinePath} className="caustic-texture" stroke="rgba(255,255,255,0.15)" strokeWidth="54" fill="none" strokeLinejoin="round" strokeLinecap="round" />
                 
-                {/* Industrial Connectors */}
-                <circle cx="200" cy="400" r="38" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="6" />
-                <circle cx="200" cy="400" r="34" fill="none" stroke="rgba(245,158,11,0.7)" strokeWidth="2" />
+                {/* Industrial Joints (Highly Visible) */}
+                <circle cx="200" cy="400" r="42" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="8" />
+                <circle cx="200" cy="400" r="34" fill="none" stroke="rgba(245,158,11,0.8)" strokeWidth="3" />
+                <circle cx="200" cy="400" r="30" fill="none" stroke="white" strokeWidth="1" opacity="0.5" />
             </svg>
         </div>
 

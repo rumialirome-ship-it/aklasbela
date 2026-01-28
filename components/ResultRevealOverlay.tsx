@@ -16,7 +16,7 @@ const RAINBOW_COLORS = [
 
 // Refined timings for cinematic feel
 const SHUFFLE_TIME = 12000; // 12 seconds shuffle
-const DELIVERY_TIME = 16000; // Increased to 16 seconds for "slowly" through the pipe
+const DELIVERY_TIME = 16000; // 16 seconds for "slowly" through the pipe
 const HOLD_TIME = 4500;      // 4.5 seconds hold in display area
 
 const Ball: React.FC<{ 
@@ -144,49 +144,79 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
 
       <div className={`relative w-full h-full flex flex-col items-center justify-center transition-all duration-1000 ${phase === 'REVEAL' ? 'opacity-0 scale-150 blur-3xl' : 'opacity-100'}`}>
         
-        {/* 3D GLASSY PIPELINE SVG */}
+        {/* ULTRA-REALISTIC GLASSY PIPELINE SVG */}
         <div className="absolute inset-0 z-[40] pointer-events-none">
             <svg className="w-full h-full" viewBox="0 0 400 800" preserveAspectRatio="none">
                 <defs>
+                    {/* Dark inner cavity for depth */}
+                    <linearGradient id="glassCavity" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="rgba(0,0,0,0.6)" />
+                        <stop offset="50%" stopColor="rgba(0,0,0,0.2)" />
+                        <stop offset="100%" stopColor="rgba(0,0,0,0.6)" />
+                    </linearGradient>
+                    
+                    {/* Primary glass cylinder body with refraction feel */}
                     <linearGradient id="glassBody" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor="rgba(255,255,255,0.05)" />
-                        <stop offset="20%" stopColor="rgba(255,255,255,0.15)" />
-                        <stop offset="50%" stopColor="rgba(255,255,255,0.2)" />
-                        <stop offset="80%" stopColor="rgba(255,255,255,0.15)" />
-                        <stop offset="100%" stopColor="rgba(255,255,255,0.05)" />
+                        <stop offset="0%" stopColor="rgba(255,255,255,0.08)" />
+                        <stop offset="25%" stopColor="rgba(255,255,255,0.18)" />
+                        <stop offset="50%" stopColor="rgba(255,255,255,0.25)" />
+                        <stop offset="75%" stopColor="rgba(255,255,255,0.18)" />
+                        <stop offset="100%" stopColor="rgba(255,255,255,0.08)" />
                     </linearGradient>
+                    
+                    {/* Specular rim highlight */}
+                    <linearGradient id="glassRim" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="rgba(255,255,255,0.4)" />
+                        <stop offset="2%" stopColor="rgba(255,255,255,0.1)" />
+                        <stop offset="98%" stopColor="rgba(255,255,255,0.1)" />
+                        <stop offset="100%" stopColor="rgba(255,255,255,0.4)" />
+                    </linearGradient>
+
+                    {/* Central environment reflection beam */}
                     <linearGradient id="glassReflection" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="45%" stopColor="rgba(255,255,255,0)" />
-                        <stop offset="50%" stopColor="rgba(255,255,255,0.4)" />
-                        <stop offset="55%" stopColor="rgba(255,255,255,0)" />
+                        <stop offset="0%" stopColor="rgba(255,255,255,0)" />
+                        <stop offset="48%" stopColor="rgba(255,255,255,0)" />
+                        <stop offset="50%" stopColor="rgba(255,255,255,0.6)" />
+                        <stop offset="52%" stopColor="rgba(255,255,255,0)" />
+                        <stop offset="100%" stopColor="rgba(255,255,255,0)" />
                     </linearGradient>
+
+                    <filter id="glassRefraction">
+                        <feGaussianBlur stdDeviation="1.5" />
+                    </filter>
                 </defs>
                 
-                {/* 1. Pipe Background Shadow (Inner pipe look) */}
-                <path d={pipelinePath} stroke="rgba(0,0,0,0.5)" strokeWidth="60" fill="none" strokeLinejoin="round" strokeLinecap="round" />
-                
-                {/* 2. Glass Tube Body */}
-                <path d={pipelinePath} stroke="url(#glassBody)" strokeWidth="52" fill="none" strokeLinejoin="round" strokeLinecap="round" />
-                
-                {/* 3. Outer Edge Refractions */}
-                <path d={pipelinePath} stroke="rgba(255,255,255,0.1)" strokeWidth="54" fill="none" strokeLinejoin="round" strokeLinecap="round" />
-                
-                {/* 4. Central 3D Highlight Line */}
-                <path d={pipelinePath} stroke="url(#glassReflection)" strokeWidth="8" fill="none" strokeLinejoin="round" strokeLinecap="round" opacity="0.6" />
+                {/* 1. BACK OF PIPE (Behind the ball) */}
+                <path d={pipelinePath} stroke="url(#glassCavity)" strokeWidth="58" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+                <path d={pipelinePath} stroke="rgba(255,255,255,0.03)" strokeWidth="52" fill="none" strokeLinejoin="round" strokeLinecap="round" filter="url(#glassRefraction)" />
 
-                {/* Neck Connector */}
-                <circle cx="200" cy="400" r="32" fill="none" stroke="rgba(245,158,11,0.4)" strokeWidth="4" />
-                <circle cx="200" cy="400" r="28" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="1" />
+                {/* --- WINNING BALL WILL BE RENDERED HERE BY REACT (z-index 43) --- */}
+
+                {/* 2. FRONT OF PIPE (Highlights & Specular) */}
+                {/* Outer Glass Shell */}
+                <path d={pipelinePath} stroke="url(#glassBody)" strokeWidth="56" fill="none" strokeLinejoin="round" strokeLinecap="round" opacity="0.8" />
+                
+                {/* Hard Specular Rim */}
+                <path d={pipelinePath} stroke="url(#glassRim)" strokeWidth="57" fill="none" strokeLinejoin="round" strokeLinecap="round" opacity="0.5" />
+                
+                {/* Sharp Linear Highlights */}
+                <path d={pipelinePath} className="glass-pipe-highlight" stroke="url(#glassReflection)" strokeWidth="12" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+                <path d={pipelinePath} className="glass-pipe-highlight" stroke="rgba(255,255,255,0.2)" strokeWidth="2" fill="none" strokeLinejoin="round" strokeLinecap="round" transform="translate(18, 0)" />
+
+                {/* Connection Accents */}
+                <circle cx="200" cy="400" r="34" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="4" />
+                <circle cx="200" cy="400" r="32" fill="none" stroke="rgba(245,158,11,0.5)" strokeWidth="2" />
             </svg>
         </div>
 
-        {/* WINNING BALL (EXTRACTION LAYER) - Moves over the pipeline */}
+        {/* WINNING BALL (EXTRACTION LAYER) - Moves over the pipeline back but under the front highlights */}
         {(phase === 'DELIVERY' || phase === 'HOLD') && (
             <div 
                 className={`lottery-ball-3d ${phase === 'DELIVERY' ? 'ball-delivering' : 'ball-held'}`} 
                 style={{ '--ball-color': '#f59e0b' } as any}
             >
-                <div className="absolute inset-0 bg-white/20 blur-sm rounded-full pointer-events-none" />
+                {/* Refractive blur behind text */}
+                <div className="absolute inset-0 bg-white/10 backdrop-blur-[1px] rounded-full pointer-events-none" />
                 <span className="ball-text-3d" style={{ fontSize: phase === 'HOLD' ? '22px' : '12px' }}>
                     {winningNumber.padStart(2, '0')}
                 </span>

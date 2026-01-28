@@ -36,18 +36,10 @@ const Ball: React.FC<{
     return { radius, speed, delay };
   }, []);
 
-  // During Extraction/Delivery/Hold, only show the special winner ball following the track
+  // During Extraction/Delivery/Hold, the winner ball is rendered outside the jar separately 
+  // to avoid container clipping (overflow:hidden). 
   if (isActuallyWinner && (phase === 'DELIVERY' || phase === 'HOLD')) {
-      return (
-        <div 
-          className={`lottery-ball-3d ${phase === 'DELIVERY' ? 'ball-delivering' : 'ball-held'}`} 
-          style={{ '--ball-color': '#f59e0b' } as any}
-        >
-            <span className="ball-text-3d" style={{ fontSize: phase === 'HOLD' ? '18px' : '12px' }}>
-                {winningNumber.padStart(2, '0')}
-            </span>
-        </div>
-      );
+      return null;
   }
 
   // Hide non-winners if we've moved past shuffling to clear the viewport for the delivery sequence
@@ -192,6 +184,18 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
                 <circle cx="200" cy="400" r="30" fill="none" stroke="rgba(245,158,11,0.4)" strokeWidth="3" />
             </svg>
         </div>
+
+        {/* WINNING BALL (EXTRACTION LAYER) - Rendered outside jar for track travel */}
+        {(phase === 'DELIVERY' || phase === 'HOLD') && (
+            <div 
+                className={`lottery-ball-3d ${phase === 'DELIVERY' ? 'ball-delivering' : 'ball-held'}`} 
+                style={{ '--ball-color': '#f59e0b' } as any}
+            >
+                <span className="ball-text-3d" style={{ fontSize: phase === 'HOLD' ? '22px' : '12px' }}>
+                    {winningNumber.padStart(2, '0')}
+                </span>
+            </div>
+        )}
 
         {/* THE SPHERICAL MIXING JAR */}
         <div className="machine-jar">

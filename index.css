@@ -1,9 +1,8 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* --- THE FISHBOWL MECHANICAL ENGINE --- */
+/* --- CINEMATIC MECHANICAL DRAW ENGINE (VIDEO INSPIRED) --- */
 
 .lottery-machine-viewport {
     position: fixed;
@@ -18,11 +17,11 @@
     z-index: 10000;
 }
 
-/* THE SPHERICAL JAR */
+/* THE SPHERICAL CHAMBER */
 .machine-jar {
     position: relative;
-    margin-top: 18vh;
-    width: clamp(300px, 85vw, 450px);
+    margin-top: 15vh;
+    width: clamp(320px, 85vw, 500px);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -30,190 +29,214 @@
 }
 
 .jar-neck-mechanical {
-    width: 90px;
-    height: 40px;
-    background: rgba(255, 255, 255, 0.05);
+    width: 100px;
+    height: 45px;
+    background: linear-gradient(to bottom, #111, #222);
     border: 2px solid rgba(255, 255, 255, 0.1);
     border-bottom: none;
-    border-radius: 12px 12px 0 0;
-    box-shadow: inset 0 8px 15px rgba(0,0,0,0.4);
+    border-radius: 20px 20px 0 0;
+    box-shadow: 
+        inset 0 10px 20px rgba(0,0,0,0.8),
+        0 -5px 15px rgba(245, 158, 11, 0.2);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.jar-neck-glow {
+    width: 60%;
+    height: 4px;
+    background: #f59e0b;
+    filter: blur(4px);
+    animation: neon-pulse 1.5s infinite;
 }
 
 .jar-body-sphere {
     position: relative;
     width: 100%;
     aspect-ratio: 1/1;
-    background: radial-gradient(circle at 40% 30%, rgba(255,255,255,0.06) 0%, transparent 70%);
-    border: 4px solid rgba(255, 255, 255, 0.1);
+    background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.08) 0%, transparent 70%);
+    border: 4px solid rgba(255, 255, 255, 0.12);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     box-shadow: 
         inset 0 0 120px rgba(0,0,0,1),
-        inset 0 0 40px rgba(255,255,255,0.02),
-        0 20px 50px rgba(0,0,0,0.8);
+        inset 0 0 40px rgba(245, 158, 11, 0.05),
+        0 40px 80px rgba(0,0,0,1);
     overflow: hidden;
 }
 
-/* THE BALLS */
+.chamber-vortex-glow {
+    animation: vortex-flicker 1.5s infinite ease-in-out;
+}
+
+@keyframes vortex-flicker {
+    0%, 100% { box-shadow: inset 0 0 140px rgba(0,0,0,1); }
+    50% { box-shadow: inset 0 0 180px rgba(245, 158, 11, 0.08); }
+}
+
+@keyframes neon-pulse {
+    0%, 100% { opacity: 0.5; filter: blur(4px); }
+    50% { opacity: 1; filter: blur(8px); }
+}
+
+/* THE BALLS - ENHANCED 3D */
 .lottery-ball-3d {
     position: absolute;
-    width: clamp(22px, 5.2vw, 34px);
-    height: clamp(22px, 5.2vw, 34px);
+    width: clamp(26px, 6vw, 42px);
+    height: clamp(26px, 6vw, 42px);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     box-shadow: 
-        inset -4px -4px 8px rgba(0,0,0,1),
-        inset 2px 2px 5px rgba(255,255,255,0.4),
-        0 5px 12px rgba(0,0,0,0.8);
-    background: radial-gradient(circle at 35% 35%, #fff 0%, var(--ball-color, #fff) 60%, #000 100%);
+        inset -6px -6px 12px rgba(0,0,0,0.9),
+        inset 4px 4px 8px rgba(255,255,255,0.5),
+        0 10px 20px rgba(0,0,0,0.8);
+    background: radial-gradient(circle at 30% 30%, #fff 0%, var(--ball-color, #fff) 70%, #000 100%);
     z-index: 25;
-    transition: transform 1.2s cubic-bezier(0.19, 1, 0.22, 1);
+    transition: transform 1s cubic-bezier(0.19, 1, 0.22, 1);
 }
 
 .ball-text-3d {
-    font-size: clamp(9px, 2.5vw, 13px);
-    font-family: 'Inter', sans-serif;
-    font-weight: 950;
+    font-size: clamp(10px, 3vw, 16px);
+    font-family: 'Russo One', sans-serif;
+    font-weight: 900;
     color: #000;
     line-height: 1;
-    text-shadow: 0 0.5px 0 rgba(255,255,255,0.2);
+    transform: rotate(-10deg);
 }
 
-/* INTENSE SHUFFLE */
-@keyframes mechanical-mix {
-    0%   { transform: translate(var(--x1), var(--y1)) rotate(0deg); }
-    25%  { transform: translate(var(--x2), var(--y2)) rotate(90deg); }
-    50%  { transform: translate(var(--x3), var(--y3)) rotate(180deg); }
-    75%  { transform: translate(var(--x4), var(--y4)) rotate(270deg); }
-    100% { transform: translate(var(--x1), var(--y1)) rotate(360deg); }
+/* VORTEX MIXING ANIMATION (AERODYNAMIC) */
+@keyframes ball-vortex-move {
+    0% { transform: rotate(0deg) translate(var(--radius)) rotate(0deg) scale(0.85); opacity: 0.7; }
+    50% { transform: rotate(180deg) translate(var(--radius)) rotate(-180deg) scale(1.15); opacity: 1; }
+    100% { transform: rotate(360deg) translate(var(--radius)) rotate(-360deg) scale(0.85); opacity: 0.7; }
 }
 
-.ball-mixing {
-    animation: mechanical-mix var(--duration) infinite ease-in-out;
+.ball-vortex {
+    animation: ball-vortex-move var(--speed) infinite linear;
     animation-delay: var(--delay);
 }
 
-/* BALLS SETTLING AT BOTTOM */
-.ball-resting {
-    transform: translate(var(--rest-x), var(--rest-y)) rotate(15deg);
-}
-
-/* BALL TRAVELING THROUGH COMPLEX ZIG-ZAG PIPE */
+/* EXTRACTION PHYSICS */
 .ball-delivering {
-    z-index: 1000 !important;
-    animation: follow-complex-path 8s cubic-bezier(0.45, 0, 0.15, 1) forwards;
+    z-index: 2000 !important;
+    animation: follow-extraction-path 8.5s cubic-bezier(0.45, 0.05, 0.55, 0.95) forwards;
 }
 
-@keyframes follow-complex-path {
-    /* 1X = 0.25vw, 1Y = 0.125vh approx from SVG 400x800 */
-    /* Start M 200 420 (Inside Neck) */
-    0% { transform: translate(0, -22vh) scale(0.6); opacity: 0; }
-    3% { transform: translate(0, -22vh) scale(1.1); opacity: 1; }
-    /* L 200 350 (Straight Up) */
-    7% { transform: translate(0, -32vh) scale(1.2); }
-    /* L 140 320 (Zig Left) */
-    12% { transform: translate(-15vw, -36vh) scale(1.3); }
-    /* L 260 280 (Zig Right) */
-    18% { transform: translate(15vw, -42vh) scale(1.4); }
-    /* L 140 240 (Zig Left) */
-    24% { transform: translate(-15vw, -48vh) scale(1.5); }
-    /* L 260 200 (Zig Right) */
-    30% { transform: translate(15vw, -54vh) scale(1.6); }
-    /* L 330 200 (Move to column) */
-    35% { transform: translate(32vw, -54vh) scale(1.7); }
-    /* L 330 250 (Drop in column) */
-    40% { transform: translate(32vw, -46vh) scale(1.8); }
-    /* Helix Drops (L 280 320, L 330 390, etc.) */
-    48% { transform: translate(20vw, -36vh) scale(1.9); }
-    56% { transform: translate(32vw, -25vh) scale(2.0); }
-    64% { transform: translate(20vw, -15vh) scale(2.2); }
-    72% { transform: translate(32vw, -5vh) scale(2.5); }
-    80% { transform: translate(20vw, 5vh) scale(2.8); }
-    88% { transform: translate(32vw, 15vh) scale(3.2); }
-    /* Final stretch L 330 750 -> L 200 780 */
-    95% { transform: translate(32vw, 35vh) scale(3.5); }
-    100% { transform: translate(0, 42vh) scale(4); opacity: 1; }
+@keyframes follow-extraction-path {
+    /* M 200 420 in the SVG coord space */
+    0% { transform: translate(0, -10vh) scale(0.8) rotate(0deg); opacity: 0; }
+    2% { transform: translate(0, -10vh) scale(1.1) rotate(0deg); opacity: 1; }
+    /* Up into neck */
+    8% { transform: translate(0, -25vh) scale(1.3) rotate(45deg); }
+    /* Horizontal banking zig-zags */
+    15% { transform: translate(-22vw, -30vh) scale(1.4) rotate(-30deg); }
+    22% { transform: translate(22vw, -38vh) scale(1.6) rotate(30deg); }
+    28% { transform: translate(-22vw, -45vh) scale(1.8) rotate(-30deg); }
+    34% { transform: translate(22vw, -52vh) scale(2.0) rotate(30deg); }
+    /* Drop into vertical helix track */
+    42% { transform: translate(35vw, -52vh) scale(2.2) rotate(0deg); }
+    50% { transform: translate(35vw, -40vh) scale(2.4) rotate(720deg); }
+    60% { transform: translate(25vw, -25vh) scale(2.7) rotate(1440deg); }
+    70% { transform: translate(35vw, -5vh) scale(3.0) rotate(2160deg); }
+    80% { transform: translate(25vw, 15vh) scale(3.5) rotate(2880deg); }
+    90% { transform: translate(35vw, 35vh) scale(4.0) rotate(3600deg); }
+    /* Final roll into box */
+    100% { transform: translate(0, 42vh) scale(5) rotate(3960deg); opacity: 1; }
 }
 
-/* HOLD PHASE PULSE */
+/* HOLD PHASE - EXTREME GLOW */
 .ball-held {
-    z-index: 1001 !important;
-    transform: translate(0, 42vh) scale(4);
-    animation: result-pulse 1.5s infinite ease-in-out;
-    box-shadow: 0 0 60px rgba(245, 158, 11, 0.7), inset -5px -5px 15px rgba(0,0,0,0.8);
+    z-index: 2001 !important;
+    transform: translate(0, 42vh) scale(5);
+    animation: held-ball-pulse 2s infinite ease-in-out;
 }
 
-@keyframes result-pulse {
-    0%, 100% { transform: translate(0, 42vh) scale(4); filter: brightness(1); }
-    50% { transform: translate(0, 42vh) scale(4.3); filter: brightness(1.3); }
+@keyframes held-ball-pulse {
+    0%, 100% { 
+        transform: translate(0, 42vh) scale(5) rotate(0deg); 
+        box-shadow: 0 0 100px rgba(245, 158, 11, 0.7), inset -5px -5px 15px rgba(0,0,0,0.8);
+    }
+    50% { 
+        transform: translate(0, 42vh) scale(5.3) rotate(5deg); 
+        box-shadow: 0 0 140px rgba(245, 158, 11, 1), inset -5px -5px 15px rgba(0,0,0,0.8);
+        filter: brightness(1.2);
+    }
 }
 
-/* RECEIVER UNIT */
+/* THE REVEAL DISPLAY BOX (MECHANICAL TRAY) */
 .result-display-box {
     position: absolute;
     bottom: 8vh;
-    width: clamp(280px, 80vw, 420px);
-    height: clamp(120px, 18vh, 180px);
-    background: rgba(255, 255, 255, 0.05); 
+    width: clamp(300px, 85vw, 480px);
+    height: clamp(140px, 20vh, 200px);
+    background: linear-gradient(135deg, rgba(20,20,20,0.9) 0%, rgba(5,5,5,0.95) 100%);
     backdrop-filter: blur(40px);
-    border: 3px solid rgba(245, 158, 11, 0.6);
-    border-radius: 40px;
+    border: 4px solid #f59e0b;
+    border-radius: 50px;
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 50;
     box-shadow: 
-        0 40px 80px rgba(0,0,0,1), 
-        inset 0 0 50px rgba(245, 158, 11, 0.1);
+        0 50px 100px rgba(0,0,0,1), 
+        0 0 40px rgba(245, 158, 11, 0.2),
+        inset 0 0 80px rgba(0,0,0,0.8);
+}
+
+.result-display-glass {
+    position: absolute;
+    inset: 10px;
+    border-radius: 40px;
+    background: linear-gradient(160deg, rgba(255,255,255,0.05) 0%, transparent 50%);
+    pointer-events: none;
+    border: 1px solid rgba(255,255,255,0.05);
 }
 
 .result-glow-text {
     font-family: 'Russo One', sans-serif;
     font-weight: 900;
-    font-size: clamp(70px, 16vw, 120px);
+    font-size: clamp(80px, 20vw, 140px);
     background: linear-gradient(to bottom, #fff, #f59e0b);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
-    animation: result-pop 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    filter: drop-shadow(0 0 30px rgba(245, 158, 11, 0.5));
+    animation: cinematic-pop 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 
-@keyframes result-pop {
-    0% { transform: scale(0.2); opacity: 0; filter: blur(20px); }
-    100% { transform: scale(1); opacity: 1; filter: blur(0); }
+@keyframes cinematic-pop {
+    0% { transform: scale(0.2) translateY(50px); opacity: 0; filter: blur(20px); }
+    100% { transform: scale(1) translateY(0); opacity: 1; filter: blur(0); }
 }
 
-/* BIG SCREEN REVEAL */
+/* REVEAL SLAM (FULL SCREEN) */
+.reveal-slam-bg {
+    background: radial-gradient(circle at center, rgba(245, 158, 11, 0.1) 0%, #000 70%);
+}
+
 .animate-result-slam-3d {
-    animation: result-slam-3d 1.5s cubic-bezier(0.1, 0.9, 0.2, 1) forwards;
+    animation: result-slam-3d 1s cubic-bezier(0.1, 0.9, 0.2, 1.1) forwards;
 }
 
 @keyframes result-slam-3d {
-    0% { transform: perspective(2000px) scale(5) rotateX(45deg); opacity: 0; filter: blur(40px); }
-    100% { transform: perspective(2000px) scale(1) rotateX(0deg); opacity: 1; filter: blur(0); }
-}
-
-.premium-gold-text {
-    background: linear-gradient(to bottom, #ffffff 0%, #f59e0b 50%, #78350f 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    filter: drop-shadow(0 0 30px rgba(245,158,11,0.6));
+    0% { transform: perspective(2000px) translateZ(1000px) rotateX(45deg); opacity: 0; filter: brightness(3); }
+    100% { transform: perspective(2000px) translateZ(0) rotateX(0deg); opacity: 1; filter: brightness(1); }
 }
 
 .gold-shimmer {
     background: linear-gradient(
         90deg, 
         rgba(255,255,255,0) 0%, 
-        rgba(255,255,255,0.7) 50%, 
+        rgba(255,255,255,0.9) 50%, 
         rgba(255,255,255,0) 100%
     );
     background-size: 200% 100%;
-    animation: shimmer 4s infinite linear;
+    animation: shimmer 3s infinite linear;
     -webkit-background-clip: text;
     background-clip: text;
 }
@@ -223,18 +246,13 @@
     100% { background-position: 200% 0; }
 }
 
-.glass-panel {
-    background: rgba(15, 23, 42, 0.4);
-    backdrop-filter: blur(40px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+.animate-fade-in {
+    animation: fade-in 0.8s ease-out forwards;
 }
 
-.bg-mesh {
-    position: fixed;
-    inset: 0;
-    background-image: radial-gradient(at 50% 50%, rgba(255, 255, 255, 0.05) 0px, transparent 50%);
-    pointer-events: none;
-    z-index: -1;
+@keyframes fade-in {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 .animate-shake {

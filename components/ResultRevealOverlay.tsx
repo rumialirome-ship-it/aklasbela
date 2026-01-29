@@ -69,7 +69,7 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
   
   const balls = useMemo(() => Array.from({ length: 100 }, (_, i) => ({
     id: i,
-    number: i.toString().padStart(2, '0')
+    number: i.toString() // Use raw string to avoid leading zeros on single digits
   })), []);
 
   useEffect(() => {
@@ -112,7 +112,12 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
     };
   }, []);
 
-  const pipelinePath = "M 200 420 L 200 320 L 120 280 L 280 230 L 120 180 L 280 130 L 340 130 L 340 250 L 280 320 L 340 390 L 280 460 L 340 530 L 280 600 L 340 670 L 340 750 L 200 780";
+  // REFINED PATH: Using Quadratic Bezier (Q) for smoother, natural glass pipe curves
+  const pipelinePath = "M 200 420 Q 200 320 120 280 Q 280 230 120 180 Q 280 130 340 130 Q 340 250 280 320 Q 340 390 280 460 Q 340 530 280 600 Q 340 670 340 750 Q 340 780 200 780";
+
+  const formattedWinningNumber = useMemo(() => {
+      return parseInt(winningNumber).toString();
+  }, [winningNumber]);
 
   return (
     <div className="fixed inset-0 z-[10000] lottery-machine-viewport select-none bg-black overflow-hidden flex flex-col items-center justify-center font-inter">
@@ -147,44 +152,44 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
 
       <div className={`relative w-full h-full flex flex-col items-center justify-center transition-all duration-1000 ${phase === 'REVEAL' ? 'scale-105 brightness-75' : 'opacity-100'}`}>
         
-        {/* ENHANCED GLASSY PIPELINE SVG - LAYERED FOR DEPTH */}
+        {/* ENHANCED GLASSY PIPELINE SVG - LAYERED FOR DEPTH AND SMOOTHNESS */}
         <div className="absolute inset-0 z-[40] pointer-events-none">
             <svg className="w-full h-full" viewBox="0 0 400 800" preserveAspectRatio="none">
                 <defs>
                     <linearGradient id="glassCavity" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor="rgba(0,0,0,0.3)" />
-                        <stop offset="50%" stopColor="rgba(0,0,0,0.02)" />
-                        <stop offset="100%" stopColor="rgba(0,0,0,0.3)" />
+                        <stop offset="0%" stopColor="rgba(0,0,0,0.2)" />
+                        <stop offset="50%" stopColor="rgba(0,0,0,0.01)" />
+                        <stop offset="100%" stopColor="rgba(0,0,0,0.2)" />
                     </linearGradient>
                     
                     <linearGradient id="glassBody" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor="rgba(255,255,255,0.08)" />
-                        <stop offset="50%" stopColor="rgba(255,255,255,0.02)" />
-                        <stop offset="100%" stopColor="rgba(255,255,255,0.08)" />
+                        <stop offset="0%" stopColor="rgba(255,255,255,0.06)" />
+                        <stop offset="50%" stopColor="rgba(255,255,255,0.01)" />
+                        <stop offset="100%" stopColor="rgba(255,255,255,0.06)" />
                     </linearGradient>
                     
                     <linearGradient id="glassSpecular" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor="rgba(255,255,255,0.2)" />
+                        <stop offset="0%" stopColor="rgba(255,255,255,0.15)" />
                         <stop offset="48%" stopColor="rgba(255,255,255,0)" />
-                        <stop offset="50%" stopColor="rgba(255,255,255,0.4)" />
+                        <stop offset="50%" stopColor="rgba(255,255,255,0.3)" />
                         <stop offset="52%" stopColor="rgba(255,255,255,0)" />
-                        <stop offset="100%" stopColor="rgba(255,255,255,0.2)" />
+                        <stop offset="100%" stopColor="rgba(255,255,255,0.15)" />
                     </linearGradient>
                 </defs>
                 
-                {/* 1. BACKSIDE OF PIPE (Visual depth behind ball) */}
-                <path d={pipelinePath} stroke="url(#glassCavity)" strokeWidth="64" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+                {/* 1. BACKSIDE OF PIPE (Visual depth behind ball) - Highly transparent */}
+                <path d={pipelinePath} stroke="url(#glassCavity)" strokeWidth="64" fill="none" strokeLinejoin="round" strokeLinecap="round" opacity="0.3" />
 
                 {/* --- WINNING BALL MOVES BETWEEN THESE SVG LAYERS (z-index 43) --- */}
 
-                {/* 2. FRONTSIDE GLASS (Reflections & Highlights) */}
-                <path d={pipelinePath} stroke="url(#glassBody)" strokeWidth="60" fill="none" strokeLinejoin="round" strokeLinecap="round" opacity="0.4" />
-                <path d={pipelinePath} className="glass-pipe-highlight" stroke="url(#glassSpecular)" strokeWidth="58" fill="none" strokeLinejoin="round" strokeLinecap="round" opacity="0.5" />
+                {/* 2. FRONTSIDE GLASS (Reflections & Highlights) - Subtle and clear */}
+                <path d={pipelinePath} stroke="url(#glassBody)" strokeWidth="60" fill="none" strokeLinejoin="round" strokeLinecap="round" opacity="0.3" />
+                <path d={pipelinePath} className="glass-pipe-highlight" stroke="url(#glassSpecular)" strokeWidth="58" fill="none" strokeLinejoin="round" strokeLinecap="round" opacity="0.4" />
                 
                 {/* MECHANICAL INTERFACE PORT */}
                 <g transform="translate(200, 400)">
-                    <circle r="50" fill="rgba(15,23,42,0.9)" stroke="rgba(255,255,255,0.1)" strokeWidth="2" />
-                    <circle r="42" fill="none" stroke="#f59e0b" strokeWidth="6" opacity="0.6" />
+                    <circle r="50" fill="rgba(15,23,42,0.85)" stroke="rgba(255,255,255,0.1)" strokeWidth="2" />
+                    <circle r="42" fill="none" stroke="#f59e0b" strokeWidth="6" opacity="0.5" />
                 </g>
             </svg>
         </div>
@@ -195,9 +200,9 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
                 className={`lottery-ball-3d ${phase === 'DELIVERY' ? 'ball-delivering' : 'ball-held'}`} 
                 style={{ '--ball-color': '#f59e0b' } as any}
             >
-                <div className="absolute inset-0 bg-white/5 backdrop-blur-[0.5px] rounded-full pointer-events-none" />
+                <div className="absolute inset-0 bg-white/5 backdrop-blur-[0.2px] rounded-full pointer-events-none" />
                 <span className="ball-text-3d" style={{ fontSize: phase === 'HOLD' || phase === 'REVEAL' ? '24px' : '14px' }}>
-                    {winningNumber.padStart(2, '0')}
+                    {formattedWinningNumber}
                 </span>
             </div>
         )}

@@ -66,7 +66,8 @@
         inset 0 0 160px rgba(0,0,0,1),
         inset 0 0 100px rgba(245, 158, 11, 0.12),
         0 80px 120px rgba(0,0,0,1);
-    overflow: visible; 
+    /* CRITICAL FIX: Ensure balls do not escape the glass circle */
+    overflow: hidden; 
 }
 
 @keyframes neon-pulse {
@@ -89,6 +90,8 @@
         0 15px 30px rgba(0,0,0,0.7);
     background: radial-gradient(circle at 35% 35%, #fff 0%, var(--ball-color, #fff) 65%, #000 100%);
     z-index: 44; 
+    /* Centers the absolute ball in the flex container */
+    margin: auto;
 }
 
 .ball-text-3d {
@@ -103,14 +106,15 @@
 
 /* AIRFLOW DRIVEN MIXING */
 @keyframes ball-airflow-move {
-    0% { transform: rotate(0deg) translate(var(--radius-x), var(--radius-y)) rotate(0deg) scale(0.8); opacity: 0.8; }
-    25% { transform: rotate(90deg) translate(calc(var(--radius-x) * 1.15), calc(var(--radius-y) * 1.25)) rotate(-90deg) scale(1.1); opacity: 1; }
-    50% { transform: rotate(180deg) translate(var(--radius-x), var(--radius-y)) rotate(-180deg) scale(0.85); opacity: 0.85; }
-    75% { transform: rotate(270deg) translate(calc(var(--radius-x) * 0.85), calc(var(--radius-y) * 0.75)) rotate(-270deg) scale(1.15); opacity: 1; }
-    100% { transform: rotate(360deg) translate(var(--radius-x), var(--radius-y)) rotate(-360deg) scale(0.8); opacity: 0.8; }
+    0% { transform: translate(calc(var(--radius-x) * cos(0deg)), calc(var(--radius-y) * sin(0deg))) scale(0.8); opacity: 0.8; }
+    25% { transform: translate(calc(var(--radius-x) * cos(90deg)), calc(var(--radius-y) * sin(90deg))) scale(1.1); opacity: 1; }
+    50% { transform: translate(calc(var(--radius-x) * cos(180deg)), calc(var(--radius-y) * sin(180deg))) scale(0.85); opacity: 0.85; }
+    75% { transform: translate(calc(var(--radius-x) * cos(270deg)), calc(var(--radius-y) * sin(270deg))) scale(1.15); opacity: 1; }
+    100% { transform: translate(calc(var(--radius-x) * cos(360deg)), calc(var(--radius-y) * sin(360deg))) scale(0.8); opacity: 0.8; }
 }
 
 .ball-airflow {
+    /* Use a simpler orbiting animation that stays centered properly */
     animation: ball-airflow-move var(--speed) infinite linear;
     animation-delay: var(--delay);
 }

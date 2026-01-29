@@ -29,17 +29,19 @@ const Ball: React.FC<{
   
   // Natural settling positions at the bottom of the spherical chamber
   const settledPos = useMemo(() => {
+    // Spreads along the bottom arc of the sphere
     const angle = (id / 99) * Math.PI - (Math.PI / 2); 
-    const spreadWidth = 140; 
-    const x = Math.sin(angle) * (spreadWidth * (0.8 + Math.random() * 0.4));
-    const y = 170 + Math.cos(angle) * 15 + (Math.floor(id / 15) * -12.5);
+    const spreadWidth = 110; // Reduced to stay inside the jar
+    const x = Math.sin(angle) * (spreadWidth * (0.7 + Math.random() * 0.3));
+    const y = 130 + Math.cos(angle) * 12 + (Math.floor(id / 15) * -10); // Higher up to avoid clipping the bottom
     const rot = (id * 23) % 360;
     return { x, y, rot };
   }, [id]);
 
   const motion = useMemo(() => {
-    const radiusX = 90 + Math.random() * 100;
-    const radiusY = 70 + Math.random() * 80;
+    // Airflow-driven circular mixing parameters - reduced to stay inside the jar
+    const radiusX = 60 + Math.random() * 80;
+    const radiusY = 50 + Math.random() * 70;
     const speed = 0.3 + Math.random() * 0.2;
     const delay = Math.random() * -10;
     return { radiusX, radiusY, speed, delay };
@@ -167,7 +169,7 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
                     <div className="jar-neck-glow" />
                 </div>
                 <div className={`jar-body-sphere ${phase === 'SHUFFLE' ? 'chamber-vortex-glow' : ''}`}>
-                    <div className="absolute inset-0 bg-gradient-to-tr from-white/10 via-transparent to-white/10 rounded-full z-[25]" />
+                    <div className="absolute inset-0 bg-gradient-to-tr from-white/10 via-transparent to-white/10 rounded-full z-[25] pointer-events-none" />
                     {balls.map((b) => (
                         <Ball 
                             key={b.id} 

@@ -57,15 +57,15 @@
     position: relative;
     width: 100%;
     aspect-ratio: 1/1;
-    background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.08) 0%, transparent 80%);
-    border: 5px solid rgba(255, 255, 255, 0.08);
+    background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.1) 0%, transparent 80%);
+    border: 5px solid rgba(255, 255, 255, 0.12);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     box-shadow: 
         inset 0 0 140px rgba(0,0,0,1),
-        inset 0 0 60px rgba(245, 158, 11, 0.05),
+        inset 0 0 60px rgba(245, 158, 11, 0.08),
         0 60px 100px rgba(0,0,0,1);
     overflow: visible; 
 }
@@ -86,11 +86,10 @@
     justify-content: center;
     box-shadow: 
         inset -6px -6px 12px rgba(0,0,0,0.8),
-        inset 4px 4px 8px rgba(255,255,255,0.4),
+        inset 4px 4px 8px rgba(255,255,255,0.5),
         0 10px 20px rgba(0,0,0,0.6);
-    background: radial-gradient(circle at 35% 35%, #fff 0%, var(--ball-color, #fff) 60%, #000 100%);
+    background: radial-gradient(circle at 30% 30%, #fff 0%, var(--ball-color, #fff) 60%, #000 100%);
     z-index: 44; 
-    transition: transform 1.2s cubic-bezier(0.19, 1, 0.22, 1);
 }
 
 .ball-text-3d {
@@ -103,69 +102,75 @@
     text-shadow: 0 1px 1px rgba(255,255,255,0.3);
 }
 
-/* TURBULENT VORTEX MIXING */
-@keyframes ball-vortex-move {
-    0% { transform: rotate(0deg) translate(var(--radius)) rotate(0deg) scale(0.85); opacity: 0.7; }
-    25% { transform: rotate(90deg) translate(calc(var(--radius) * 1.1)) rotate(-90deg) scale(1.05); opacity: 1; }
-    50% { transform: rotate(180deg) translate(var(--radius)) rotate(-180deg) scale(0.9); opacity: 0.8; }
-    75% { transform: rotate(270deg) translate(calc(var(--radius) * 0.9)) rotate(-270deg) scale(1.15); opacity: 1; }
-    100% { transform: rotate(360deg) translate(var(--radius)) rotate(-360deg) scale(0.85); opacity: 0.7; }
+/* AIRFLOW DRIVEN MIXING */
+@keyframes ball-airflow-move {
+    0% { transform: rotate(0deg) translate(var(--radius-x), var(--radius-y)) rotate(0deg) scale(0.8); opacity: 0.8; }
+    25% { transform: rotate(90deg) translate(calc(var(--radius-x) * 1.1), calc(var(--radius-y) * 1.2)) rotate(-90deg) scale(1.05); opacity: 1; }
+    50% { transform: rotate(180deg) translate(var(--radius-x), var(--radius-y)) rotate(-180deg) scale(0.9); opacity: 0.8; }
+    75% { transform: rotate(270deg) translate(calc(var(--radius-x) * 0.9), calc(var(--radius-y) * 0.8)) rotate(-270deg) scale(1.1); opacity: 1; }
+    100% { transform: rotate(360deg) translate(var(--radius-x), var(--radius-y)) rotate(-360deg) scale(0.8); opacity: 0.8; }
 }
 
-.ball-vortex {
-    animation: ball-vortex-move var(--speed) infinite linear;
+.ball-airflow {
+    animation: ball-airflow-move var(--speed) infinite linear;
     animation-delay: var(--delay);
 }
 
-/* SETTLED PILE PHYSICS */
+/* NATURAL SETTLING REDISTRIBUTION */
 .ball-settled {
     transform: translate(var(--target-x), var(--target-y)) rotate(var(--target-rot));
-    transition: transform 2.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: transform 3s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
-/* SLOW EXTRACTION PATHING */
+/* EXTRACTION PATHING USING MOTION PATH */
 .ball-delivering {
-    position: fixed;
-    top: 0;
-    left: 0;
-    z-index: 35 !important; 
-    animation: follow-extraction-path-slow 16s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    offset-path: var(--path-data);
+    offset-rotate: auto;
+    animation: ball-extraction-motion 16s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    transform-origin: center;
 }
 
-@keyframes follow-extraction-path-slow {
-    0% { transform: translate(50vw, 50vh) scale(0.6); opacity: 0; }
-    1% { transform: translate(50vw, 50vh) scale(1.0); opacity: 1; }
-    10% { transform: translate(50vw, 40vh) scale(1.2); }
-    18% { transform: translate(30vw, 35vh) scale(1.3) rotate(-20deg); }
-    26% { transform: translate(70vw, 28.75vh) scale(1.4) rotate(20deg); }
-    34% { transform: translate(30vw, 22.5vh) scale(1.5) rotate(-20deg); }
-    42% { transform: translate(70vw, 16.25vh) scale(1.6) rotate(20deg); }
-    50% { transform: translate(85vw, 16.25vh) scale(1.7) rotate(0deg); }
-    58% { transform: translate(85vw, 31.25vh) scale(1.8) rotate(360deg); }
-    66% { transform: translate(70vw, 40vh) scale(2.0) rotate(720deg); }
-    74% { transform: translate(85vw, 48.75vh) scale(2.2) rotate(1080deg); }
-    82% { transform: translate(70vw, 57.5vh) scale(2.4) rotate(1440deg); }
-    90% { transform: translate(85vw, 66.25vh) scale(2.6) rotate(1800deg); }
-    94% { transform: translate(85vw, 83.75vh) scale(3.0) rotate(2160deg); }
-    100% { transform: translate(50vw, 92vh) scale(5.5) rotate(2520deg); opacity: 1; }
+@keyframes ball-extraction-motion {
+    0% { 
+        offset-distance: 0%; 
+        transform: scale(0.6); 
+        opacity: 0; 
+        filter: brightness(0.5); 
+    }
+    1% { 
+        offset-distance: 0%; 
+        transform: scale(0.8); 
+        opacity: 1; 
+        filter: brightness(1); 
+    }
+    10% { transform: scale(1.0); }
+    30% { transform: scale(1.3); }
+    60% { transform: scale(1.8); }
+    85% { transform: scale(2.5); }
+    100% { 
+        offset-distance: 100%; 
+        transform: scale(5.5); 
+        opacity: 1; 
+    }
 }
 
 .ball-held {
-    position: fixed;
+    position: absolute;
     top: 0;
     left: 0;
     z-index: 2001 !important;
-    transform: translate(50vw, 92vh) scale(5.5);
+    /* Aligns with the end of the new path at 200 780 */
+    transform: translate(calc(50vw - 23px), calc(100vh - 120px)) scale(5.5);
     animation: winner-pulse 2.5s infinite ease-in-out;
 }
 
 @keyframes winner-pulse {
     0%, 100% { 
-        transform: translate(50vw, 92vh) scale(5.5) rotate(0deg); 
+        transform: translate(calc(50vw - 23px), calc(100vh - 120px)) scale(5.5) rotate(0deg); 
         box-shadow: 0 0 100px rgba(245, 158, 11, 0.7), inset -4px -4px 10px rgba(0,0,0,0.8);
     }
     50% { 
-        transform: translate(50vw, 92vh) scale(5.8) rotate(5deg); 
+        transform: translate(calc(50vw - 23px), calc(100vh - 120px)) scale(5.8) rotate(5deg); 
         box-shadow: 0 0 140px rgba(245, 158, 11, 1), inset -4px -4px 10px rgba(0,0,0,0.8);
         filter: brightness(1.15);
     }
@@ -191,28 +196,7 @@
         inset 0 0 60px rgba(0,0,0,0.8);
 }
 
-.result-glow-text {
-    font-family: 'Russo One', sans-serif;
-    font-weight: 900;
-    font-size: clamp(80px, 18vw, 130px);
-    background: linear-gradient(to bottom, #fff 20%, #f59e0b 80%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    filter: drop-shadow(0 0 40px rgba(245, 158, 11, 0.6));
-    animation: cinematic-reveal 1.5s cubic-bezier(0.17, 0.89, 0.32, 1.28) forwards;
-}
-
-@keyframes cinematic-reveal {
-    0% { transform: scale(0.3) translateY(40px); opacity: 0; filter: blur(15px) brightness(3); }
-    100% { transform: scale(1) translateY(0); opacity: 1; filter: blur(0) brightness(1); }
-}
-
 /* FINAL REVEAL IMPACT */
-.reveal-slam-bg {
-    background: radial-gradient(circle at center, rgba(245, 158, 11, 0.1) 0%, #000 80%);
-}
-
 .animate-result-slam-3d {
     animation: result-slam-3d 1.2s cubic-bezier(0.1, 0.9, 0.2, 1.1) forwards;
 }
@@ -220,24 +204,6 @@
 @keyframes result-slam-3d {
     0% { transform: perspective(2500px) translateZ(1500px) rotateX(30deg); opacity: 0; filter: brightness(4); }
     100% { transform: perspective(2500px) translateZ(0) rotateX(0deg); opacity: 1; filter: brightness(1); }
-}
-
-.gold-shimmer {
-    background: linear-gradient(
-        90deg, 
-        rgba(255,255,255,0) 0%, 
-        rgba(255,255,255,0.9) 50%, 
-        rgba(255,255,255,0) 100%
-    );
-    background-size: 200% 100%;
-    animation: shimmer 2.5s infinite linear;
-    -webkit-background-clip: text;
-    background-clip: text;
-}
-
-@keyframes shimmer {
-    0% { background-position: -200% 0; }
-    100% { background-position: 200% 0; }
 }
 
 .animate-fade-in {
@@ -252,11 +218,10 @@
 /* GLASS PIPE SHINE */
 .glass-pipe-highlight {
     mix-blend-mode: screen;
-    animation: pipe-shimmer 4s infinite linear;
+    animation: pipe-shimmer 4s infinite ease-in-out;
 }
 
 @keyframes pipe-shimmer {
-    0% { opacity: 0.3; filter: blur(2px); }
-    50% { opacity: 0.8; filter: blur(4px); }
-    100% { opacity: 0.3; filter: blur(2px); }
+    0%, 100% { opacity: 0.3; filter: blur(2px); }
+    50% { opacity: 0.8; filter: blur(5px); }
 }

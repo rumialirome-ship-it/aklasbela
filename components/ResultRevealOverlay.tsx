@@ -14,47 +14,61 @@ const RAINBOW_COLORS = [
   '#3b82f6', '#6366f1', '#a855f7', '#ec4899',
 ];
 
-// Refined timings for cinematic feel
-const SHUFFLE_TIME = 12000; // 12 seconds shuffle
-const DELIVERY_TIME = 16000; // 16 seconds for "slowly" through the pipe
-const HOLD_TIME = 4500;      // 4.5 seconds hold in display area
+// Timing constants for a cinematic sequence
+const SHUFFLE_TIME = 10000; 
+const DELIVERY_TIME = 15000; 
+const HOLD_TIME = 3500;
 
 const Ball: React.FC<{ 
   id: number; 
   number: string; 
   phase: Phase; 
   isActuallyWinner: boolean; 
-  winningNumber: string 
-}> = React.memo(({ id, number, phase, isActuallyWinner, winningNumber }) => {
+}> = React.memo(({ id, number, phase, isActuallyWinner }) => {
   const color = useMemo(() => RAINBOW_COLORS[id % RAINBOW_COLORS.length], [id]);
   
+  // Natural settling positions at the bottom of the spherical chamber
+  const settledPos = useMemo(() => {
+    // Spreads along the bottom arc of the sphere
+    const angle = (id / 99) * Math.PI - (Math.PI / 2); 
+    const spreadWidth = 110; 
+    const x = Math.sin(angle) * (spreadWidth * (0.7 + Math.random() * 0.3));
+    const y = 130 + Math.cos(angle) * 12 + (Math.floor(id / 15) * -10);
+    const rot = (id * 23) % 360;
+    return { x, y, rot };
+  }, [id]);
+
   const motion = useMemo(() => {
-    const radius = 60 + Math.random() * 120;
-    const speed = 0.2 + Math.random() * 0.3;
+    // Mixing motion constrained to the jar
+    const radiusX = 60 + Math.random() * 80;
+    const radiusY = 50 + Math.random() * 70;
+    const speed = 0.3 + Math.random() * 0.2;
     const delay = Math.random() * -10;
-    return { radius, speed, delay };
+    return { radiusX, radiusY, speed, delay };
   }, []);
 
-  if (isActuallyWinner && (phase === 'DELIVERY' || phase === 'HOLD')) {
+  // Hide the winner inside the jar only when it's being "extracted" through the pipe
+  if (isActuallyWinner && (phase === 'DELIVERY' || phase === 'HOLD' || phase === 'REVEAL')) {
       return null;
   }
 
-  if (phase === 'REVEAL' || ((phase === 'DELIVERY' || phase === 'HOLD') && !isActuallyWinner)) return null;
-  
   const isMixing = phase === 'SHUFFLE';
 
   return (
     <div 
-        className={`lottery-ball-3d ${isMixing ? 'ball-vortex' : ''}`}
+        className={`lottery-ball-3d ${isMixing ? 'ball-airflow' : 'ball-settled'}`}
         style={{
             '--ball-color': color,
-            '--radius': `${motion.radius}px`,
+            '--radius-x': `${motion.radiusX}px`,
+            '--radius-y': `${motion.radiusY}px`,
             '--speed': `${motion.speed}s`,
             '--delay': `${motion.delay}s`,
-            transform: !isMixing ? `translate(${(id % 12 - 5.5) * 20}px, ${140 + (Math.floor(id/12) * -18)}px)` : undefined
+            '--target-x': `${settledPos.x}px`,
+            '--target-y': `${settledPos.y}px`,
+            '--target-rot': `${settledPos.rot}deg`,
         } as any}
     >
-        <span className="ball-text-3d">{number}</span>
+        <span className="ball-text-3d">{parseInt(number).toString()}</span>
     </div>
   );
 });
@@ -66,7 +80,7 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
   
   const balls = useMemo(() => Array.from({ length: 100 }, (_, i) => ({
     id: i,
-    number: i.toString().padStart(2, '0')
+    number: i.toString() 
   })), []);
 
   useEffect(() => {
@@ -75,7 +89,7 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
             const resp = await ai.models.generateContent({
                 model: 'gemini-2.5-flash-image',
-                contents: { parts: [{ text: "Cinematic shot of a high-tech glass lottery machine laboratory, dark polished floors reflecting amber neon lights, blurred mechanical background, ultra-realistic, 4k." }] },
+                contents: { parts: [{ text: "Hyper-realistic futuristic glass lottery extraction chamber, glowing orange airflow, mechanical laboratory, snaking glass tubes in front, dark cinematic background, 8k." }] },
                 config: { imageConfig: { aspectRatio: "9:16" } }
             });
             for (const p of resp.candidates[0].content.parts) {
@@ -109,184 +123,177 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
     };
   }, []);
 
-  const pipelinePath = "M 200 420 L 200 320 L 120 280 L 280 230 L 120 180 L 280 130 L 340 130 L 340 250 L 280 320 L 340 390 L 280 460 L 340 530 L 280 600 L 340 670 L 340 750 L 200 780";
+  // EXTRACTION PATH (400x800 SVG space)
+  const pipelinePath = "M 200 180 Q 200 80 300 80 Q 380 80 380 250 Q 380 400 200 450 Q 20 500 20 650 Q 20 780 200 780";
+
+  const formattedWinner = useMemo(() => parseInt(winningNumber).toString(), [winningNumber]);
 
   return (
     <div className="fixed inset-0 z-[10000] lottery-machine-viewport select-none bg-black overflow-hidden flex flex-col items-center justify-center font-inter">
       {aiBackdrop && (
         <div className="absolute inset-0 z-0">
-          <img src={aiBackdrop} className="w-full h-full object-cover opacity-25 blur-lg" alt="" />
+          <img src={aiBackdrop} className="w-full h-full object-cover opacity-30 blur-2xl scale-110" alt="" />
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent" />
         </div>
       )}
 
-      {/* MECHANICAL HEADER STATUS */}
+      {/* HEADER STATUS */}
       {phase !== 'REVEAL' && (
         <div className="absolute top-10 text-center z-[10010] w-full px-8 animate-fade-in">
-            <h2 className="text-white text-5xl sm:text-7xl font-black russo tracking-[0.2em] uppercase mb-4 drop-shadow-[0_0_40px_rgba(245,158,11,0.5)]">
+            <h2 className="text-white text-5xl sm:text-7xl font-black russo tracking-[0.2em] uppercase mb-4 drop-shadow-[0_0_30px_rgba(245,158,11,0.4)]">
                 {gameName} <span className="text-amber-500">LIVE</span>
             </h2>
             <div className="flex flex-col items-center gap-4">
                 <div className="flex items-center gap-5">
-                    <div className={`w-4 h-4 rounded-full ${phase === 'SHUFFLE' ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500 shadow-[0_0_200px_#10b981]'}`} />
-                    <p className="text-[12px] font-black text-slate-300 uppercase tracking-[0.4em]">
-                        {phase === 'SHUFFLE' ? 'AERODYNAMIC MIXING: ENGAGED' : 'UNIT ISOLATION: VERIFIED'}
+                    <div className={`w-3 h-3 rounded-full ${phase === 'SHUFFLE' ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500 shadow-[0_0_10px_#10b981]'}`} />
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">
+                        {phase === 'SHUFFLE' ? 'AIRFLOW VORTEX: ACTIVE' : 'SYSTEM STABILIZED'}
                     </p>
                 </div>
                 {phase === 'SHUFFLE' && (
-                  <div className="bg-slate-900/90 border border-white/10 px-10 py-3 rounded-2xl shadow-2xl flex items-center gap-6 backdrop-blur-xl">
-                    <span className="text-amber-500 font-mono font-black text-xl tracking-tighter">EXTRACTION T-MINUS {timeLeft}S</span>
+                  <div className="bg-slate-900/60 border border-white/5 px-8 py-2.5 rounded-2xl shadow-xl flex items-center gap-5 backdrop-blur-md">
+                    <span className="text-amber-500 font-mono font-black text-lg tracking-widest uppercase">EXTRACTION IN {timeLeft}S</span>
                   </div>
                 )}
             </div>
         </div>
       )}
 
-      <div className={`relative w-full h-full flex flex-col items-center justify-center transition-all duration-1000 ${phase === 'REVEAL' ? 'opacity-0 scale-150 blur-3xl' : 'opacity-100'}`}>
+      {/* CORE MACHINE ASSEMBLY */}
+      <div className={`relative w-full h-full flex items-center justify-center max-w-lg transition-all duration-1000 ${phase === 'REVEAL' ? 'scale-75 -translate-y-20 opacity-40 blur-[2px]' : ''}`}>
         
-        {/* ULTRA-REALISTIC GLASSY PIPELINE SVG */}
-        <div className="absolute inset-0 z-[40] pointer-events-none">
-            <svg className="w-full h-full" viewBox="0 0 400 800" preserveAspectRatio="none">
-                <defs>
-                    {/* Dark inner cavity for depth */}
-                    <linearGradient id="glassCavity" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor="rgba(0,0,0,0.6)" />
-                        <stop offset="50%" stopColor="rgba(0,0,0,0.2)" />
-                        <stop offset="100%" stopColor="rgba(0,0,0,0.6)" />
-                    </linearGradient>
-                    
-                    {/* Primary glass cylinder body with refraction feel */}
-                    <linearGradient id="glassBody" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor="rgba(255,255,255,0.08)" />
-                        <stop offset="25%" stopColor="rgba(255,255,255,0.18)" />
-                        <stop offset="50%" stopColor="rgba(255,255,255,0.25)" />
-                        <stop offset="75%" stopColor="rgba(255,255,255,0.18)" />
-                        <stop offset="100%" stopColor="rgba(255,255,255,0.08)" />
-                    </linearGradient>
-                    
-                    {/* Specular rim highlight */}
-                    <linearGradient id="glassRim" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor="rgba(255,255,255,0.4)" />
-                        <stop offset="2%" stopColor="rgba(255,255,255,0.1)" />
-                        <stop offset="98%" stopColor="rgba(255,255,255,0.1)" />
-                        <stop offset="100%" stopColor="rgba(255,255,255,0.4)" />
-                    </linearGradient>
+        {/* BACKGROUND LAYER: The Spherical Chamber (Remaining 99 balls are here) */}
+        <div className="absolute inset-0 flex items-center justify-center z-[10] translate-y-[10vh]">
+            <div className="machine-jar scale-90 sm:scale-100">
+                <div className="jar-neck-mechanical">
+                    <div className="jar-neck-glow" />
+                </div>
+                <div className={`jar-body-sphere ${phase === 'SHUFFLE' ? 'chamber-vortex-glow' : ''}`}>
+                    <div className="absolute inset-0 bg-gradient-to-tr from-white/10 via-transparent to-white/10 rounded-full z-[25] pointer-events-none" />
+                    {balls.map((b) => (
+                        <Ball 
+                            key={b.id} 
+                            id={b.id} 
+                            number={b.number} 
+                            phase={phase} 
+                            isActuallyWinner={parseInt(b.number) === parseInt(winningNumber)} 
+                        />
+                    ))}
+                </div>
+            </div>
+        </div>
 
-                    {/* Central environment reflection beam */}
-                    <linearGradient id="glassReflection" x1="0%" y1="0%" x2="100%" y2="0%">
+        {/* FOREGROUND LAYER: The Extraction Pipe and Moving Ball */}
+        <div className="absolute inset-0 z-[50] pointer-events-none">
+            <svg className="w-full h-full" viewBox="0 0 400 800" preserveAspectRatio="xMidYMid meet">
+                <defs>
+                    <linearGradient id="pipeBack" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="rgba(0,0,0,0.7)" />
+                        <stop offset="50%" stopColor="rgba(0,0,0,0.2)" />
+                        <stop offset="100%" stopColor="rgba(0,0,0,0.7)" />
+                    </linearGradient>
+                    <linearGradient id="glassWall" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="rgba(255,255,255,0.22)" />
+                        <stop offset="10%" stopColor="rgba(255,255,255,0.04)" />
+                        <stop offset="90%" stopColor="rgba(255,255,255,0.04)" />
+                        <stop offset="100%" stopColor="rgba(255,255,255,0.22)" />
+                    </linearGradient>
+                    <linearGradient id="glassRim" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="rgba(255,255,255,0.5)" />
+                        <stop offset="4%" stopColor="rgba(255,255,255,0.15)" />
+                        <stop offset="96%" stopColor="rgba(255,255,255,0.15)" />
+                        <stop offset="100%" stopColor="rgba(255,255,255,0.5)" />
+                    </linearGradient>
+                    <linearGradient id="specularGlow" x1="0%" y1="0%" x2="100%" y2="0%">
                         <stop offset="0%" stopColor="rgba(255,255,255,0)" />
                         <stop offset="48%" stopColor="rgba(255,255,255,0)" />
-                        <stop offset="50%" stopColor="rgba(255,255,255,0.6)" />
+                        <stop offset="50%" stopColor="rgba(255,255,255,0.9)" />
                         <stop offset="52%" stopColor="rgba(255,255,255,0)" />
                         <stop offset="100%" stopColor="rgba(255,255,255,0)" />
                     </linearGradient>
-
-                    <filter id="glassRefraction">
-                        <feGaussianBlur stdDeviation="1.5" />
-                    </filter>
                 </defs>
-                
-                {/* 1. BACK OF PIPE (Behind the ball) */}
-                <path d={pipelinePath} stroke="url(#glassCavity)" strokeWidth="58" fill="none" strokeLinejoin="round" strokeLinecap="round" />
-                <path d={pipelinePath} stroke="rgba(255,255,255,0.03)" strokeWidth="52" fill="none" strokeLinejoin="round" strokeLinecap="round" filter="url(#glassRefraction)" />
 
-                {/* --- WINNING BALL WILL BE RENDERED HERE BY REACT (z-index 43) --- */}
-
-                {/* 2. FRONT OF PIPE (Highlights & Specular) */}
-                {/* Outer Glass Shell */}
-                <path d={pipelinePath} stroke="url(#glassBody)" strokeWidth="56" fill="none" strokeLinejoin="round" strokeLinecap="round" opacity="0.8" />
+                <path d={pipelinePath} stroke="url(#pipeBack)" strokeWidth="70" fill="none" strokeLinejoin="round" strokeLinecap="round" />
                 
-                {/* Hard Specular Rim */}
-                <path d={pipelinePath} stroke="url(#glassRim)" strokeWidth="57" fill="none" strokeLinejoin="round" strokeLinecap="round" opacity="0.5" />
-                
-                {/* Sharp Linear Highlights */}
-                <path d={pipelinePath} className="glass-pipe-highlight" stroke="url(#glassReflection)" strokeWidth="12" fill="none" strokeLinejoin="round" strokeLinecap="round" />
-                <path d={pipelinePath} className="glass-pipe-highlight" stroke="rgba(255,255,255,0.2)" strokeWidth="2" fill="none" strokeLinejoin="round" strokeLinecap="round" transform="translate(18, 0)" />
+                {/* Extraction Animation Ball */}
+                {(phase === 'DELIVERY' || phase === 'HOLD') && (
+                    <foreignObject 
+                        className={`overflow-visible ${phase === 'DELIVERY' ? 'ball-delivering-svg' : 'ball-held-svg-final'}`}
+                        width="60" height="60"
+                        style={{
+                            '--path-data': `path('${pipelinePath}')`
+                        } as any}
+                    >
+                        <div className="lottery-ball-3d relative flex items-center justify-center w-[60px] h-[60px]" style={{ '--ball-color': '#f59e0b' } as any}>
+                            <span className="ball-text-3d" style={{ fontSize: phase === 'HOLD' ? '28px' : '18px' }}>
+                                {formattedWinner}
+                            </span>
+                        </div>
+                    </foreignObject>
+                )}
 
-                {/* Connection Accents */}
-                <circle cx="200" cy="400" r="34" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="4" />
-                <circle cx="200" cy="400" r="32" fill="none" stroke="rgba(245,158,11,0.5)" strokeWidth="2" />
+                <path d={pipelinePath} stroke="url(#glassWall)" strokeWidth="66" fill="none" strokeLinejoin="round" strokeLinecap="round" opacity="0.6" />
+                <path d={pipelinePath} className="glass-pipe-highlight" stroke="url(#specularGlow)" strokeWidth="22" fill="none" strokeLinejoin="round" strokeLinecap="round" opacity="0.8" />
+                <path d={pipelinePath} stroke="url(#glassRim)" strokeWidth="74" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+
+                <g transform="translate(200, 180)">
+                    <rect x="-50" y="-40" width="100" height="60" fill="rgba(10,20,35,0.99)" stroke="rgba(255,255,255,0.25)" strokeWidth="2" rx="15" />
+                    <circle r="36" fill="none" stroke="#f59e0b" strokeWidth="4" opacity="0.8" className="animate-pulse" />
+                </g>
             </svg>
         </div>
 
-        {/* WINNING BALL (EXTRACTION LAYER) - Moves over the pipeline back but under the front highlights */}
-        {(phase === 'DELIVERY' || phase === 'HOLD') && (
-            <div 
-                className={`lottery-ball-3d ${phase === 'DELIVERY' ? 'ball-delivering' : 'ball-held'}`} 
-                style={{ '--ball-color': '#f59e0b' } as any}
-            >
-                {/* Refractive blur behind text */}
-                <div className="absolute inset-0 bg-white/10 backdrop-blur-[1px] rounded-full pointer-events-none" />
-                <span className="ball-text-3d" style={{ fontSize: phase === 'HOLD' ? '22px' : '12px' }}>
-                    {winningNumber.padStart(2, '0')}
-                </span>
-            </div>
-        )}
-
-        {/* THE SPHERICAL MIXING JAR */}
-        <div className="machine-jar">
-            <div className="jar-neck-mechanical">
-                <div className="jar-neck-glow" />
-            </div>
-            <div className={`jar-body-sphere ${phase === 'SHUFFLE' ? 'chamber-vortex-glow' : ''}`}>
-                {balls.map((b) => (
-                    <Ball 
-                        key={b.id} 
-                        id={b.id} 
-                        number={b.number} 
-                        phase={phase} 
-                        isActuallyWinner={parseInt(b.number) === parseInt(winningNumber)} 
-                        winningNumber={winningNumber} 
-                    />
-                ))}
-            </div>
-        </div>
-
-        {/* MECHANICAL COLLECTION TRAY */}
-        <div className={`result-display-box transition-all duration-1000 ${phase === 'SHUFFLE' ? 'opacity-0 translate-y-48 scale-90' : 'opacity-100 translate-y-0 scale-100'}`}>
-            <div className="absolute -top-16 left-1/2 -translate-x-1/2 flex flex-col items-center">
-                <div className="bg-slate-900 border-2 border-amber-500/60 px-8 py-2 rounded-full shadow-2xl">
-                    <p className="text-[11px] font-black text-amber-500 uppercase tracking-[0.6em] whitespace-nowrap">EXTRACTED UNIT</p>
+        {/* COLLECTION TRAY (Bottom UI Anchor) - Removed the 'glow-text' from here as per request */}
+        <div className={`result-display-box transition-all duration-1000 z-[60] translate-y-[38vh] ${phase === 'SHUFFLE' ? 'opacity-0 translate-y-[48vh]' : 'opacity-100'}`}>
+            <div className="absolute -top-12 left-1/2 -translate-x-1/2 flex flex-col items-center">
+                <div className="bg-slate-900 border border-amber-500/40 px-8 py-2 rounded-full shadow-2xl">
+                    <p className="text-[10px] font-black text-amber-500 uppercase tracking-[0.4em] whitespace-nowrap">UNIT CAPTURED</p>
                 </div>
-                <div className="w-1 h-10 bg-gradient-to-b from-amber-500 to-transparent"></div>
             </div>
             
             {(phase === 'HOLD' || phase === 'REVEAL') ? (
-                <span className="result-glow-text">{winningNumber.padStart(2, '0')}</span>
+                <div className="flex flex-col items-center gap-1">
+                    <div className="w-20 h-1 bg-amber-500/20 rounded-full animate-pulse" />
+                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">DRAW AUTHENTICATED</p>
+                </div>
             ) : (
                 <div className="flex gap-4">
-                    <div className="w-4 h-4 rounded-full bg-slate-800 animate-bounce" />
-                    <div className="w-4 h-4 rounded-full bg-slate-800 animate-bounce delay-150" />
-                    <div className="w-4 h-4 rounded-full bg-slate-800 animate-bounce delay-300" />
+                    <div className="w-3 h-3 rounded-full bg-slate-800 animate-bounce" />
+                    <div className="w-3 h-3 rounded-full bg-slate-800 animate-bounce delay-150" />
+                    <div className="w-3 h-3 rounded-full bg-slate-800 animate-bounce delay-300" />
                 </div>
             )}
         </div>
       </div>
 
-      {/* FINAL DRAMATIC REVEAL IMPACT */}
+      {/* FINAL SYSTEM AUTHENTICATION OVERLAY (Center Piece is the Ball) */}
       {phase === 'REVEAL' && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black reveal-slam-bg z-[10020] p-10">
-            <div className="relative text-center space-y-20 max-w-5xl animate-result-slam-3d">
-                <div className="space-y-8">
-                    <div className="inline-block bg-amber-500/10 border border-amber-500/40 px-8 py-3 rounded-full mb-3">
-                        <p className="text-amber-500 font-black text-[12px] uppercase tracking-[1em] animate-pulse">OFFICIAL CERTIFICATION</p>
+        <div className="absolute inset-0 flex flex-col items-center justify-center z-[10020] p-10">
+            <div className="relative text-center space-y-12 max-w-4xl animate-result-slam-3d">
+                <div className="space-y-6">
+                    <div className="inline-block bg-amber-500/10 border border-amber-500/30 px-6 py-2 rounded-full mb-2">
+                        <p className="text-amber-500 font-black text-[10px] uppercase tracking-[0.8em] animate-pulse">CRYPTOGRAPHIC VERIFICATION SUCCESSFUL</p>
                     </div>
-                    <h2 className="text-white text-6xl sm:text-9xl font-black russo tracking-tighter uppercase drop-shadow-[0_0_60px_rgba(245,158,11,0.4)]">{gameName}</h2>
+                    <h2 className="text-white text-6xl sm:text-8xl font-black russo tracking-tighter uppercase drop-shadow-[0_0_50px_rgba(245,158,11,0.5)]">{gameName}</h2>
                 </div>
                 
-                <div className="relative inline-block px-20 py-16 sm:px-48 sm:py-32 bg-white/[0.03] rounded-[5rem] sm:rounded-[12rem] border-2 border-amber-500/50 shadow-[0_0_200px_rgba(245,158,11,0.3)] backdrop-blur-3xl overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-br from-amber-500/15 via-transparent to-amber-500/15" />
-                    <span className="relative text-[12rem] sm:text-[28rem] font-black russo text-white gold-shimmer tracking-tighter leading-none block drop-shadow-[0_40px_100px_rgba(0,0,0,1)]">
-                        {winningNumber.padStart(2, '0')}
-                    </span>
+                {/* CENTERPIECE: The Winning Ball instead of text */}
+                <div className="relative flex items-center justify-center p-20">
+                    <div className="absolute inset-0 bg-amber-500/10 blur-[100px] rounded-full scale-150 animate-pulse" />
+                    <div className="lottery-ball-3d relative flex items-center justify-center w-[200px] h-[200px] sm:w-[280px] sm:h-[280px] shadow-[0_0_80px_rgba(245,158,11,0.6)]" style={{ '--ball-color': '#f59e0b' } as any}>
+                        <span className="font-black russo text-slate-950 text-7xl sm:text-9xl -rotate-12 drop-shadow-md">
+                            {formattedWinner}
+                        </span>
+                        <div className="absolute inset-0 bg-white/15 rounded-full pointer-events-none border border-white/20" />
+                    </div>
                 </div>
 
-                <div className="pt-16">
+                <div className="pt-8">
                     <button 
                         onClick={onClose}
-                        className="group bg-amber-500 hover:bg-amber-400 text-slate-950 font-black px-24 py-8 sm:px-40 sm:py-10 rounded-[3rem] uppercase tracking-[0.8em] text-[12px] sm:text-base transition-all transform active:scale-95 shadow-[0_0_80px_rgba(245,158,11,0.5)] border-b-8 border-amber-700 overflow-hidden relative"
+                        className="group bg-amber-500 hover:bg-amber-400 text-slate-950 font-black px-24 py-8 sm:px-36 sm:py-9 rounded-[2.5rem] uppercase tracking-[0.6em] text-[11px] sm:text-sm transition-all transform active:scale-95 shadow-[0_0_60px_rgba(245,158,11,0.6)] border-b-4 border-amber-700 overflow-hidden relative"
                     >
-                        <span className="relative z-10">ACCEPT RESULT</span>
+                        <span className="relative z-10">ACCEPT VALIDATION</span>
                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
                     </button>
                 </div>

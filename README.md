@@ -100,9 +100,10 @@ sudo certbot --nginx -d aklasbela-tv.com -d www.aklasbela-tv.com
 
 ---
 
-### **Step 8: Hardened Nginx Config**
-Ensure your `/etc/nginx/sites-available/aklasbela-tv.com` looks like this after Certbot runs. 
-Notice that the static `/dist` folder is served directly by Nginx, while api traffic is relayed to port **3005**:
+### **Step 8: Hardened Nginx Config (Bulletproof Reverse Proxy)**
+To prevent Nginx permission problems (usually caused by Nginx not being allowed to read files inside the `/home` directory of user `rumialirome`), the recommended and safest way is to configure Nginx as a **pure reverse proxy**. This delegates static file serving to your Node.js backend. 
+
+Modify `/etc/nginx/sites-available/aklasbela-tv.com` to look exactly like this:
 
 ```nginx
 server {
@@ -115,19 +116,13 @@ server {
     listen 443 ssl;
     server_name aklasbela-tv.com www.aklasbela-tv.com;
 
-    # Certbot will add SSL paths here...
+    # Certbot will automatically insert SSL paths here...
     
     # Hide Nginx Version
     server_tokens off;
 
-    root /home/rumialirome/aklasbela/dist;
-    index index.html;
-
+    # Forward all traffic directly to node backend running on Port 3005
     location / {
-        try_files $uri /index.html;
-    }
-
-    location /api/ {
         proxy_pass http://127.0.0.1:3005;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
@@ -138,6 +133,12 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 }
+```
+
+After editing, test and reload Nginx:
+```bash
+sudo nginx -t
+sudo systemctl reload nginx
 ```
 
 ---

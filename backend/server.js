@@ -383,6 +383,18 @@ app.get('/api/health', (req, res) => {
     });
 });
 
+// --- FRONTEND STATIC SERVING ---
+const path = require('path');
+// Serve static client assets built by Vite
+app.use(express.static(path.join(__dirname, '../dist')));
+
+// Fallback all non-API GET requests to index.html for client side routing
+app.get('*', (req, res) => {
+    if (!req.path.startsWith('/api/')) {
+        res.sendFile(path.join(__dirname, '../dist/index.html'));
+    }
+});
+
 const PORT = process.env.PORT || 3005;
 app.listen(PORT, () => {
     console.log(`[SERVER] Aklasbela Nexus active on port ${PORT}`);

@@ -395,19 +395,19 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
 
             {/* THE SPHERICAL MIXING CORE */}
             {(phase === 'SHUFFLE' || phase === 'DELIVERY' || phase === 'HOLD') && (
-              <div className="relative w-full h-full flex flex-col items-center justify-center">
+              <div className="relative aspect-[1/2] w-full max-w-[325px] h-full flex items-center justify-center p-0 mx-auto select-none">
                 
-                {/* GLASSY DRAW PIPE VECTOR (Z-Index 40) */}
-                <div className="absolute inset-0 z-[40] pointer-events-none">
-                    <svg className="w-full h-full" viewBox="0 0 400 800" preserveAspectRatio="none">
-                        <path d={pipelinePath} stroke="rgba(0,0,0,0.8)" strokeWidth="60" fill="none" strokeLinejoin="round" strokeLinecap="round" />
-                        <path d={pipelinePath} stroke="rgba(255,255,255,0.06)" strokeWidth="56" fill="none" strokeLinejoin="round" strokeLinecap="round" />
-                        <path d={pipelinePath} stroke="rgba(255,255,255,0.18)" strokeWidth="58" fill="none" strokeLinejoin="round" strokeLinecap="round" opacity="0.6" />
-                        <path d={pipelinePath} className="glass-pipe-highlight" stroke="rgba(255,255,255,0.4)" strokeWidth="8" fill="none" strokeLinejoin="round" strokeLinecap="round" />
-                    </svg>
-                </div>
+                {/* GLASSY DRAW PIPE BACK VECTOR (Z-Index 10) */}
+                <svg className="absolute inset-0 w-full h-full pointer-events-none z-[10]" viewBox="0 0 400 800" preserveAspectRatio="none">
+                    {/* Shadow casing of the glass tube */}
+                    <path d={pipelinePath} stroke="rgba(15, 23, 42, 0.95)" strokeWidth="64" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+                    {/* Dark inner tube wall shading */}
+                    <path d={pipelinePath} stroke="rgba(30, 41, 59, 0.82)" strokeWidth="58" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+                    {/* Internal vacuum track highlight */}
+                    <path d={pipelinePath} stroke="rgba(245, 158, 11, 0.15)" strokeWidth="48" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+                </svg>
 
-                {/* WINNING BALL DOCKED AND DELIVERED */}
+                {/* WINNING BALL DOCKED AND DELIVERED (Z-Index 20) */}
                 {(phase === 'DELIVERY' || phase === 'HOLD') && (
                     <div 
                         className={`lottery-ball-3d ${phase === 'DELIVERY' ? 'ball-delivering' : 'ball-held'}`} 
@@ -420,7 +420,7 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
                     </div>
                 )}
 
-                {/* MECHANICAL ROTATING SPHERE */}
+                {/* MECHANICAL ROTATING SPHERE (Z-Index 15) */}
                 <div className="machine-jar">
                     <div className="jar-neck-mechanical">
                         <div className="jar-neck-glow" />
@@ -439,22 +439,32 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
                     </div>
                 </div>
 
-                {/* DECISION COLLECTION CUPPED RECEPTACLE */}
+                {/* GLASSY DRAW PIPE FRONT REFRACTIVE HIGHLIGHTS (Z-Index 30) */}
+                <svg className="absolute inset-0 w-full h-full pointer-events-none z-[30]" viewBox="0 0 400 800" preserveAspectRatio="none">
+                    {/* Soft glass edge glow */}
+                    <path d={pipelinePath} stroke="rgba(255, 255, 255, 0.14)" strokeWidth="56" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+                    {/* High-gloss light strike refraction */}
+                    <path d={pipelinePath} className="glass-pipe-highlight" stroke="rgba(255, 255, 255, 0.38)" strokeWidth="8" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+                    {/* Dual glare reflection */}
+                    <path d={pipelinePath} stroke="rgba(255, 255, 255, 0.18)" strokeWidth="2" fill="none" strokeLinejoin="round" strokeLinecap="round" transform="translate(6, 0)" opacity="0.8" />
+                </svg>
+
+                {/* DECISION COLLECTION CUPPED RECEPTACLE (Z-Index 50) */}
                 <div className={`result-display-box transition-all duration-1000 ${phase === 'SHUFFLE' ? 'opacity-0 translate-y-48 scale-90' : 'opacity-100 translate-y-0 scale-100'}`}>
-                    <div className="absolute -top-16 left-1/2 -translate-x-1/2 flex flex-col items-center">
-                        <div className="bg-slate-900 border-2 border-amber-500/60 px-8 py-2 rounded-full">
-                            <p className="text-[11px] font-black text-amber-500 uppercase tracking-[0.6em] whitespace-nowrap">EXTRACTED DOCK</p>
+                    <div className="absolute -top-[52px] left-1/2 -translate-x-1/2 flex flex-col items-center">
+                        <div className="bg-slate-900 border-2 border-amber-500/60 px-6 py-1 rounded-full shadow-lg shadow-amber-500/10">
+                            <p className="text-[10px] font-black text-amber-500 uppercase tracking-[0.5em] whitespace-nowrap">EXTRACTED DOCK</p>
                         </div>
-                        <div className="w-1 h-10 bg-gradient-to-b from-amber-500 to-transparent"></div>
+                        <div className="w-0.5 h-6 bg-gradient-to-b from-amber-500 to-transparent"></div>
                     </div>
                     
                     {phase === 'HOLD' ? (
                         <span className="result-glow-text">{winningNumber.padStart(2, '0')}</span>
                     ) : (
                         <div className="flex gap-4">
-                            <div className="w-4 h-4 rounded-full bg-slate-800 animate-bounce" />
-                            <div className="w-4 h-4 rounded-full bg-slate-800 animate-bounce delay-150" />
-                            <div className="w-4 h-4 rounded-full bg-slate-800 animate-bounce delay-300" />
+                            <div className="w-3 h-3 rounded-full bg-slate-800 animate-bounce" />
+                            <div className="w-3 h-3 rounded-full bg-slate-800 animate-bounce delay-150" />
+                            <div className="w-3 h-3 rounded-full bg-slate-800 animate-bounce delay-300" />
                         </div>
                     )}
                 </div>

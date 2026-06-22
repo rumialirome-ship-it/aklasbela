@@ -19,13 +19,15 @@
 
 /* THE SPHERICAL CHAMBER */
 .machine-jar {
-    position: relative;
-    margin-top: 12vh;
-    width: clamp(320px, 80vw, 480px);
+    position: absolute;
+    top: 25%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 82%;
     display: flex;
     flex-direction: column;
     align-items: center;
-    z-index: 20;
+    z-index: 15;
 }
 
 .jar-neck-mechanical {
@@ -120,70 +122,76 @@
 
 /* SLOW EXTRACTION PATHING */
 .ball-delivering {
-    position: fixed;
-    top: 0;
-    left: 0;
-    z-index: 43 !important; 
-    animation: follow-extraction-path-slow 16s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    position: absolute;
+    width: 11.5%;
+    height: 11.5%;
+    z-index: 20 !important;
+    transform: translate(-50%, -50%);
+    animation: follow-extraction-path-slow-contained 16s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
-@keyframes follow-extraction-path-slow {
-    0% { transform: translate(50vw, 52.5vh) scale(0.6); opacity: 0; }
-    2% { transform: translate(50vw, 52.5vh) scale(1.0); opacity: 1; }
-    10% { transform: translate(50vw, 40vh) scale(1.2); }
-    18% { transform: translate(30vw, 35vh) scale(1.3) rotate(-20deg); }
-    26% { transform: translate(70vw, 28.75vh) scale(1.4) rotate(20deg); }
-    34% { transform: translate(30vw, 22.5vh) scale(1.5) rotate(-20deg); }
-    42% { transform: translate(70vw, 16.25vh) scale(1.6) rotate(20deg); }
-    50% { transform: translate(85vw, 16.25vh) scale(1.7) rotate(0deg); }
-    58% { transform: translate(85vw, 31.25vh) scale(1.8) rotate(360deg); }
-    66% { transform: translate(70vw, 40vh) scale(2.0) rotate(720deg); }
-    74% { transform: translate(85vw, 48.75vh) scale(2.2) rotate(1080deg); }
-    82% { transform: translate(70vw, 57.5vh) scale(2.4) rotate(1440deg); }
-    90% { transform: translate(85vw, 66.25vh) scale(2.6) rotate(1800deg); }
-    94% { transform: translate(85vw, 83.75vh) scale(3.0) rotate(2160deg); }
-    100% { transform: translate(50vw, 92vh) scale(5.5) rotate(2520deg); opacity: 1; }
+@keyframes follow-extraction-path-slow-contained {
+    0% { transform: translate(-50%, -50%) scale(0.7) rotate(0deg); left: 50%; top: 40%; opacity: 0; }
+    3% { transform: translate(-50%, -50%) scale(0.8) rotate(0deg); left: 50%; top: 40%; opacity: 1; }
+    6% { transform: translate(-50%, -50%) scale(0.85) rotate(5deg); left: 50%; top: 52.5%; }
+    12% { transform: translate(-50%, -50%) scale(0.95) rotate(-30deg); left: 30%; top: 35%; }
+    18% { transform: translate(-50%, -50%) scale(1.0) rotate(30deg); left: 70%; top: 28.75%; }
+    24% { transform: translate(-50%, -50%) scale(1.05) rotate(-60deg); left: 30%; top: 22.5%; }
+    30% { transform: translate(-50%, -50%) scale(1.05) rotate(60deg); left: 70%; top: 16.25%; }
+    36% { transform: translate(-50%, -50%) scale(1.1) rotate(90deg); left: 85%; top: 16.25%; }
+    42% { transform: translate(-50%, -50%) scale(1.1) rotate(180deg); left: 85%; top: 31.25%; }
+    48% { transform: translate(-50%, -50%) scale(1.15) rotate(240deg); left: 70%; top: 40%; }
+    54% { transform: translate(-50%, -50%) scale(1.15) rotate(300deg); left: 85%; top: 48.75%; }
+    60% { transform: translate(-50%, -50%) scale(1.2) rotate(360deg); left: 70%; top: 57.5%; }
+    66% { transform: translate(-50%, -50%) scale(1.2) rotate(420deg); left: 85%; top: 66.25%; }
+    72% { transform: translate(-50%, -50%) scale(1.25) rotate(480deg); left: 70%; top: 75%; }
+    78% { transform: translate(-50%, -50%) scale(1.25) rotate(540deg); left: 85%; top: 83.75%; }
+    85% { transform: translate(-50%, -50%) scale(1.3) rotate(600deg); left: 85%; top: 93.75%; }
+    93% { transform: translate(-50%, -50%) scale(1.4) rotate(640deg); left: 50%; top: 93.75%; opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(1.4) rotate(660deg); left: 50%; top: 93.75%; opacity: 1; }
 }
 
 .ball-held {
-    position: fixed;
-    top: 0;
-    left: 0;
+    position: absolute;
+    top: 93.75%;
+    left: 50%;
     z-index: 2001 !important;
-    transform: translate(50vw, 92vh) scale(5.5);
-    animation: winner-pulse 2.5s infinite ease-in-out;
+    transform: translate(-50%, -50%) scale(1.4);
+    animation: winner-pulse-contained 2.5s infinite ease-in-out;
 }
 
-@keyframes winner-pulse {
+@keyframes winner-pulse-contained {
     0%, 100% { 
-        transform: translate(50vw, 92vh) scale(5.5) rotate(0deg); 
-        box-shadow: 0 0 100px rgba(245, 158, 11, 0.7), inset -5px -5px 15px rgba(0,0,0,0.8);
+        transform: translate(-50%, -50%) scale(1.4) rotate(0deg); 
+        box-shadow: 0 0 50px rgba(245, 158, 11, 0.7), inset -5px -5px 15px rgba(0,0,0,0.8);
     }
     50% { 
-        transform: translate(50vw, 92vh) scale(5.8) rotate(5deg); 
-        box-shadow: 0 0 140px rgba(245, 158, 11, 1), inset -5px -5px 15px rgba(0,0,0,0.8);
-        filter: brightness(1.2);
+        transform: translate(-50%, -50%) scale(1.5) rotate(5deg); 
+        box-shadow: 0 0 70px rgba(245, 158, 11, 1), inset -5px -5px 15px rgba(0,0,0,0.8);
+        filter: brightness(1.25);
     }
 }
 
 /* THE REVEAL DISPLAY BOX */
 .result-display-box {
     position: absolute;
-    bottom: 8vh;
-    width: clamp(280px, 85vw, 460px);
-    height: clamp(140px, 18vh, 180px);
+    bottom: 2%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    height: 90px;
     background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(2, 6, 23, 0.98) 100%);
     backdrop-filter: blur(30px);
     border: 3px solid #f59e0b;
-    border-radius: 40px;
+    border-radius: 25px;
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 50;
     box-shadow: 
-        0 40px 100px rgba(0,0,0,1), 
-        0 0 50px rgba(245, 158, 11, 0.15),
-        inset 0 0 60px rgba(0,0,0,0.8);
+        0 20px 50px rgba(0,0,0,1), 
+        0 0 35px rgba(245, 158, 11, 0.2),
+        inset 0 0 30px rgba(0,0,0,0.85);
 }
 
 .result-glow-text {

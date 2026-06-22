@@ -256,3 +256,96 @@
     50% { opacity: 0.8; }
     100% { opacity: 0.3; }
 }
+
+/* --- BROADCAST SIMULATOR OVERLAYS & LIVE EFFECTS --- */
+
+/* CRT SCANLINE SHIELD */
+.live-scanlines {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        rgba(18, 16, 16, 0) 50%, 
+        rgba(0, 0, 0, 0.45) 50%
+    );
+    background-size: 100% 4px;
+    z-index: 10050;
+    pointer-events: none;
+    opacity: 0.35;
+}
+
+/* ANALOG CHROMATIC SEPARATION ON ACTIVE STREAM */
+.stream-crt-chroma {
+    position: relative;
+}
+.stream-crt-chroma::after {
+    content: " ";
+    display: block;
+    position: absolute;
+    top: 0; left: 0; bottom: 0; right: 0;
+    background: radial-gradient(circle, rgba(14,24,41,0) 60%, rgba(0,0,0,0.8) 100%);
+    pointer-events: none;
+    z-index: 10010;
+}
+
+/* BOUNCING EQUALIZER WAVEFORM CARDS */
+@keyframes audio-bounce-bar {
+    0%, 100% { height: 10%; }
+    50% { height: 100%; }
+}
+
+.wave-bar {
+    width: 3px;
+    background: #f59e0b;
+    border-radius: 99px;
+    animation: audio-bounce-bar var(--duration) ease-in-out infinite;
+    animation-delay: var(--delay);
+}
+
+/* BROADCAST HEADS-UP OVERLAYS */
+@keyframes rec-pulse {
+    0% { opacity: 0.2; transform: scale(0.9); }
+    100% { opacity: 1; transform: scale(1.1); }
+}
+
+.live-indicator-pulse {
+    animation: rec-pulse 0.8s infinite alternate ease-in-out;
+}
+
+/* CHAT BOX TICKERS */
+@keyframes feed-comment-slide {
+    0% { transform: translateY(30px); opacity: 0; }
+    15% { transform: translateY(0); opacity: 1; }
+    85% { transform: translateY(0); opacity: 1; }
+    100% { transform: translateY(-30px); opacity: 0; }
+}
+
+.chat-bubble-animate {
+    animation: feed-comment-slide 4s infinite ease-in-out;
+}
+
+/* HORIZONTAL MARQUEE/NEWS TICKER */
+@keyframes ticker-slide {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
+
+.news-marquee-content {
+    display: flex;
+    white-space: nowrap;
+    animation: ticker-slide 28s infinite linear;
+}
+
+/* presenter mouth bounce synced with artificial talking */
+@keyframes lip-talk {
+    0%, 100% { transform: scaleY(0.1); }
+    30% { transform: scaleY(1); }
+    50% { transform: scaleY(0.4); }
+    80% { transform: scaleY(0.8); }
+}
+
+.presenter-mouth {
+    transform-origin: center;
+    animation: lip-talk var(--speech-speed, 0.25s) infinite ease-in-out;
+}

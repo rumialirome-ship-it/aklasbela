@@ -1,3 +1,29 @@
+### Key Fixes Applied:
+1. **Gemini SDK (`@google/genai`) Image Generation**:
+   * Updated the configuration to set `responseModalities: ['IMAGE']` under the `config` object which is required by the SDK for generating images with `gemini-2.5-flash-image`.
+   * Added robust type-safe parsing using optional chaining to retrieve the generated base64 image data from the response candidates.
+   * Handled environment variables gracefully, checking for both `process.env.API_KEY` and Vite-specific `import.meta.env.VITE_API_KEY`. If no key is set, the API call is skipped with a warning, preventing console errors.
+
+2. **Stale Closure Bug with Audio Muting**:
+   * Because `playSynthesizerBeep` and `speakNarrative` were defined inside the component and captured `isMuted` during the initial render, toggling the mute button had no effect on timeouts that were already scheduled.
+   * Fixed by implementing a mutable ref (`isMutedRef`) that keeps track of the live mute state, allowing the async timeouts to read the correct value immediately.
+
+3. **Balls Vanishing During Draw Sequence**:
+   * Previously, all non-winning lottery balls disappeared from the chamber during the `DELIVERY` and `HOLD` phases due to an incorrect conditional check (`!isActuallyWinner`).
+   * Corrected the logic so that non-winning balls remain visible and settle to the bottom of the chamber (`isMixing = false`) while the winning ball travels through the tube.
+
+4. **Draw Sequence Resetting on Props Change**:
+   * Reset all simulation states (phase, camera, viewer counts, chat feeds, etc.) at the start of `useEffect` to ensure that if `gameName` or `winningNumber` changes, the drawing resets cleanly from the beginning.
+
+5. **Performance & CSS Property Typing**:
+   * Moved static configurations (like `SIMULATED_CHAT_FEED`, `pipelinePath`, and `RAINBOW_COLORS`) out of the component body to prevent them from being re-allocated on every render.
+   * Padded and normalized the winning number in a `useMemo` hook once rather than calling `.padStart(2, '0')` and `parseInt` on every ball on every single frame render.
+   * Rendered the `timeLeft` countdown (which was previously unused) inside the live camera header during the `SHUFFLE` phase.
+   * Typed custom CSS variables securely as `React.CSSProperties` instead of using `as any`.
+
+### Corrected Code:
+
+```tsx
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { GoogleGenAI } from "@google/genai";
 
@@ -30,6 +56,23 @@ interface ChatMsg {
   time: string;
 }
 
+const PIPELINE_PATH = "M 200 420 L 200 320 L 120 280 L 280 230 L 120 180 L 280 130 L 340 130 L 340 250 L 280 320 L 340 390 L 280 460 L 340 530 L 280 600 L 340 670 L 340 750 L 200 780";
+
+const SIMULATED_CHAT_FEED = [
+  { user: "Raja_G", text: "Please let it be open 07!" },
+  { user: "LuckyPK", text: "Lahore Node online, heavy stakes active!" },
+  { user: "Ali_Shah", text: "Aklasbela TV stream looks absolutely HD tonight" },
+  { user: "CyberNomad", text: "Secure VPS Port 3005 connection is stable" },
+  { user: "Zain_786", text: "Who else bets 2-digit double units today?" },
+  { user: "Malik_Boss", text: "Hoping for standard returns" },
+  { user: "CryptoSufi", text: "Pneumatic system is spinning incredibly fast!" },
+  { user: "Amina_Jan", text: "08 is going to win, I swear" },
+  { user: "Bano_TV", text: "Love the live 3D ball simulation" },
+  { user: "King_Arthur", text: "Direct satellite connection is butter smooth." },
+  { user: "Kashif_R", text: "Certified ledger values checked" },
+  { user: "Siddique78", text: "This is a masterpiece live presentation!" }
+];
+
 const Ball: React.FC<{ 
   id: number; 
   number: string; 
@@ -46,11 +89,13 @@ const Ball: React.FC<{
     return { radius, speed, delay };
   }, []);
 
+  if (phase === 'REVEAL') return null;
+
+  // The winning ball is drawn along the SVG pipeline path during delivery and hold phases, 
+  // so we hide it from the main mixing chamber.
   if (isActuallyWinner && (phase === 'DELIVERY' || phase === 'HOLD')) {
       return null;
   }
-
-  if (phase === 'REVEAL' || ((phase === 'DELIVERY' || phase === 'HOLD') && !isActuallyWinner)) return null;
   
   const isMixing = phase === 'SHUFFLE';
 
@@ -63,7 +108,7 @@ const Ball: React.FC<{
             '--speed': `${motion.speed}s`,
             '--delay': `${motion.delay}s`,
             transform: !isMixing ? `translate(${(id % 12 - 5.5) * 20}px, ${140 + (Math.floor(id/12) * -18)}px)` : undefined
-        } as any}
+        } as React.CSSProperties}
     >
         <span className="ball-text-3d">{number}</span>
     </div>
@@ -85,7 +130,10 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
   const [liveChats, setLiveChats] = useState<ChatMsg[]>([]);
 
   const chatCounter = useRef(0);
+  const isMutedRef = useRef(isMuted);
   const speechRef = useRef<SpeechSynthesisUtterance | null>(null);
+
+  const normalizedWinningNumber = useMemo(() => winningNumber.padStart(2, '0'), [winningNumber]);
 
   const balls = useMemo(() => Array.from({ length: 100 }, (_, i) => ({
     id: i,
@@ -94,7 +142,7 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
 
   // Audio synthesizer via web audio utility
   const playSynthesizerBeep = (freqStart: number, freqEnd: number, duration: number, wave: OscillatorType = 'sine') => {
-    if (isMuted) return;
+    if (isMutedRef.current) return;
     try {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
       if (!AudioCtx) return;
@@ -122,7 +170,7 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
   // Text-To-Speech Narrator Speech Engine
   const speakNarrative = (text: string) => {
     setCurrentSpeech(text);
-    if (isMuted) return;
+    if (isMutedRef.current) return;
     try {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
@@ -146,35 +194,49 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
     }
   };
 
-  // Populate dynamic simulated user reactions
-  const simulatedChatFeed = useMemo(() => [
-    { user: "Raja_G", text: "Please let it be open 07!" },
-    { user: "LuckyPK", text: "Lahore Node online, heavy stakes active!" },
-    { user: "Ali_Shah", text: "Aklasbela TV stream looks absolutely HD tonight" },
-    { user: "CyberNomad", text: "Secure VPS Port 3005 connection is stable" },
-    { user: "Zain_786", text: "Who else bets 2-digit double units today?" },
-    { user: "Malik_Boss", text: "Hoping for standard returns" },
-    { user: "CryptoSufi", text: "Pneumatic system is spinning incredibly fast!" },
-    { user: "Amina_Jan", text: "08 is going to win, I swear" },
-    { user: "Bano_TV", text: "Love the live 3D ball simulation" },
-    { user: "King_Arthur", text: "Direct satellite connection is butter smooth." },
-    { user: "Kashif_R", text: "Certified ledger values checked" },
-    { user: "Siddique78", text: "This is a masterpiece live presentation!" }
-  ], []);
-
   // Core drawing state trigger logic
   useEffect(() => {
+    // Reset states whenever props trigger a new sequence
+    setPhase('IDLE');
+    setTimeLeft(SHUFFLE_TIME / 1000);
+    setCamera('CAM_01_STUDIO');
+    setViewerCount(14850);
+    setBitrate(8420);
+    setCurrentSpeech("Establishing secure broadcast matrix...");
+    setIsHostTalking(false);
+    setLiveChats([]);
+    chatCounter.current = 0;
+
     // 1. Scene Generation via Google GenAI Studio
     const generateAiBackdrop = async () => {
         try {
-            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+            const apiKey = (typeof process !== 'undefined' ? process.env.API_KEY : '') 
+              || (import.meta as any).env?.VITE_API_KEY 
+              || '';
+
+            if (!apiKey) {
+                console.warn("Google GenAI API Key is missing. Skipping AI background generation.");
+                return;
+            }
+
+            const ai = new GoogleGenAI({ apiKey });
             const resp = await ai.models.generateContent({
                 model: 'gemini-2.5-flash-image',
-                contents: { parts: [{ text: "Cinematic medium camera shot of a dark high class glass lottery television studio with scanning neon grids, 4k resolution, ultra futuristic." }] },
-                config: { imageConfig: { aspectRatio: "16:9" } }
+                contents: "Cinematic medium camera shot of a dark high class glass lottery television studio with scanning neon grids, 4k resolution, ultra futuristic.",
+                config: { 
+                    responseModalities: ['IMAGE'],
+                    imageConfig: { aspectRatio: "16:9" } 
+                }
             });
-            for (const p of resp.candidates[0].content.parts) {
-                if (p.inlineData) setAiBackdrop(`data:image/png;base64,${p.inlineData.data}`);
+
+            const parts = resp.candidates?.[0]?.content?.parts;
+            if (parts) {
+                for (const p of parts) {
+                    if (p.inlineData?.data) {
+                        setAiBackdrop(`data:${p.inlineData.mimeType || 'image/png'};base64,${p.inlineData.data}`);
+                        break;
+                    }
+                }
             }
         } catch (e) {
             console.error("AI Scene Generation Engine idle", e);
@@ -211,7 +273,7 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
     const tReveal = setTimeout(() => {
       setPhase('REVEAL');
       playSynthesizerBeep(523.25, 1046.50, 1.5, 'triangle'); // high C chord chime
-      speakNarrative(`Outcome confirmed! The official winning result for ${gameName} is declared as double digit ${winningNumber}. Multiplied payouts are routing to active dealer ledgers. Congratulations to the winning accounts!`);
+      speakNarrative(`Outcome confirmed! The official winning result for ${gameName} is declared as double digit ${normalizedWinningNumber}. Multiplied payouts are routing to active dealer ledgers. Congratulations to the winning accounts!`);
     }, 4500 + SHUFFLE_TIME + DELIVERY_TIME + HOLD_TIME);
 
     // 3. Sub-ticks for countdown and telemetry fluctuation
@@ -230,7 +292,7 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
 
     // 4. Simulated Chat Matrix flow
     const chatInterval = setInterval(() => {
-        const randomItem = simulatedChatFeed[Math.floor(Math.random() * simulatedChatFeed.length)];
+        const randomItem = SIMULATED_CHAT_FEED[Math.floor(Math.random() * SIMULATED_CHAT_FEED.length)];
         const newMsg: ChatMsg = {
           id: chatCounter.current++,
           user: randomItem.user,
@@ -250,12 +312,13 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
       clearInterval(chatInterval);
       window.speechSynthesis.cancel();
     };
-  }, [gameName, winningNumber, simulatedChatFeed]);
+  }, [gameName, winningNumber, normalizedWinningNumber]);
 
   // Handle sudden mute toggle changes and cancel or trigger script speak
   const handleToggleMute = () => {
     const nextState = !isMuted;
     setIsMuted(nextState);
+    isMutedRef.current = nextState;
     if (nextState) {
       window.speechSynthesis.cancel();
       setIsHostTalking(false);
@@ -264,8 +327,6 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
       speakNarrative(currentSpeech);
     }
   };
-
-  const pipelinePath = "M 200 420 L 200 320 L 120 280 L 280 230 L 120 180 L 280 130 L 340 130 L 340 250 L 280 320 L 340 390 L 280 460 L 340 530 L 280 600 L 340 670 L 340 750 L 200 780";
 
   return (
     <div className="fixed inset-0 z-[10000] select-none bg-black overflow-hidden flex flex-col justify-between font-inter text-slate-100 pb-4">
@@ -292,6 +353,9 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
           <div className="text-[10px] font-mono text-slate-400 flex items-center gap-4">
             <span className="hidden md:inline">TR: 3005-A_TV</span>
             <span>CH: {camera}</span>
+            {phase === 'SHUFFLE' && (
+              <span className="text-red-500 font-bold animate-pulse">SHUFFLE: {timeLeft}s</span>
+            )}
             <span className="text-emerald-400 font-bold">{bitrate} KBPS</span>
             <span className="text-amber-500 font-black">{viewerCount.toLocaleString()} VIEWERS</span>
           </div>
@@ -335,7 +399,7 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
                   <line x1="30" y1="48" x2="70" y2="48" stroke="#000" strokeWidth="2" />
                   {/* Animated mouth waves */}
                   <g transform="translate(50, 68)">
-                    <rect x="-12" y="-3" width="24" height="6" rx="2" fill="currentColor" className={isHostTalking ? "presenter-mouth" : ""} style={{ '--speech-speed': '0.15s' } as any} />
+                    <rect x="-12" y="-3" width="24" height="6" rx="2" fill="currentColor" className={isHostTalking ? "presenter-mouth" : ""} style={{ '--speech-speed': '0.15s' } as React.CSSProperties} />
                   </g>
                   {/* Neon node ticks */}
                   <circle cx="50" cy="20" r="3" fill="#f59e0b" className="animate-ping" />
@@ -366,7 +430,7 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
                       backgroundColor: isHostTalking ? '#f59e0b' : '#334155',
                       height: isHostTalking ? undefined : '4px',
                       animationPlayState: isHostTalking ? 'running' : 'paused'
-                    } as any}
+                    } as React.CSSProperties}
                   />
                 ))}
               </div>
@@ -415,11 +479,11 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
                         </filter>
                     </defs>
                     {/* Shadow casing of the glass tube */}
-                    <path d={pipelinePath} stroke="rgba(15, 23, 42, 0.95)" strokeWidth="64" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+                    <path d={PIPELINE_PATH} stroke="rgba(15, 23, 42, 0.95)" strokeWidth="64" fill="none" strokeLinejoin="round" strokeLinecap="round" />
                     {/* Dark inner tube wall shading */}
-                    <path d={pipelinePath} stroke="rgba(30, 41, 59, 0.82)" strokeWidth="58" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+                    <path d={PIPELINE_PATH} stroke="rgba(30, 41, 59, 0.82)" strokeWidth="58" fill="none" strokeLinejoin="round" strokeLinecap="round" />
                     {/* Internal vacuum track highlight */}
-                    <path d={pipelinePath} stroke="rgba(245, 158, 11, 0.15)" strokeWidth="48" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+                    <path d={PIPELINE_PATH} stroke="rgba(245, 158, 11, 0.15)" strokeWidth="48" fill="none" strokeLinejoin="round" strokeLinecap="round" />
                 </svg>
 
                 {/* WINNING BALL DOCKED AND DELIVERED (Z-Index 20) */}
@@ -446,16 +510,16 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
                                     fontFamily="'Russo One', sans-serif"
                                     letterSpacing="-0.5px"
                                 >
-                                    {winningNumber.padStart(2, '0')}
+                                    {normalizedWinningNumber}
                                 </text>
                                 <path d="M -16 -8 A 18 18 0 0 1 16 -8 A 18 10 0 0 0 -16 -8" fill="url(#glareGrad)" opacity="0.6" />
                             </g>
                             <animateMotion
-                                key={phase + winningNumber}
+                                key={phase + normalizedWinningNumber}
                                 dur="16s"
                                 repeatCount="1"
                                 fill="freeze"
-                                path={pipelinePath}
+                                path={PIPELINE_PATH}
                                 calcMode="paced"
                             />
                         </g>
@@ -474,7 +538,7 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
                                 fontFamily="'Russo One', sans-serif"
                                 letterSpacing="-0.5px"
                             >
-                                {winningNumber.padStart(2, '0')}
+                                {normalizedWinningNumber}
                             </text>
                             <path d="M -17 -8 A 19 19 0 0 1 17 -8 A 19 11 0 0 0 -17 -8" fill="url(#glareGrad)" opacity="0.6" />
                         </g>
@@ -493,8 +557,8 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
                                 id={b.id} 
                                 number={b.number} 
                                 phase={phase} 
-                                isActuallyWinner={parseInt(b.number) === parseInt(winningNumber)} 
-                                winningNumber={winningNumber} 
+                                isActuallyWinner={b.number === normalizedWinningNumber} 
+                                winningNumber={normalizedWinningNumber} 
                             />
                         ))}
 
@@ -560,11 +624,11 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
                 {/* GLASSY DRAW PIPE FRONT REFRACTIVE HIGHLIGHTS (Z-Index 30) */}
                 <svg className="absolute inset-0 w-full h-full pointer-events-none z-[30]" viewBox="0 0 400 800" preserveAspectRatio="none">
                     {/* Soft glass edge glow */}
-                    <path d={pipelinePath} stroke="rgba(255, 255, 255, 0.14)" strokeWidth="56" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+                    <path d={PIPELINE_PATH} stroke="rgba(255, 255, 255, 0.14)" strokeWidth="56" fill="none" strokeLinejoin="round" strokeLinecap="round" />
                     {/* High-gloss light strike refraction */}
-                    <path d={pipelinePath} className="glass-pipe-highlight" stroke="rgba(255, 255, 255, 0.38)" strokeWidth="8" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+                    <path d={PIPELINE_PATH} className="glass-pipe-highlight" stroke="rgba(255, 255, 255, 0.38)" strokeWidth="8" fill="none" strokeLinejoin="round" strokeLinecap="round" />
                     {/* Dual glare reflection */}
-                    <path d={pipelinePath} stroke="rgba(255, 255, 255, 0.18)" strokeWidth="2" fill="none" strokeLinejoin="round" strokeLinecap="round" transform="translate(6, 0)" opacity="0.8" />
+                    <path d={PIPELINE_PATH} stroke="rgba(255, 255, 255, 0.18)" strokeWidth="2" fill="none" strokeLinejoin="round" strokeLinecap="round" transform="translate(6, 0)" opacity="0.8" />
                 </svg>
 
                 {/* DECISION COLLECTION CUPPED RECEPTACLE (Z-Index 50) */}
@@ -577,7 +641,7 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
                     </div>
                     
                     {phase === 'HOLD' ? (
-                        <span className="result-glow-text">{winningNumber.padStart(2, '0')}</span>
+                        <span className="result-glow-text">{normalizedWinningNumber}</span>
                     ) : (
                         <div className="flex gap-4">
                             <div className="w-3 h-3 rounded-full bg-slate-800 animate-bounce" />
@@ -643,7 +707,7 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
                 <div className="relative inline-block px-12 py-10 sm:px-44 sm:py-28 bg-white/[0.03] rounded-[4rem] sm:rounded-[10rem] border-2 border-amber-500/50 shadow-[0_0_120px_rgba(245,158,11,0.35)] backdrop-blur-3xl overflow-hidden">
                     <div className="absolute inset-0 bg-gradient-to-br from-amber-500/15 via-transparent to-amber-500/15" />
                     <span className="relative text-[10rem] sm:text-[24rem] font-black russo text-white gold-shimmer tracking-tighter leading-none block drop-shadow-[0_40px_100px_rgba(0,0,0,1)]">
-                        {winningNumber.padStart(2, '0')}
+                        {normalizedWinningNumber}
                     </span>
                 </div>
 
@@ -687,3 +751,4 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
 };
 
 export default ResultRevealOverlay;
+```

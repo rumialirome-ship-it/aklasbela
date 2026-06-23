@@ -399,6 +399,21 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
                 
                 {/* GLASSY DRAW PIPE BACK VECTOR (Z-Index 10) */}
                 <svg className="absolute inset-0 w-full h-full pointer-events-none z-[10]" viewBox="0 0 400 800" preserveAspectRatio="none">
+                    <defs>
+                        <radialGradient id="winnerBallGrad" cx="30%" cy="30%" r="70%">
+                            <stop offset="0%" stopColor="#ffffff" />
+                            <stop offset="15%" stopColor="#fffbeb" />
+                            <stop offset="65%" stopColor="#f59e0b" />
+                            <stop offset="100%" stopColor="#581c0c" />
+                        </radialGradient>
+                        <linearGradient id="glareGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="white" stopOpacity="0.84" />
+                            <stop offset="100%" stopColor="white" stopOpacity="0" />
+                        </linearGradient>
+                        <filter id="ballShadow" x="-30%" y="-30%" width="160%" height="160%">
+                            <feDropShadow dx="0" dy="6" stdDeviation="5" floodColor="#000000" floodOpacity="0.75" />
+                        </filter>
+                    </defs>
                     {/* Shadow casing of the glass tube */}
                     <path d={pipelinePath} stroke="rgba(15, 23, 42, 0.95)" strokeWidth="64" fill="none" strokeLinejoin="round" strokeLinecap="round" />
                     {/* Dark inner tube wall shading */}
@@ -408,17 +423,63 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
                 </svg>
 
                 {/* WINNING BALL DOCKED AND DELIVERED (Z-Index 20) */}
-                {(phase === 'DELIVERY' || phase === 'HOLD') && (
-                    <div 
-                        className={`lottery-ball-3d ${phase === 'DELIVERY' ? 'ball-delivering' : 'ball-held'}`} 
-                        style={{ '--ball-color': '#f59e0b' } as any}
-                    >
-                        <div className="absolute inset-0 bg-white/10 backdrop-blur-[1.5px] rounded-full pointer-events-none" />
-                        <span className="ball-text-3d" style={{ fontSize: phase === 'HOLD' ? '22px' : '12px' }}>
-                            {winningNumber.padStart(2, '0')}
-                        </span>
-                    </div>
-                )}
+                <svg className="absolute inset-0 w-full h-full pointer-events-none z-[20]" viewBox="0 0 400 800" preserveAspectRatio="none">
+                    {phase === 'DELIVERY' && (
+                        <g filter="url(#ballShadow)">
+                            <g>
+                                <animateTransform
+                                    attributeName="transform"
+                                    type="rotate"
+                                    from="0"
+                                    to="1440"
+                                    dur="16s"
+                                    repeatCount="1"
+                                />
+                                <circle cx="0" cy="0" r="23" fill="url(#winnerBallGrad)" />
+                                <circle cx="0" cy="0" r="23" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" />
+                                <text
+                                    textAnchor="middle"
+                                    dy="6"
+                                    fill="#1e1b4b"
+                                    fontSize="18"
+                                    fontWeight="900"
+                                    fontFamily="'Russo One', sans-serif"
+                                    letterSpacing="-0.5px"
+                                >
+                                    {winningNumber.padStart(2, '0')}
+                                </text>
+                                <path d="M -16 -8 A 18 18 0 0 1 16 -8 A 18 10 0 0 0 -16 -8" fill="url(#glareGrad)" opacity="0.6" />
+                            </g>
+                            <animateMotion
+                                key={phase + winningNumber}
+                                dur="16s"
+                                repeatCount="1"
+                                fill="freeze"
+                                path={pipelinePath}
+                                calcMode="paced"
+                            />
+                        </g>
+                    )}
+
+                    {phase === 'HOLD' && (
+                        <g filter="url(#ballShadow)" transform="translate(200, 780)">
+                            <circle cx="0" cy="0" r="24" fill="url(#winnerBallGrad)" />
+                            <circle cx="0" cy="0" r="24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" />
+                            <text
+                                textAnchor="middle"
+                                dy="7"
+                                fill="#1e1b4b"
+                                fontSize="19"
+                                fontWeight="900"
+                                fontFamily="'Russo One', sans-serif"
+                                letterSpacing="-0.5px"
+                            >
+                                {winningNumber.padStart(2, '0')}
+                            </text>
+                            <path d="M -17 -8 A 19 19 0 0 1 17 -8 A 19 11 0 0 0 -17 -8" fill="url(#glareGrad)" opacity="0.6" />
+                        </g>
+                    )}
+                </svg>
 
                 {/* MECHANICAL ROTATING SPHERE (Z-Index 15) */}
                 <div className="machine-jar">
@@ -436,6 +497,63 @@ const ResultRevealOverlay: React.FC<ResultRevealOverlayProps> = ({ gameName, win
                                 winningNumber={winningNumber} 
                             />
                         ))}
+
+                        {/* SECONDARY SVG GLASS-MORPHISM REFRACTION OVERLAY & FILTER (Z-Index 48 - directly on top of the balls) */}
+                        <div className="absolute inset-0 rounded-full pointer-events-none z-[48] overflow-hidden">
+                            <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                                <defs>
+                                    {/* High-fidelity glass sphere glare gradient */}
+                                    <linearGradient id="glassSphereGlare" x1="0" y1="0" x2="1" y2="1">
+                                        <stop offset="0%" stopColor="#ffffff" stopOpacity="0.55" />
+                                        <stop offset="35%" stopColor="#ffffff" stopOpacity="0.22" />
+                                        <stop offset="70%" stopColor="#ffffff" stopOpacity="0" />
+                                    </linearGradient>
+                                    
+                                    {/* Sub-spherical internal refraction glow */}
+                                    <radialGradient id="glassSphereRefraction" cx="70%" cy="70%" r="65%">
+                                        <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.28" />
+                                        <stop offset="45%" stopColor="#f59e0b" stopOpacity="0.09" />
+                                        <stop offset="100%" stopColor="#000000" stopOpacity="0" />
+                                    </radialGradient>
+                                    
+                                    {/* Pure light source specular hotspot */}
+                                    <radialGradient id="glassHotspot" cx="28%" cy="24%" r="18%">
+                                        <stop offset="0%" stopColor="#ffffff" stopOpacity="0.82" />
+                                        <stop offset="50%" stopColor="#ffffff" stopOpacity="0.18" />
+                                        <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
+                                    </radialGradient>
+
+                                    {/* Thick 3D lens highlight border */}
+                                    <linearGradient id="glassRim" x1="1" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stopColor="#ffffff" stopOpacity="0.5" />
+                                        <stop offset="50%" stopColor="#ffffff" stopOpacity="0.1" />
+                                        <stop offset="100%" stopColor="#000000" stopOpacity="0.8" />
+                                    </linearGradient>
+
+                                    {/* Real glass thickness edge distortion filter */}
+                                    <filter id="glassRefractFilter" x="-10%" y="-10%" width="120%" height="120%">
+                                        <feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="3" result="noise" />
+                                        <feDisplacementMap in="SourceGraphic" in2="noise" scale="3" xChannelSelector="R" yChannelSelector="G" />
+                                    </filter>
+                                </defs>
+
+                                {/* Base refraction shading inside the glass chamber */}
+                                <circle cx="50" cy="50" r="49.5" fill="url(#glassSphereRefraction)" />
+                                
+                                {/* Structural edge reflection ring */}
+                                <circle cx="50" cy="50" r="48.5" fill="none" stroke="url(#glassRim)" strokeWidth="1.8" />
+                                
+                                {/* Realistic crescence glare curve mirroring standard glass bubbles */}
+                                <path d="M 6,24 A 44,44 0 0,1 94,24 A 44,22 0 0,0 6,24" fill="url(#glassSphereGlare)" />
+                                
+                                {/* Deep micro hotspot glint */}
+                                <circle cx="30" cy="22" r="9" fill="url(#glassHotspot)" />
+                                
+                                {/* Multi-faceted lens refraction circles */}
+                                <circle cx="50" cy="50" r="41" fill="none" stroke="rgba(255, 255, 255, 0.09)" strokeWidth="0.8" strokeDasharray="3 15" />
+                                <circle cx="50" cy="50" r="45.5" fill="none" stroke="rgba(255, 255, 255, 0.05)" strokeWidth="0.5" />
+                            </svg>
+                        </div>
                     </div>
                 </div>
 

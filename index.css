@@ -30,6 +30,27 @@
     z-index: 15;
 }
 
+.machine-jar::after {
+    content: '';
+    position: absolute;
+    top: 48px; /* Offset to align perfectly with the sphere below the mechanical neck */
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 49; /* Sitting on top of mixing balls for dynamic refraction layer */
+    background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.45) 0%, rgba(255, 255, 255, 0.08) 35%, rgba(0, 0, 0, 0.5) 75%, rgba(0, 0, 0, 0.92) 100%);
+    box-shadow: 
+        inset 0 0 60px rgba(255, 255, 255, 0.24),
+        inset -25px -25px 50px rgba(0, 0, 0, 0.95),
+        inset 25px 25px 50px rgba(255, 255, 255, 0.28),
+        0 30px 60px rgba(0, 0, 0, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.32);
+    backdrop-filter: blur(1.5px) contrast(1.2) saturate(1.15);
+    opacity: 0.88;
+}
+
 .jar-neck-mechanical {
     width: 110px;
     height: 50px;
@@ -118,58 +139,6 @@
 .ball-vortex {
     animation: ball-vortex-move var(--speed) infinite linear;
     animation-delay: var(--delay);
-}
-
-/* SLOW EXTRACTION PATHING */
-.ball-delivering {
-    position: absolute;
-    width: 11.5%;
-    height: 11.5%;
-    z-index: 20 !important;
-    transform: translate(-50%, -50%);
-    animation: follow-extraction-path-slow-contained 16s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-
-@keyframes follow-extraction-path-slow-contained {
-    0% { transform: translate(-50%, -50%) scale(0.7) rotate(0deg); left: 50%; top: 40%; opacity: 0; }
-    3% { transform: translate(-50%, -50%) scale(0.8) rotate(0deg); left: 50%; top: 40%; opacity: 1; }
-    6% { transform: translate(-50%, -50%) scale(0.85) rotate(5deg); left: 50%; top: 52.5%; }
-    12% { transform: translate(-50%, -50%) scale(0.95) rotate(-30deg); left: 30%; top: 35%; }
-    18% { transform: translate(-50%, -50%) scale(1.0) rotate(30deg); left: 70%; top: 28.75%; }
-    24% { transform: translate(-50%, -50%) scale(1.05) rotate(-60deg); left: 30%; top: 22.5%; }
-    30% { transform: translate(-50%, -50%) scale(1.05) rotate(60deg); left: 70%; top: 16.25%; }
-    36% { transform: translate(-50%, -50%) scale(1.1) rotate(90deg); left: 85%; top: 16.25%; }
-    42% { transform: translate(-50%, -50%) scale(1.1) rotate(180deg); left: 85%; top: 31.25%; }
-    48% { transform: translate(-50%, -50%) scale(1.15) rotate(240deg); left: 70%; top: 40%; }
-    54% { transform: translate(-50%, -50%) scale(1.15) rotate(300deg); left: 85%; top: 48.75%; }
-    60% { transform: translate(-50%, -50%) scale(1.2) rotate(360deg); left: 70%; top: 57.5%; }
-    66% { transform: translate(-50%, -50%) scale(1.2) rotate(420deg); left: 85%; top: 66.25%; }
-    72% { transform: translate(-50%, -50%) scale(1.25) rotate(480deg); left: 70%; top: 75%; }
-    78% { transform: translate(-50%, -50%) scale(1.25) rotate(540deg); left: 85%; top: 83.75%; }
-    85% { transform: translate(-50%, -50%) scale(1.3) rotate(600deg); left: 85%; top: 93.75%; }
-    93% { transform: translate(-50%, -50%) scale(1.4) rotate(640deg); left: 50%; top: 93.75%; opacity: 1; }
-    100% { transform: translate(-50%, -50%) scale(1.4) rotate(660deg); left: 50%; top: 93.75%; opacity: 1; }
-}
-
-.ball-held {
-    position: absolute;
-    top: 93.75%;
-    left: 50%;
-    z-index: 2001 !important;
-    transform: translate(-50%, -50%) scale(1.4);
-    animation: winner-pulse-contained 2.5s infinite ease-in-out;
-}
-
-@keyframes winner-pulse-contained {
-    0%, 100% { 
-        transform: translate(-50%, -50%) scale(1.4) rotate(0deg); 
-        box-shadow: 0 0 50px rgba(245, 158, 11, 0.7), inset -5px -5px 15px rgba(0,0,0,0.8);
-    }
-    50% { 
-        transform: translate(-50%, -50%) scale(1.5) rotate(5deg); 
-        box-shadow: 0 0 70px rgba(245, 158, 11, 1), inset -5px -5px 15px rgba(0,0,0,0.8);
-        filter: brightness(1.25);
-    }
 }
 
 /* THE REVEAL DISPLAY BOX */
